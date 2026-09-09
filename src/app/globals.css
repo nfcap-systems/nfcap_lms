@@ -1,13 +1,61 @@
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+@import 'tailwindcss';
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+@theme {
+  /* Brand */
+  --color-brand-primary: #123557;
+  --color-brand-primary-dark: #0d2942;
+  --color-brand-primary-hover: #315678;
+  --color-brand-heading: #123557;
+  --color-brand-accent: #d71920;
+  --color-brand-accent-hover: #b51218;
+
+  /* Brand tints */
+  --color-accent-tint: #fcecee;
+  --color-accent-tint-text: #9e1015;
+  --color-brand-tint: #edf3f8;
+
+  /* Surfaces */
+  --color-bg-page: #f6f7f9;
+  --color-bg-card: #ffffff;
+  --color-bg-subtle: #eef1f4;
+
+  /* Text */
+  --color-text-primary: #1f2d3a;
+  --color-text-secondary: #64778a;
+  --color-text-muted: #315678;
+  --color-on-brand: #ffffff;
+
+  /* Borders */
+  --color-border-subtle: #eef1f4;
+  --color-border-default: #dce2e8;
+
+  /* Status */
+  --color-status-success-bg: #eaf7f0;
+  --color-status-success-text: #21855b;
+  --color-status-success-border: #bfe8d3;
+
+  --color-status-pending-bg: #fdf6e9;
+  --color-status-pending-text: #b7791f;
+  --color-status-pending-border: #f3dba6;
+
+  --color-status-restricted-bg: #eef1f4;
+  --color-status-restricted-text: #315678;
+  --color-status-restricted-border: #dce2e8;
+
+  --color-status-info-bg: #edf3f8;
+  --color-status-info-text: #315678;
+  --color-status-info-border: #c9d9e8;
+
+  --color-status-danger-bg: #fcecee;
+  --color-status-danger-text: #d71920;
+  --color-status-danger-border: #f5c2c5;
+  --color-danger: #d71920;
+
+  --font-sans: var(--font-geist-sans), system-ui, -apple-system, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+
+  --shadow-card: 0 10px 24px rgba(15, 23, 42, 0.08);
+  --shadow-elevated: 0 18px 55px rgba(15, 23, 42, 0.12);
 }
 
 html {
@@ -22,28 +70,43 @@ body {
 
 body {
   min-height: 100%;
-  display: flex;
-  flex-direction: column;
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+  color: var(--color-text-primary);
+  background: var(--color-bg-page);
+  font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
 * {
   box-sizing: border-box;
-  padding: 0;
-  margin: 0;
 }
 
-a {
-  color: inherit;
-  text-decoration: none;
+.no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 }
 
-@media (prefers-color-scheme: dark) {
-  html {
-    color-scheme: dark;
-  }
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Dual-tone focus ring: white inner ring + navy-dark outer ring.
+   Stays legible on both light cards and the dark navy hero band. */
+:focus-visible {
+  outline: 2px solid #ffffff;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px var(--color-brand-primary-dark);
+  border-radius: 4px;
+}
+
+.btn-secondary {
+  color: var(--color-brand-primary);
+  background: transparent;
+  border: 1px solid var(--color-border-default);
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.btn-secondary:hover {
+  background: var(--color-brand-tint);
+  color: var(--color-brand-primary-dark);
 }

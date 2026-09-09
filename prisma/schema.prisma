@@ -1,0 +1,576 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum CourseAccess {
+  OPEN
+  RESTRICTED
+}
+
+enum LessonType {
+  VIDEO
+  TEXT
+  IMAGE
+  RESOURCE
+}
+
+enum EvidenceStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum UserRole {
+  LEARNER
+  ADMIN
+}
+
+enum FundingSource {
+  SELF_PAY
+  WIOA_PENDING
+}
+
+model Course {
+  id             String       @id @default(cuid())
+  /// Human-readable route/lookup key (e.g. "safety-tools"). Distinct from `id` so routes stay
+  /// readable while every relation still targets the stable cuid.
+  slug           String       @unique
+  title          String
+  description    String
+  category       String
+  access         CourseAccess @default(OPEN)
+  /// Position in the apprenticeship pathway, for display ordering only.
+  pathwayOrder   Int
+  evidencePrompt String
+  /// Hides the course from learner discovery (Explore/Home) when false. Never filtered on for
+  /// enrollment/progress/admin queries — unpublishing must not revoke access for learners
+  /// already enrolled (docs/product/PRODUCT_CONTEXT.md, course-store.tsx historical comment).
+  isPublished    Boolean      @default(true)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  sections           Section[]
+  assessment         Assessment?
+  enrollments        Enrollment[]
+  wioaCommunications WioaCommunication[]
+  wioaCases          WioaCase[]
+  courseUnlocks      CourseUnlock[]
+}
+
+model Section {
+  id       String @id @default(cuid())
+  courseId String
+  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  title    String
+  /// Display order among sibling sections of the same course.
+  order    Int
+
+  lessons Lesson[]
+
+  @@index([courseId])
+}
+
+model Lesson {
+  id              String     @id @default(cuid())
+  sectionId       String
+  section         Section    @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  title           String
+  type            LessonType
+  durationMinutes Int
+  /// Text body (type TEXT), caption/body accompanying video/image, or resource description.
+  body            String
+  /// Video URL (type VIDEO), image URL (type IMAGE), or resource file URL (type RESOURCE).
+  src             String?
+  /// Display label for a downloadable resource, e.g. "Site Safety Checklist.pdf".
+  resourceLabel   String?
+  /// Display order among sibling lessons of the same section.
+  order           Int
+
+  completions CompletedLesson[]
+
+  @@index([sectionId])
+}
+
+model Assessment {
+  id            String @id @default(cuid())
+  courseId      String @unique
+  course        Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  /// Fraction of questions (0-1) a learner must answer correctly to pass.
+  passThreshold Float
+
+  questions QuizQuestion[]
+}
+
+model QuizQuestion {
+  id           String     @id @default(cuid())
+  assessmentId String
+  assessment   Assessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  prompt       String
+  options      String[]
+  correctIndex Int
+  /// Display order among sibling questions of the same assessment.
+  order        Int
+
+  @@index([assessmentId])
+}
+
+/// One row per learner per course. `learnerId` is a Supabase `auth.users.id` (uuid) stored as a
+/// plain scalar — Prisma has no visibility into Supabase's `auth` schema, so this is an
+/// app-enforced foreign key, not a Prisma relation. Learner identity/name/email are read from
+/// Supabase Auth directly (src/lib/data/learners.ts), never duplicated into Postgres.
+model Enrollment {
+  id         String   @id @default(cuid())
+  learnerId  String
+  courseId   String
+  course     Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  enrolledAt DateTime @default(now())
+
+  completedLessons    CompletedLesson[]
+  quizAttempts        QuizAttempt[]
+  evidenceSubmissions EvidenceSubmission[]
+  certificate         Certificate?
+
+  @@unique([learnerId, courseId])
+  @@index([learnerId])
+}
+
+model CompletedLesson {
+  id           String     @id @default(cuid())
+  enrollmentId String
+  enrollment   Enrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  lessonId     String
+  lesson       Lesson     @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  completedAt  DateTime   @default(now())
+
+  @@unique([enrollmentId, lessonId])
+}
+
+/// One row per quiz submission (retakes append, they don't overwrite) — "the latest attempt" is
+/// computed at query time (order by submittedAt desc, take 1).
+model QuizAttempt {
+  id           String     @id @default(cuid())
+  enrollmentId String
+  enrollment   Enrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  scorePercent Float
+  passed       Boolean
+  submittedAt  DateTime   @default(now())
+
+  @@index([enrollmentId, submittedAt])
+}
+
+/// One row per submission — a rejected submission followed by a resubmission is two rows, not an
+/// overwrite. "The current/latest submission" is computed at query time (order by submittedAt
+/// desc, take 1).
+model EvidenceSubmission {
+  id              String         @id @default(cuid())
+  enrollmentId    String
+  enrollment      Enrollment     @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  description     String
+  /// Display filename only — no real file storage yet (Supabase Storage integration deferred).
+  fileName        String?
+  status          EvidenceStatus @default(PENDING)
+  submittedAt     DateTime       @default(now())
+  statusUpdatedAt DateTime?
+
+  certificate Certificate?
+
+  @@index([enrollmentId, submittedAt])
+}
+
+/// Materialized when Admin approves an EvidenceSubmission (docs/product/PRODUCT_CONTEXT.md Section 5: a
+/// course completes only once evidence is verified). One per enrollment — a course can only be
+/// certified once.
+model Certificate {
+  id                   String             @id @default(cuid())
+  enrollmentId         String             @unique
+  enrollment           Enrollment         @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  evidenceSubmissionId String             @unique
+  evidenceSubmission   EvidenceSubmission @relation(fields: [evidenceSubmissionId], references: [id])
+  certificateCode      String             @unique
+  issuedAt             DateTime           @default(now())
+}
+
+// ---------------------------------------------------------------------------------------------
+// WIOA funding module (docs/wioa/WIOA_INTEGRATION_PLAN.md, docs/build/WIOA_BUILD_WORKFLOW.md) — Phase 1
+// (Match). Additive only; nothing above this line changes shape for this module.
+// ---------------------------------------------------------------------------------------------
+
+enum ContactType {
+  PRIMARY
+  SECONDARY
+  GENERAL
+}
+
+enum CommunicationChannel {
+  EMAIL
+  CALL
+}
+
+/// The 18 canonical statuses (docs/wioa/WIOA_Eligibility_Matching_App_Developer_Specification.pdf
+/// Section 7), grouped into 6 UI phases by src/lib/wioa/status.ts — this enum is the canonical
+/// list per docs/build/WIOA_BUILD_WORKFLOW.md "Open decisions". Order matches the spec's numbering,
+/// which is also the linear transition order (see WioaCase.status doc comment).
+enum WioaCaseStatus {
+  REGISTERED
+  WORKFORCE_BOARD_MATCHED
+  INITIAL_CONTACT_SENT
+  AWAITING_RESPONSE
+  ORIENTATION_SCHEDULED
+  ORIENTATION_COMPLETED
+  CALJOBS_COMPLETED
+  WIOA_APPLICATION_SUBMITTED
+  DOCUMENTS_PENDING
+  DOCUMENTS_SUBMITTED
+  INTAKE_APPOINTMENT_SCHEDULED
+  ELIGIBILITY_UNDER_REVIEW
+  WIOA_ELIGIBLE
+  ETPL_TRAINING_REQUESTED
+  TRAINING_AUTHORIZATION_PENDING
+  TUITION_APPROVED
+  APPRENTICESHIP_ENROLLMENT_COMPLETE
+  CLOSED_INELIGIBLE
+}
+
+enum AppointmentType {
+  ORIENTATION
+  INTAKE
+  FOLLOWUP
+}
+
+enum WioaDocumentStatus {
+  MISSING
+  UPLOADED
+  UNDER_REVIEW
+  ACCEPTED
+  REJECTED
+  NOT_APPLICABLE
+}
+
+/// The app's first Postgres-side user record (see WIOA_BUILD_WORKFLOW.md "Conflicts" #3) —
+/// Supabase Auth remains the identity/session source of truth; this only holds structured,
+/// queryable fields (address/zip for matching, funding intent for nav routing) that
+/// `user_metadata` can't be queried on.
+model LearnerProfile {
+  id                             String        @id @default(cuid())
+  /// Supabase auth.users.id (uuid), stored as a plain scalar — same app-enforced-FK pattern
+  /// Enrollment.learnerId already uses; Prisma has no visibility into Supabase's `auth` schema.
+  learnerId                      String        @unique
+  streetAddress                  String?
+  city                           String?
+  state                          String?
+  zip                            String?
+  preferredLanguage              String?
+  employmentStatus               String?
+  unemploymentInsuranceStatus    String?
+  trainingApprenticeshipInterest String?
+  /// Routing/UX signal only — decides whether the Funding nav area appears. Never an
+  /// authorization input (WIOA_INTEGRATION_PLAN.md Section 4).
+  fundingSource                  FundingSource @default(SELF_PAY)
+  dateOfBirth                    DateTime?
+  mobilePhone                    String?
+  createdAt                      DateTime      @default(now())
+  updatedAt                      DateTime      @updatedAt
+}
+
+model WorkforceBoard {
+  id             String  @id @default(cuid())
+  name           String
+  county         String
+  serviceArea    String
+  phone          String
+  email          String
+  website        String?
+  address        String
+  orientationUrl String?
+  applicationUrl String?
+  active         Boolean @default(true)
+
+  ajccCenters          AjccCenter[]
+  jurisdictions        WorkforceJurisdiction[]
+  contacts             WorkforceContact[]
+  cases                WioaCase[]
+  documentRequirements WioaDocumentRequirement[]
+}
+
+model AjccCenter {
+  id                 String         @id @default(cuid())
+  workforceBoardId   String
+  workforceBoard     WorkforceBoard @relation(fields: [workforceBoardId], references: [id], onDelete: Cascade)
+  name               String
+  address            String
+  phone              String
+  website            String?
+  intakeInstructions String?
+  active             Boolean        @default(true)
+
+  jurisdictions WorkforceJurisdiction[]
+  contacts      WorkforceContact[]
+  cases         WioaCase[]
+
+  @@index([workforceBoardId])
+}
+
+/// ZIP -> board/AJCC routing table (WIOA_INTEGRATION_PLAN.md Section 5). ZIP-only lookup for
+/// the prototype (WIOA_BUILD_WORKFLOW.md "Open decisions") — no city/county fallback logic.
+model WorkforceJurisdiction {
+  id               String         @id @default(cuid())
+  zip              String
+  city             String
+  county           String
+  workforceBoardId String
+  workforceBoard   WorkforceBoard @relation(fields: [workforceBoardId], references: [id], onDelete: Cascade)
+  ajccCenterId     String?
+  ajccCenter       AjccCenter?    @relation(fields: [ajccCenterId], references: [id])
+  /// Captured but not enforced as temporal versioning in the prototype (no "as of" query).
+  effectiveDate    DateTime       @default(now())
+  active           Boolean        @default(true)
+
+  @@index([zip])
+  @@index([workforceBoardId])
+}
+
+model WorkforceContact {
+  id               String         @id @default(cuid())
+  workforceBoardId String
+  workforceBoard   WorkforceBoard @relation(fields: [workforceBoardId], references: [id], onDelete: Cascade)
+  ajccCenterId     String?
+  ajccCenter       AjccCenter?    @relation(fields: [ajccCenterId], references: [id])
+  name             String
+  title            String?
+  email            String
+  phone            String
+  contactType      ContactType    @default(PRIMARY)
+  priority         Int            @default(0)
+  active           Boolean        @default(true)
+  lastVerifiedDate DateTime?
+
+  communications WioaCommunication[]
+  cases          WioaCase[]
+
+  @@index([workforceBoardId])
+}
+
+/// Outreach log (WIOA_INTEGRATION_PLAN.md Section 6/11: real delivery is out of scope, generate
+/// -> review -> confirm-sent -> logged must be real). `wioaCaseId` is nullable because a Phase 1
+/// no-match communication (rare, but the schema allows it) has no case to attach to; Phase 2's
+/// confirm-send always sets it (see sendWioaOutreach).
+model WioaCommunication {
+  id         String               @id @default(cuid())
+  /// Supabase auth.users.id — same app-enforced-FK pattern as Enrollment.learnerId.
+  learnerId  String
+  courseId   String
+  course     Course               @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  wioaCaseId String?
+  wioaCase   WioaCase?            @relation(fields: [wioaCaseId], references: [id])
+  contactId  String?
+  contact    WorkforceContact?    @relation(fields: [contactId], references: [id])
+  channel    CommunicationChannel @default(EMAIL)
+  recipient  String
+  subject    String?
+  body       String?
+  sentAt     DateTime             @default(now())
+
+  @@index([learnerId])
+  @@index([courseId])
+  @@index([wioaCaseId])
+}
+
+// ---------------------------------------------------------------------------------------------
+// WIOA funding module — Phase 2 (Case + Documents). Additive only.
+// ---------------------------------------------------------------------------------------------
+
+/// One case per learner per restricted course (WIOA_INTEGRATION_PLAN.md Section 5 — case scope
+/// is per learner PER COURSE, not one case per learner). `workforceBoardId`/`ajccCenterId`/
+/// `contactId` are nullable for the no-match path (docs/build/WIOA_BUILD_WORKFLOW.md "Open decisions"):
+/// the case still opens, matching resolved by hand later. Uniqueness on (learnerId, courseId) is
+/// only meant to apply to the active (non-closed) case per the plan, but Postgres/Prisma can't
+/// express a partial unique index declaratively here — enforced in
+/// src/lib/actions/wioa.ts (createWioaCase checks for an existing open case) instead of the DB.
+/// `status` transitions are staff-driven, linear, not skippable/reversible except into
+/// CLOSED_INELIGIBLE (docs/build/WIOA_BUILD_WORKFLOW.md "Open decisions").
+model WioaCase {
+  id                     String            @id @default(cuid())
+  /// Supabase auth.users.id — same app-enforced-FK pattern as Enrollment.learnerId.
+  learnerId              String
+  courseId               String
+  course                 Course            @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  workforceBoardId       String?
+  workforceBoard         WorkforceBoard?   @relation(fields: [workforceBoardId], references: [id])
+  ajccCenterId           String?
+  ajccCenter             AjccCenter?       @relation(fields: [ajccCenterId], references: [id])
+  contactId              String?
+  contact                WorkforceContact? @relation(fields: [contactId], references: [id])
+  /// Set in Phase 3 when Admin/Coordinator assigns the case to a Partner Staff account — no
+  /// PARTNER_STAFF role exists yet, so this stays null until then.
+  assignedPartnerStaffId String?
+  status                 WioaCaseStatus    @default(INITIAL_CONTACT_SENT)
+  closedAt               DateTime?
+  createdAt              DateTime          @default(now())
+  updatedAt              DateTime          @updatedAt
+
+  statusHistory  WioaStatusHistory[]
+  documents      WioaDocument[]
+  appointments   Appointment[]
+  communications WioaCommunication[]
+  fundingRequest EtplFundingRequest?
+
+  @@index([learnerId])
+  @@index([courseId])
+  @@index([workforceBoardId])
+}
+
+/// Immutable log — a row is appended on every status change, never edited (WioaCase.status is
+/// the current value; this is the history behind it).
+model WioaStatusHistory {
+  id         String         @id @default(cuid())
+  wioaCaseId String
+  wioaCase   WioaCase       @relation(fields: [wioaCaseId], references: [id], onDelete: Cascade)
+  status     WioaCaseStatus
+  changedAt  DateTime       @default(now())
+  /// Supabase auth.users.id of the staff account that made the change (or the system, for the
+  /// case-creation row) — same app-enforced-FK pattern as Enrollment.learnerId.
+  changedBy  String
+
+  @@index([wioaCaseId, changedAt])
+}
+
+/// Orientation/intake/follow-up scheduling data. `Appointment` is authoritative for date/time;
+/// the matching case status (e.g. ORIENTATION_SCHEDULED) is a derived label staff sets alongside
+/// creating this row in the same UI action — creating the appointment does not itself advance
+/// the status (docs/build/WIOA_BUILD_WORKFLOW.md "Open decisions").
+model Appointment {
+  id          String          @id @default(cuid())
+  wioaCaseId  String
+  wioaCase    WioaCase        @relation(fields: [wioaCaseId], references: [id], onDelete: Cascade)
+  type        AppointmentType
+  scheduledAt DateTime
+  completedAt DateTime?
+  notes       String?
+  createdAt   DateTime        @default(now())
+
+  @@index([wioaCaseId])
+}
+
+/// Admin-configurable per board (WIOA_INTEGRATION_PLAN.md Section 5/spec Section 13/17) — no
+/// admin CRUD UI yet (that's Phase 3), seeded directly from prisma/seed-wioa.ts for Phase 2.
+model WioaDocumentRequirement {
+  id               String         @id @default(cuid())
+  workforceBoardId String
+  workforceBoard   WorkforceBoard @relation(fields: [workforceBoardId], references: [id], onDelete: Cascade)
+  name             String
+  description      String
+  /// True when this requirement only applies to some learners (e.g. the EDD Award Letter only
+  /// applies when unemploymentInsuranceStatus indicates recent UI activity) — see
+  /// `applicableRule` for what condition. A non-conditional requirement always generates a
+  /// WioaDocument row when a case opens; a conditional one only generates a row when its rule
+  /// matches (src/lib/actions/wioa.ts, createWioaCase).
+  conditional      Boolean        @default(false)
+  /// Human-readable description of the condition (e.g. "unemploymentInsuranceStatus is not
+  /// 'Not applicable'") — not machine-parsed; the matching code in createWioaCase hardcodes the
+  /// one conditional rule this prototype needs (EDD Award Letter) directly against this field's
+  /// well-known requirement name, rather than building a rule-evaluation engine for one case.
+  applicableRule   String?
+
+  documents WioaDocument[]
+
+  @@index([workforceBoardId])
+}
+
+/// One row per (case, requirement) — created MISSING when the case opens (for
+/// non-conditional/matching-conditional requirements), then updated through the upload/review
+/// lifecycle. Never deleted on re-upload after rejection — status moves back to UNDER_REVIEW.
+model WioaDocument {
+  id              String                  @id @default(cuid())
+  wioaCaseId      String
+  wioaCase        WioaCase                @relation(fields: [wioaCaseId], references: [id], onDelete: Cascade)
+  requirementId   String
+  requirement     WioaDocumentRequirement @relation(fields: [requirementId], references: [id])
+  fileName        String?
+  /// Supabase Storage object path in the private `wioa-documents` bucket — never a public URL
+  /// (WIOA_INTEGRATION_PLAN.md Section 6/10). Distinct from EvidenceSubmission.fileName, which
+  /// stays filename-only per the Evidence Storage decision in WIOA_BUILD_WORKFLOW.md.
+  storagePath     String?
+  status          WioaDocumentStatus      @default(MISSING)
+  uploadedAt      DateTime?
+  reviewedBy      String?
+  reviewedAt      DateTime?
+  rejectionReason String?
+  expirationDate  DateTime?
+  notes           String?
+
+  @@unique([wioaCaseId, requirementId])
+  @@index([wioaCaseId])
+}
+
+// ---------------------------------------------------------------------------------------------
+// WIOA funding module — Phase 4 (Funding + Gating). Additive only.
+// ---------------------------------------------------------------------------------------------
+
+/// Tracks the ETPL/funding-request half of the spec's 8 milestones (spec Section 14 — "track
+/// separately", not as one generic status) as distinct fields rather than a status enum, per
+/// docs/build/WIOA_BUILD_WORKFLOW.md Phase 4. One per case — a case only ever requests funding once.
+model EtplFundingRequest {
+  id                    String    @id @default(cuid())
+  wioaCaseId            String    @unique
+  wioaCase              WioaCase  @relation(fields: [wioaCaseId], references: [id], onDelete: Cascade)
+  trainingProgram       String?
+  etplProviderConfirmed Boolean   @default(false)
+  submittedAt           DateTime?
+  caseManagerNotifiedAt DateTime?
+  /// Free-text milestone label (e.g. "Pending" / "Approved" / "Denied") — not a machine-checked
+  /// enum, same prototype-scope call as WioaDocumentRequirement.applicableRule.
+  fundingReviewStatus   String?
+  status                String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  authorization FundingAuthorization?
+}
+
+/// The remaining 4 of the spec's 8 milestones (ITA issued, approved amount, tuition approval
+/// date, training start/enrollment) — split from EtplFundingRequest per the plan's own schema
+/// shape (WIOA_INTEGRATION_PLAN.md Section 5).
+model FundingAuthorization {
+  id                String             @id @default(cuid())
+  fundingRequestId  String             @unique
+  fundingRequest    EtplFundingRequest @relation(fields: [fundingRequestId], references: [id], onDelete: Cascade)
+  itaIssuedAt       DateTime?
+  approvedAmount    Float?
+  approvalDate      DateTime?
+  trainingStartDate DateTime?
+  status            String?
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+}
+
+enum CourseUnlockSource {
+  WIOA_FUNDING
+  ADMIN_ASSIGNMENT
+}
+
+/// The only thing enrollment reads to decide whether a RESTRICTED course is open to a learner
+/// (WIOA_INTEGRATION_PLAN.md Section 4) — never WioaCase or LearnerProfile.fundingSource
+/// directly. One row per (learner, course); `source` records why it exists, `grantedBy` is the
+/// staff/system Supabase user id that created it (the case's advancing staff for WIOA_FUNDING,
+/// the granting Admin for ADMIN_ASSIGNMENT).
+model CourseUnlock {
+  id        String             @id @default(cuid())
+  /// Supabase auth.users.id — same app-enforced-FK pattern as Enrollment.learnerId.
+  learnerId String
+  courseId  String
+  course    Course             @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  source    CourseUnlockSource
+  grantedAt DateTime           @default(now())
+  grantedBy String
+
+  @@unique([learnerId, courseId])
+  @@index([learnerId])
+}

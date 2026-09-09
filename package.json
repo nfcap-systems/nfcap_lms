@@ -1,24 +1,53 @@
 {
-  "name": "nfcap-tmp",
+  "name": "nfcap",
   "version": "0.1.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "prisma:generate": "prisma generate",
+    "prisma:seed": "tsx prisma/seed.ts",
+    "prisma:seed-wioa": "tsx prisma/seed-wioa.ts",
+    "prisma:seed-wioa-documents": "tsx prisma/seed-wioa-documents.ts",
+    "promote-role": "tsx scripts/promote-role.ts",
+    "seed-demo-learners": "tsx scripts/seed-demo-learners.ts",
+    "seed-wioa-staff": "tsx scripts/seed-wioa-staff.ts",
+    "seed-wioa-learner": "tsx scripts/seed-wioa-learner.ts",
+    "wioa-fast-forward-case": "tsx scripts/wioa-fast-forward-case.ts",
+    "wioa-verify-gating": "tsx scripts/wioa-verify-gating.ts"
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
   },
   "dependencies": {
+    "@prisma/adapter-pg": "^7.10.0",
+    "@prisma/client": "^7.10.0",
+    "@supabase/ssr": "^0.12.7",
+    "@supabase/supabase-js": "^2.116.0",
     "next": "16.3.4",
+    "pg": "^8.23.0",
     "react": "19.2.8",
-    "react-dom": "19.2.8"
+    "react-dom": "19.2.8",
+    "zod": "^4.5.4"
   },
   "devDependencies": {
+    "@tailwindcss/postcss": "^4.3.3",
     "@types/node": "^20",
+    "@types/pg": "^8.23.1",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "dotenv": "^17.4.2",
     "eslint": "^9",
     "eslint-config-next": "16.3.4",
+    "eslint-config-prettier": "^10.1.8",
+    "prettier": "^3.9.6",
+    "prisma": "^7.10.0",
+    "tailwindcss": "^4.3.3",
+    "tsx": "^4.23.13",
     "typescript": "^5"
   }
 }
