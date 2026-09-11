@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/prisma';
 import { getLearnerById } from '@/lib/data/learners';
 import type { WioaCaseStatus, WioaDocumentStatus, AppointmentType } from '@/generated/prisma/enums';
+import { WIOA_STATUS_PHASE, WIOA_UI_PHASES, type WioaUiPhase } from '@/lib/wioa/status';
 
 export type LearnerProfile = {
   learnerId: string;
@@ -304,5 +305,198 @@ export async function getWioaCaseDetail(
           }
         : null
       : undefined,
+  };
+}
+
+const WIOA_ELIGIBLE_OR_LATER: WioaCaseStatus[] = [
+  'WIOA_ELIGIBLE',
+  'ETPL_TRAINING_REQUESTED',
+  'TRAINING_AUTHORIZATION_PENDING',
+  'TUITION_APPROVED',
+  'APPRENTICESHIP_ENROLLMENT_COMPLETE',
+];
+const WIOA_TUITION_APPROVED_OR_LATER: WioaCaseStatus[] = [
+  'TUITION_APPROVED',
+  'APPRENTICESHIP_ENROLLMENT_COMPLETE',
+];
+
+export type WioaDocumentReadiness = {
+  total: number;
+  accepted: number;
+  missing: number;
+  underReview: number;
+  rejected: number;
+};
+
+export type WioaFollowUpItem = {
+  caseId: string;
+  learnerName: string;
+  courseTitle: string;
+  status: WioaCaseStatus;
+  reason: string;
+};
+
+export type WioaBoardPerformance = {
+  boardName: string;
+  totalCases: number;
+  determinedCases: number;
+  eligibleCases: number;
+  approvalRate: number | null;
+  avgDaysToEligibility: number | null;
+  fundingConversionRate: number | null;
+};
+
+export type WioaReportingSummary = {
+  totalCases: number;
+  phaseCounts: Record<WioaUiPhase, number>;
+  documentReadiness: WioaDocumentReadiness;
+  followUpQueue: WioaFollowUpItem[];
+  /** Only populated when `includeFunding` is requested (Coordinator) — Partner Staff's report
+   * never sees board approval/funding numbers, same visibility split as getWioaCaseDetail. */
+  boardPerformance: WioaBoardPerformance[] | null;
+};
+
+/** Reporting/analytics aggregates for the Coordinator and Partner Staff dashboards (spec §16 —
+ * cohort pipeline, document readiness, follow-up queue, board performance). Computed in JS over
+ * the full case list rather than SQL aggregation — prototype scale, same no-pagination assumption
+ * as getWioaCases. Follow-up reasons reuse the exact triggers from spec §18 (Automation & Follow-Up
+ * Rules) so this reporting view and any future automation agree on what "needs follow-up" means. */
+export async function getWioaReportingSummary(opts?: {
+  assignedPartnerStaffId?: string;
+  includeFunding?: boolean;
+}): Promise<WioaReportingSummary> {
+  const cases = await prisma.wioaCase.findMany({
+    where: opts?.assignedPartnerStaffId
+      ? { assignedPartnerStaffId: opts.assignedPartnerStaffId }
+      : undefined,
+    include: {
+      course: { select: { title: true } },
+      workforceBoard: { select: { name: true } },
+      documents: { select: { status: true } },
+      statusHistory: { select: { status: true, changedAt: true }, orderBy: { changedAt: 'asc' } },
+      fundingRequest: { select: { id: true } },
+    },
+  });
+
+  const ALL_PHASES: WioaUiPhase[] = [...WIOA_UI_PHASES, 'Closed'];
+  const phaseCounts = Object.fromEntries(ALL_PHASES.map((p) => [p, 0])) as Record<
+    WioaUiPhase,
+    number
+  >;
+  const documentReadiness: WioaDocumentReadiness = {
+    total: 0,
+    accepted: 0,
+    missing: 0,
+    underReview: 0,
+    rejected: 0,
+  };
+  const followUpQueue: WioaFollowUpItem[] = [];
+  const DAY_MS = 1000 * 60 * 60 * 24;
+  const now = Date.now();
+
+  const learnerNames = new Map<string, string>();
+  async function nameOf(learnerId: string): Promise<string> {
+    if (!learnerNames.has(learnerId)) {
+      const learner = await getLearnerById(learnerId);
+      learnerNames.set(learnerId, learner?.name ?? 'Unknown');
+    }
+    return learnerNames.get(learnerId)!;
+  }
+
+  const byBoard = new Map<
+    string,
+    {
+      totalCases: number;
+      determinedCases: number;
+      eligibleCases: number;
+      daysToEligible: number[];
+      tuitionApprovedCases: number;
+    }
+  >();
+
+  for (const c of cases) {
+    phaseCounts[WIOA_STATUS_PHASE[c.status]] += 1;
+
+    for (const doc of c.documents) {
+      documentReadiness.total += 1;
+      if (doc.status === 'ACCEPTED') documentReadiness.accepted += 1;
+      else if (doc.status === 'MISSING') documentReadiness.missing += 1;
+      else if (doc.status === 'UPLOADED' || doc.status === 'UNDER_REVIEW')
+        documentReadiness.underReview += 1;
+      else if (doc.status === 'REJECTED') documentReadiness.rejected += 1;
+    }
+
+    if (!c.closedAt) {
+      const daysSinceUpdate = (now - c.updatedAt.getTime()) / DAY_MS;
+      const hasRejectedDoc = c.documents.some((d) => d.status === 'REJECTED');
+      let reason: string | null = null;
+      if (hasRejectedDoc) reason = 'Document rejected — needs resubmission';
+      else if (c.status === 'AWAITING_RESPONSE' && daysSinceUpdate >= 3)
+        reason = 'No response 3+ business days after outreach';
+      else if (c.status === 'DOCUMENTS_PENDING' && daysSinceUpdate >= 5)
+        reason = 'Documents pending 5+ days';
+      else if (c.status === 'WIOA_ELIGIBLE' && !c.fundingRequest)
+        reason = 'Eligible — ETPL funding request not started';
+
+      if (reason) {
+        followUpQueue.push({
+          caseId: c.id,
+          learnerName: await nameOf(c.learnerId),
+          courseTitle: c.course.title,
+          status: c.status,
+          reason,
+        });
+      }
+    }
+
+    if (opts?.includeFunding) {
+      const boardName = c.workforceBoard?.name ?? 'Unmatched';
+      if (!byBoard.has(boardName)) {
+        byBoard.set(boardName, {
+          totalCases: 0,
+          determinedCases: 0,
+          eligibleCases: 0,
+          daysToEligible: [],
+          tuitionApprovedCases: 0,
+        });
+      }
+      const b = byBoard.get(boardName)!;
+      b.totalCases += 1;
+
+      const reachedEligibleOrLater = WIOA_ELIGIBLE_OR_LATER.includes(c.status);
+      if (reachedEligibleOrLater || c.status === 'CLOSED_INELIGIBLE') b.determinedCases += 1;
+      if (reachedEligibleOrLater) {
+        b.eligibleCases += 1;
+        const eligibleEntry = c.statusHistory.find((h) => h.status === 'WIOA_ELIGIBLE');
+        if (eligibleEntry) {
+          b.daysToEligible.push((eligibleEntry.changedAt.getTime() - c.createdAt.getTime()) / DAY_MS);
+        }
+      }
+      if (WIOA_TUITION_APPROVED_OR_LATER.includes(c.status)) b.tuitionApprovedCases += 1;
+    }
+  }
+
+  const boardPerformance = opts?.includeFunding
+    ? Array.from(byBoard.entries()).map(([boardName, b]) => ({
+        boardName,
+        totalCases: b.totalCases,
+        determinedCases: b.determinedCases,
+        eligibleCases: b.eligibleCases,
+        approvalRate: b.determinedCases > 0 ? b.eligibleCases / b.determinedCases : null,
+        avgDaysToEligibility:
+          b.daysToEligible.length > 0
+            ? b.daysToEligible.reduce((a, x) => a + x, 0) / b.daysToEligible.length
+            : null,
+        fundingConversionRate:
+          b.eligibleCases > 0 ? b.tuitionApprovedCases / b.eligibleCases : null,
+      }))
+    : null;
+
+  return {
+    totalCases: cases.length,
+    phaseCounts,
+    documentReadiness,
+    followUpQueue,
+    boardPerformance,
   };
 }

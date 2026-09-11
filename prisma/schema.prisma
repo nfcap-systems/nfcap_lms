@@ -556,6 +556,19 @@ enum CourseUnlockSource {
   ADMIN_ASSIGNMENT
 }
 
+/// Admin-editable outreach email (subject + body) the learner reviews before "sending" in
+/// sendWioaOutreach (src/lib/actions/wioa.ts) — replaces src/lib/wioa/email-template.ts's
+/// hardcoded constants as the source of truth. Singleton: one prototype-wide template, not
+/// per-board (no board-scoped wording requirement in the spec). `body` keeps the same
+/// {{learnerName}}/{{city}}/{{zip}}/{{courseTitle}}/{{learnerEmail}}/{{learnerPhone}} tokens the
+/// hardcoded version used, substituted at render time (src/lib/wioa/email-template.ts).
+model WioaEmailTemplate {
+  id        String   @id @default(cuid())
+  subject   String
+  body      String
+  updatedAt DateTime @updatedAt
+}
+
 /// The only thing enrollment reads to decide whether a RESTRICTED course is open to a learner
 /// (WIOA_INTEGRATION_PLAN.md Section 4) — never WioaCase or LearnerProfile.fundingSource
 /// directly. One row per (learner, course); `source` records why it exists, `grantedBy` is the

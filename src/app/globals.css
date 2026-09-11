@@ -6,8 +6,8 @@
   --color-brand-primary-dark: #0d2942;
   --color-brand-primary-hover: #315678;
   --color-brand-heading: #123557;
-  --color-brand-accent: #d71920;
-  --color-brand-accent-hover: #b51218;
+  --color-brand-accent: #a91c17;
+  --color-brand-accent-hover: #8f1814;
 
   /* Brand tints */
   --color-accent-tint: #fcecee;
@@ -15,12 +15,12 @@
   --color-brand-tint: #edf3f8;
 
   /* Surfaces */
-  --color-bg-page: #f6f7f9;
+  --color-bg-page: #f8fafa;
   --color-bg-card: #ffffff;
   --color-bg-subtle: #eef1f4;
 
   /* Text */
-  --color-text-primary: #1f2d3a;
+  --color-text-primary: #000000;
   --color-text-secondary: #64778a;
   --color-text-muted: #315678;
   --color-on-brand: #ffffff;
@@ -79,6 +79,36 @@ body {
 
 * {
   box-sizing: border-box;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border-default) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background-color: var(--color-border-default);
+  border-radius: 9999px;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background-color: var(--color-text-secondary);
+}
+
+.learner-surface {
+  background:
+    radial-gradient(circle at 8% 8%, rgba(169, 26, 22, 0.16) 0%, rgba(169, 26, 22, 0) 32%),
+    radial-gradient(circle at 92% 88%, rgba(44, 58, 67, 0.07) 0%, rgba(44, 58, 67, 0) 35%),
+    #f8fafa;
 }
 
 .no-scrollbar {

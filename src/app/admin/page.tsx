@@ -14,13 +14,6 @@ export default async function AdminDashboardPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div>
-        <h1 className="text-xl font-semibold text-brand-heading">Dashboard</h1>
-        <p className="mt-1 text-sm text-text-secondary">
-          At-a-glance view of learner activity, pending evidence reviews, and program status.
-        </p>
-      </div>
-
       <DashboardView courses={courses} learners={learners} progressByLearner={progressByLearner} />
     </div>
   );

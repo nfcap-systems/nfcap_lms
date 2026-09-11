@@ -17,8 +17,9 @@ import {
 import { Icon } from '@/components/icons';
 import { Dialog } from '@/components/ui/Dialog';
 import { updateWioaProfile, sendWioaOutreach } from '@/lib/actions/wioa';
-import { buildWioaEmailBody, WIOA_EMAIL_SUBJECT } from '@/lib/wioa/email-template';
+import { fillWioaEmailTemplate } from '@/lib/wioa/email-template';
 import type { LearnerProfile, WioaCommunicationRecord, WioaCaseRecord } from '@/lib/data/wioa';
+import type { WioaEmailTemplateRecord } from '@/lib/data/wioa-email-template';
 import type { MatchedOffice } from '@/lib/wioa/matching';
 import { WioaCaseFeed } from './WioaCaseFeed';
 
@@ -30,6 +31,7 @@ export function FundingView({
   cases,
   learnerName,
   learnerEmail,
+  emailTemplate,
 }: {
   profile: LearnerProfile | null;
   match: MatchedOffice | null;
@@ -38,6 +40,7 @@ export function FundingView({
   cases: WioaCaseRecord[];
   learnerName: string;
   learnerEmail: string;
+  emailTemplate: WioaEmailTemplateRecord;
 }) {
   if (!profile || profile.fundingSource !== 'WIOA_PENDING' || !profile.zip) {
     return <AddressCapture profile={profile} />;
@@ -69,6 +72,7 @@ export function FundingView({
       city={profile.city ?? ''}
       zip={profile.zip}
       mobilePhone={profile.mobilePhone ?? ''}
+      emailTemplate={emailTemplate}
     />
   );
 }
@@ -206,6 +210,7 @@ function MatchedOfficeView({
   city,
   zip,
   mobilePhone,
+  emailTemplate,
 }: {
   match: MatchedOffice;
   restrictedCourses: { id: string; title: string }[];
@@ -216,12 +221,13 @@ function MatchedOfficeView({
   city: string;
   zip: string;
   mobilePhone: string;
+  emailTemplate: WioaEmailTemplateRecord;
 }) {
   const [courseId, setCourseId] = useState(restrictedCourses[0]?.id ?? '');
   const activeCase = cases.find((c) => c.courseId === courseId && !c.closedAt);
   const [emailOpen, setEmailOpen] = useState(false);
   const [requirementsOpen, setRequirementsOpen] = useState(false);
-  const [subject, setSubject] = useState(WIOA_EMAIL_SUBJECT);
+  const [subject, setSubject] = useState(emailTemplate.subject);
   const [body, setBody] = useState('');
   const [pending, startTransition] = useTransition();
   const router = useRouter();
@@ -230,17 +236,16 @@ function MatchedOfficeView({
   const recipient = match.contact?.email ?? match.board.email;
 
   function openEmailDialog() {
-    setSubject(WIOA_EMAIL_SUBJECT);
-    setBody(
-      buildWioaEmailBody({
-        learnerName,
-        city,
-        zip,
-        courseTitle,
-        learnerEmail,
-        learnerPhone: mobilePhone,
-      }),
-    );
+    const placeholders = {
+      learnerName,
+      city,
+      zip,
+      courseTitle,
+      learnerEmail,
+      learnerPhone: mobilePhone,
+    };
+    setSubject(fillWioaEmailTemplate(emailTemplate.subject, placeholders));
+    setBody(fillWioaEmailTemplate(emailTemplate.body, placeholders));
     setEmailOpen(true);
   }
 

@@ -53,3 +53,6 @@ next-env.d.ts
 # Local AI agent skills / tooling (not project source)
 /.claude/skills/
 
+# Working plan docs (not committed project docs)
+/docs/build/CURRICULUM_BUILDER_REDESIGN_PLAN.md
+

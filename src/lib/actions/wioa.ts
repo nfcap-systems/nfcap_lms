@@ -268,10 +268,30 @@ export async function advanceWioaCaseStatus(
 ): Promise<void> {
   const staff = await requireCaseAccess(caseId);
 
-  const current = await prisma.wioaCase.findUniqueOrThrow({ where: { id: caseId } });
+  const current = await prisma.wioaCase.findUniqueOrThrow({
+    where: { id: caseId },
+    include: { documents: { include: { requirement: true } } },
+  });
   const allowed = nextStatusOptions(current.status);
   if (!allowed.includes(nextStatus)) {
     throw new Error(`Cannot move a case from ${current.status} to ${nextStatus}.`);
+  }
+
+  // Backlog gap fix (docs/build/WIOA_BUILD_WORKFLOW.md changelog #1): a case could previously
+  // reach WIOA_ELIGIBLE — and everything downstream of it, including the TUITION_APPROVED
+  // CourseUnlock trigger — while required documents were still unreviewed or rejected. Gate the
+  // one transition where eligibility is actually determined; every later status is unreachable
+  // without passing through this one, so this single check protects the whole rest of the chain.
+  if (nextStatus === 'WIOA_ELIGIBLE') {
+    const unresolved = current.documents.filter(
+      (d) => d.status !== 'ACCEPTED' && d.status !== 'NOT_APPLICABLE',
+    );
+    if (unresolved.length > 0) {
+      const names = unresolved.map((d) => d.requirement.name).join(', ');
+      throw new Error(
+        `Cannot mark this case WIOA Eligible — the following documents still need to be accepted: ${names}.`,
+      );
+    }
   }
 
   const terminal =

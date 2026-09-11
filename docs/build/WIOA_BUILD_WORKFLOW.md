@@ -404,3 +404,35 @@ Keep this section updated whenever a locked decision changes mid-build, so we do
     direct writes, stopping before `TUITION_APPROVED` so the unlock-firing transition is still
     done through the real action), and `scripts/wioa-verify-gating.ts`.
   - `tsc --noEmit`, `eslint`, and `next build` all pass after both fixes.
+- **2026-09-10 — Second manual walkthrough (fresh case, one status at a time) — 2 backlog gaps
+  found, not fixed.** Re-verified Phases 1–4 end to end on a newly-signed-up learner
+  (`seed-wioa-learner`-style profile with a non-"Not applicable" UI status, so the EDD Award
+  Letter requirement was exercised), walking all 9 Eligibility Process statuses individually via
+  the Coordinator UI rather than the fast-forward script. Everything from the 2026-09-09 pass
+  held. Two gaps surfaced, logged here as backlog rather than fixed immediately since neither
+  blocks the prototype demo:
+  1. **No document-completeness check before `WIOA_ELIGIBLE`.** `advanceWioaCaseStatus` only
+     validates the requested transition is the legal next step in `nextStatusOptions` — it never
+     checks `WioaDocument` status. A case can reach `WIOA_ELIGIBLE` (and from there `Tuition
+     Approved`, firing the real `CourseUnlock`) with every required document still `MISSING`.
+     This was a semi-deliberate gap — the plan already treats the board's real eligibility
+     determination as happening entirely outside the app (no system-to-system integration), so
+     the document checklist was always meant as a staff-visibility/coaching aid, not a hard gate
+     — but nobody explicitly decided the pipeline should be allowed to advance with incomplete
+     documents; it's just what "no check" defaults to. If tightened: block advancing past
+     `WIOA_ELIGIBLE` (or `DOCUMENTS_PENDING`) unless every non-`NOT_APPLICABLE` requirement is
+     `ACCEPTED`.
+     **Fixed 2026-09-11:** `advanceWioaCaseStatus` now blocks the transition into `WIOA_ELIGIBLE`
+     unless every document on the case is `ACCEPTED` or `NOT_APPLICABLE`, throwing an error naming
+     the outstanding requirements — since every later status (through `TUITION_APPROVED`'s
+     `CourseUnlock`) is only reachable via `WIOA_ELIGIBLE`, this one check gates the whole rest of
+     the chain. `WioaCaseDetailView.tsx`'s `StatusCard` now catches that error and surfaces it
+     under the "Advance to" field via `Field`'s existing `error` prop instead of failing silently.
+  2. **Funding form has no per-status field locking.** `WioaCaseDetailView.tsx`'s funding form
+     (both `EtplFundingRequest` and `FundingAuthorization` fields) renders as one always-editable
+     block to a Coordinator regardless of case status — a Coordinator could fill in "Approved
+     amount" or "Training start date" while the case is still at `ETPL Training Requested`, before
+     any authorization has actually happened. Unlike gap 1, this was never discussed or decided
+     either way in the plan — pure implementation oversight, not a deliberate "can't enforce this"
+     call. If tightened: disable/hide the Authorization sub-section's fields until status ≥
+     `Training Authorization Pending`.

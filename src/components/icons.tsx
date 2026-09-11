@@ -30,7 +30,11 @@ export type IconName =
   | 'map-pin'
   | 'phone'
   | 'mail'
-  | 'hardhat';
+  | 'hardhat'
+  | 'log-out'
+  | 'search'
+  | 'bell'
+  | 'panel-left';
 
 type IconProps = SVGProps<SVGSVGElement>;
 
@@ -216,6 +220,31 @@ const paths: Record<IconName, React.ReactNode> = {
       <path d="M2.5 15.5h19" />
       <path d="M2.5 15.5v2a1 1 0 0 0 1 1h17a1 1 0 0 0 1-1v-2" />
       <path d="M11 7.5V5.5" />
+    </>
+  ),
+  'log-out': (
+    <>
+      <path d="M9 4.5H6a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h3" />
+      <path d="M16 15.5 21 12l-5-3.5" />
+      <path d="M21 12H9" />
+    </>
+  ),
+  search: (
+    <>
+      <circle cx="10.5" cy="10.5" r="6.5" />
+      <path d="m20 20-4.8-4.8" />
+    </>
+  ),
+  bell: (
+    <>
+      <path d="M6 9.5a6 6 0 0 1 12 0c0 3.5 1 5 2 6H4c1-1 2-2.5 2-6Z" />
+      <path d="M10 19a2 2 0 0 0 4 0" />
+    </>
+  ),
+  'panel-left': (
+    <>
+      <rect x="3" y="3.5" width="18" height="17" rx="2.5" />
+      <path d="M9.5 3.5v17" />
     </>
   ),
 };

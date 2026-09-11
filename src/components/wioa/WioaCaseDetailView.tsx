@@ -453,23 +453,29 @@ function StatusCard({ wioaCase }: { wioaCase: WioaCaseDetail }) {
   const [nextStatus, setNextStatus] = useState<WioaCaseStatus | ''>('');
   const [scheduledAt, setScheduledAt] = useState('');
   const [notes, setNotes] = useState('');
+  const [error, setError] = useState('');
 
   const appointmentType = nextStatus ? APPOINTMENT_STATUS_TYPE[nextStatus] : undefined;
 
   function advance() {
     if (!nextStatus) return;
+    setError('');
     startTransition(async () => {
-      await advanceWioaCaseStatus(
-        wioaCase.id,
-        nextStatus,
-        appointmentType && scheduledAt
-          ? { type: appointmentType, scheduledAt, notes: notes || undefined }
-          : undefined,
-      );
-      setNextStatus('');
-      setScheduledAt('');
-      setNotes('');
-      router.refresh();
+      try {
+        await advanceWioaCaseStatus(
+          wioaCase.id,
+          nextStatus,
+          appointmentType && scheduledAt
+            ? { type: appointmentType, scheduledAt, notes: notes || undefined }
+            : undefined,
+        );
+        setNextStatus('');
+        setScheduledAt('');
+        setNotes('');
+        router.refresh();
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Could not advance this case.');
+      }
     });
   }
 
@@ -485,11 +491,14 @@ function StatusCard({ wioaCase }: { wioaCase: WioaCaseDetail }) {
 
         {options.length > 0 && (
           <div className="flex flex-col gap-3 border-t border-border-subtle pt-4">
-            <Field label="Advance to" htmlFor="nextStatus">
+            <Field label="Advance to" htmlFor="nextStatus" error={error || undefined}>
               <Select
                 id="nextStatus"
                 value={nextStatus}
-                onChange={(e) => setNextStatus(e.target.value as WioaCaseStatus)}
+                onChange={(e) => {
+                  setError('');
+                  setNextStatus(e.target.value as WioaCaseStatus);
+                }}
               >
                 <option value="">Select next status</option>
                 {options.map((s) => (

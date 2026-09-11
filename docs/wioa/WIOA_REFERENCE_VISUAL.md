@@ -70,6 +70,22 @@ Footer tagline: "Right People · Right Opportunities · Stronger Communities · 
 ### 5. Request Apprenticeship Training Funding
 
 **Select ETPL Apprenticeship Program**
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 - Choose training program
 - Confirm ETPL status
 - Review program details (tuition, length, occupation)

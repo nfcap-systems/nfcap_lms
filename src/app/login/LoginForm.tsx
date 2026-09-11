@@ -6,7 +6,7 @@ import { login, type AuthFormState } from '@/lib/actions/auth';
 import { Field } from '@/components/ui/Field';
 import { Input, Checkbox } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
-import { MailIcon, LockIcon, EyeIcon, EyeOffIcon, ArrowRightIcon, GoogleIcon } from './icons';
+import { MailIcon, LockIcon, EyeIcon, EyeOffIcon, ArrowRightIcon } from './icons';
 
 const initialState: AuthFormState = {};
 
@@ -93,22 +93,6 @@ export function LoginForm() {
         {pending ? 'Signing in…' : 'Sign in'}
         {!pending && <ArrowRightIcon className="h-4 w-4" />}
       </Button>
-
-      <div className="flex items-center gap-3 text-xs uppercase tracking-wide text-text-muted">
-        <span className="h-px flex-1 bg-border-subtle" />
-        or
-        <span className="h-px flex-1 bg-border-subtle" />
-      </div>
-
-      <button
-        type="button"
-        disabled
-        title="Coming soon"
-        className="flex h-11 w-full items-center justify-center gap-2 rounded-md border border-border-default text-sm font-medium text-text-primary transition-colors hover:bg-brand-tint disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-transparent"
-      >
-        <GoogleIcon className="h-4 w-4" />
-        Continue with Google
-      </button>
     </form>
   );
 }

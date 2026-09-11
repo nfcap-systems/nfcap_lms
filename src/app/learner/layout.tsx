@@ -5,11 +5,15 @@ import { getLearnerProfile } from '@/lib/data/wioa';
 export default async function LearnerLayout({ children }: { children: React.ReactNode }) {
   const user = await getAuthUser();
   const name = typeof user?.user_metadata?.name === 'string' ? user.user_metadata.name : undefined;
-  const learnerInitial = (name ?? user?.email ?? 'N').charAt(0).toUpperCase();
+  const learnerName = name ?? user?.email ?? 'Learner';
+  const learnerEmail = user?.email ?? '';
+  const learnerInitial = learnerName.charAt(0).toUpperCase();
   const profile = user ? await getLearnerProfile(user.id) : null;
 
   return (
     <LearnerShell
+      learnerName={learnerName}
+      learnerEmail={learnerEmail}
       learnerInitial={learnerInitial}
       showWioaNav={profile?.fundingSource === 'WIOA_PENDING'}
     >
