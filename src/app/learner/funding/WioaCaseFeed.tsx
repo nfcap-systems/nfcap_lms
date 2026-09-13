@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useTransition } from 'react';
+import { useRef, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Badge,
@@ -136,13 +136,21 @@ export function WioaCaseFeed({ wioaCase }: { wioaCase: WioaCaseRecord }) {
 function DocumentCard({ doc }: { doc: WioaDocumentRecord }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
+  const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   function handleFile(file: File | undefined) {
     if (!file) return;
+    setError(null);
     startTransition(async () => {
-      await uploadWioaDocument(doc.id, file);
-      router.refresh();
+      try {
+        await uploadWioaDocument(doc.id, file);
+        router.refresh();
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Upload failed. Please try again.');
+      } finally {
+        if (fileInputRef.current) fileInputRef.current.value = '';
+      }
     });
   }
 
@@ -166,6 +174,7 @@ function DocumentCard({ doc }: { doc: WioaDocumentRecord }) {
       {doc.status === 'REJECTED' && doc.rejectionReason && (
         <p className="text-xs text-danger">{doc.rejectionReason}</p>
       )}
+      {error && <p className="text-xs text-danger">{error}</p>}
       {canUpload && (
         <div>
           <Button

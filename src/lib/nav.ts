@@ -39,12 +39,10 @@ export const learnerNav: NavItem[] = [
 // Section 4/7 — fundingSource is a routing/UX signal, this is its one nav-visibility effect).
 export const wioaNavItem: NavItem = { label: 'Funding', href: '/learner/funding', icon: 'map-pin' };
 
-// Program/Pathway Builder is a future capability (see docs/product/PRODUCT_CONTEXT.md,
-// Section 8) — intentionally not listed here. Curriculum Builder is scoped to
-// a single course and lives at /admin/courses/[courseId].
 export const adminNav: NavEntry[] = [
   { label: 'Dashboard', href: '/admin', icon: 'grid' },
   { label: 'Courses', href: '/admin/courses', icon: 'layers' },
+  { label: 'Pathway', href: '/admin/pathway', icon: 'compass' },
   { label: 'Learners', href: '/admin/learners', icon: 'users' },
   // WIOA case operations moved to /coordinator and /partner (docs/build/WIOA_BUILD_WORKFLOW.md
   // Phase 3, retiring the Phase 2 /admin/wioa stopgap) — Admin keeps only the reference-data CRUD

@@ -19,9 +19,12 @@ import {
   setWioaDocumentStatus,
   advanceWioaCaseStatus,
   getWioaDocumentUrl,
+  getWioaDocumentVersions,
+  getWioaDocumentVersionUrl,
   assignWioaCasePartnerStaff,
   updateWioaFunding,
   type WioaFundingFields,
+  type WioaDocumentVersionRecord,
 } from '@/lib/actions/wioa';
 import type { WioaCaseDetail, WioaDocumentRecord } from '@/lib/data/wioa';
 import type { LearnerRecord } from '@/lib/data/learners';
@@ -164,10 +167,30 @@ export function WioaCaseDetailView({
   function DocumentReviewRow({ doc }: { doc: WioaDocumentRecord }) {
     const [reason, setReason] = useState('');
     const [reviewing, setReviewing] = useState(false);
+    const [history, setHistory] = useState<WioaDocumentVersionRecord[] | null>(null);
+    const [loadingHistory, setLoadingHistory] = useState(false);
 
     async function viewFile() {
       const url = await getWioaDocumentUrl(doc.id);
       window.open(url, '_blank', 'noopener,noreferrer');
+    }
+
+    async function viewVersion(versionId: string) {
+      const url = await getWioaDocumentVersionUrl(versionId);
+      window.open(url, '_blank', 'noopener,noreferrer');
+    }
+
+    async function toggleHistory() {
+      if (history !== null) {
+        setHistory(null);
+        return;
+      }
+      setLoadingHistory(true);
+      try {
+        setHistory(await getWioaDocumentVersions(doc.id));
+      } finally {
+        setLoadingHistory(false);
+      }
     }
 
     function review(status: 'ACCEPTED' | 'REJECTED') {
@@ -232,6 +255,58 @@ export function WioaCaseDetailView({
               </div>
             )}
           </>
+        )}
+
+        {doc.status !== 'MISSING' && doc.status !== 'NOT_APPLICABLE' && (
+          <div>
+            <button
+              type="button"
+              onClick={toggleHistory}
+              className="text-xs text-text-secondary hover:underline"
+            >
+              {loadingHistory
+                ? 'Loading history…'
+                : history === null
+                  ? 'View past versions'
+                  : 'Hide past versions'}
+            </button>
+            {history !== null && (
+              <ul className="mt-2 flex flex-col gap-1.5">
+                {history.length === 0 && (
+                  <li className="text-xs text-text-muted">No earlier versions.</li>
+                )}
+                {history.map((v) => (
+                  <li
+                    key={v.id}
+                    className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-border-subtle bg-surface-subtle p-2"
+                  >
+                    <div className="flex flex-col gap-0.5">
+                      <button
+                        type="button"
+                        onClick={() => viewVersion(v.id)}
+                        className="flex items-center gap-1.5 text-xs text-brand-primary hover:underline"
+                      >
+                        <Icon name="paperclip" className="size-3.5" />
+                        {v.fileName}
+                      </button>
+                      <span className="text-[11px] text-text-muted">
+                        Uploaded{' '}
+                        {v.uploadedAt.toLocaleDateString('en-US', {
+                          month: 'short',
+                          day: 'numeric',
+                          year: 'numeric',
+                        })}
+                      </span>
+                      {v.status === 'REJECTED' && v.rejectionReason && (
+                        <span className="text-[11px] text-danger">{v.rejectionReason}</span>
+                      )}
+                    </div>
+                    <Badge tone={docStatusTone[v.status]}>{v.status.replace('_', ' ')}</Badge>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
         )}
       </div>
     );

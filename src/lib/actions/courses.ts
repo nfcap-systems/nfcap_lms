@@ -70,3 +70,27 @@ export async function setCoursePublished(slug: string, published: boolean): Prom
   await prisma.course.update({ where: { slug }, data: { isPublished: published } });
   revalidateCourseLists();
 }
+
+/** Open ↔ Restricted for a single course (Pathway tab). Restricted = locked to a learner until
+ * the previous course in `pathwayOrder` is completed (see PathwayCourseCard.tsx's lock logic). */
+export async function setCourseAccess(slug: string, access: CourseAccess): Promise<void> {
+  await requireAdmin();
+  await prisma.course.update({
+    where: { slug },
+    data: { access: access === 'restricted' ? PrismaCourseAccess.RESTRICTED : PrismaCourseAccess.OPEN },
+  });
+  revalidateCourseLists();
+}
+
+/** Persists a full reorder of the pathway (Pathway tab drag-and-drop). `orderedSlugs` is every
+ * course slug in its new top-to-bottom order; positions are assigned 1..n in a single transaction
+ * so `pathwayOrder` never has gaps or duplicates. */
+export async function reorderPathway(orderedSlugs: string[]): Promise<void> {
+  await requireAdmin();
+  await prisma.$transaction(
+    orderedSlugs.map((slug, index) =>
+      prisma.course.update({ where: { slug }, data: { pathwayOrder: index + 1 } }),
+    ),
+  );
+  revalidateCourseLists();
+}

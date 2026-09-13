@@ -258,6 +258,59 @@ credential, an updated Portfolio entry, and a certificate for the learner.
 
 ---
 
+## Phase 5a — Program/Pathway Builder 🔲
+
+**Goal:** Let Admin manage the apprenticeship pathway's course order and lock rules directly,
+instead of order being append-only (new courses already land at the end via `createCourse`, but
+nothing lets Admin reorder or insert afterward).
+
+**Decided 2026-09-13:** pulled into scope (previously future-only, see Phase 3 note and Section 9
+of `docs/product/PRODUCT_CONTEXT.md`). No schema change — reuses `Course.pathwayOrder` and
+`Course.access` (OPEN/RESTRICTED), and the lock logic already in `PathwayCourseCard.tsx`
+(`locked = !enrolled && course.access === 'restricted' && !unlocked`). Linear pathway only — no
+branching/conditional logic, no multiple parallel programs, no new prerequisite graph.
+
+**Build:**
+
+- New standalone `/admin/pathway` screen with its own `adminNav` entry (decided 2026-09-13 —
+  not a tab on Courses; Admin wanted it as its own nav item since Courses will keep growing).
+- Drag-to-reorder list (`@dnd-kit/core` + `@dnd-kit/sortable`) of all courses (any publish state),
+  showing title, category, and an Open/Restricted toggle per row (`PathwayView.tsx`, shared
+  between this page and — previously — the Courses tab; now only used here).
+- Server action to persist reordering: recompute `pathwayOrder` for all affected courses in one
+  transaction; revalidate the same paths `createCourse`/`setCoursePublished` already revalidate.
+- Server action (`setCourseAccess`) to toggle `access` per course from this view.
+
+**Depends on:** Phase 3 (Courses admin, `createCourse`, `Course.pathwayOrder`/`access` already exist).
+
+**Explicitly NOT built:** branching/conditional pathways, multiple parallel programs, a
+prerequisite graph beyond "previous course in sequence," learner-assignment UI (already covered
+by Enroll/roster), any change to WIOA `CourseUnlock` overrides.
+
+**Built 2026-09-13:** `/admin/pathway` (own nav entry, `src/lib/nav.ts`) — list page showing the
+one pathway as a summary card (`PathwayListView.tsx`: course count, total learners, completion
+rate, sourced from `getPathwaySummary()` in `src/lib/data/pathway.ts`, which derives from existing
+`getAllCourses`/`getLearnerRoster`/`getProgressByLearner`, no new table). Opening the card goes to
+`/admin/pathway/apprenticeship` (`PathwayDetailView.tsx`) — same stats plus the drag-to-reorder
+list (`PathwayView.tsx`, shared) and a static description block. `reorderPathway`/`setCourseAccess`
+server actions in `src/lib/actions/courses.ts`. No schema migration. `tsc`, lint, and `next build`
+verified clean.
+
+**Design note:** the list/detail split mirrors a reference (Trenning/Fikri Studio "Learning Path")
+the user was drawing on, scaled down for a single pathway — no multi-pathway list, no flowchart
+canvas, no branch/condition nodes (see Section 5/15 of `docs/product/PRODUCT_CONTEXT.md` — single
+linear pathway only, until NFCAP confirms otherwise).
+
+**Corrected 2026-09-13:** the detail page initially had a "Preview as Learner" button copied
+directly from the reference screenshot, linking to `/learner/explore`. `src/proxy.ts` confines
+every signed-in session to its own role prefix by design ("no cross-role preview in this
+prototype"), so the link only ever bounced Admin back to `/admin`. Re-added on request as a
+**disabled UI-only placeholder** (no href, `disabled`, tooltip: "Not yet implemented — role-preview
+isn't supported in this prototype yet") — the visual is wanted now, the capability is deferred
+until real cross-role preview is built (would need an explicit admin-only bypass in `proxy.ts`).
+
+---
+
 ## Phase 5 — UX Polish & Prototype Validation 🔲
 
 **Goal:** Make the prototype presentation-ready; confirm it holds together end to end.
@@ -287,3 +340,8 @@ Keep this section updated whenever a locked decision changes mid-build, so we do
   tool; corrected to be scoped to a single course (Course → Sections → Lessons → Content →
   Assessments). A Program/Pathway Builder is future scope only — not built in this prototype.
   `docs/product/PRODUCT_CONTEXT.md` Section 8 and 9 updated to match.
+- **2026-09-13 — Program/Pathway Builder pulled into scope.** Course order was append-only
+  (`createCourse` always adds to the end); Admin had no way to reorder or insert. Added as Phase
+  5a: a lightweight "Pathway" tab on `/admin/courses` (drag-to-reorder + Open/Restricted toggle),
+  reusing existing `pathwayOrder`/`access` fields — no schema change, no branching/graph builder.
+  `docs/product/PRODUCT_CONTEXT.md` Section 9 updated to match.

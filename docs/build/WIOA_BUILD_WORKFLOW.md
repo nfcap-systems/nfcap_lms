@@ -436,3 +436,18 @@ Keep this section updated whenever a locked decision changes mid-build, so we do
      either way in the plan — pure implementation oversight, not a deliberate "can't enforce this"
      call. If tightened: disable/hide the Authorization sub-section's fields until status ≥
      `Training Authorization Pending`.
+- **2026-09-13 — Document upload hardening pass.** Added server-side file validation (magic-byte
+  check + 10MB cap, `src/lib/supabase/wioa-storage.ts`), raised the Server Actions body limit to
+  10MB (`next.config.ts`), and added a `WioaDocumentVersion` audit trail so a superseded upload
+  (e.g. one later rejected) stays retrievable via signed URL instead of being silently overwritten
+  or orphaned in Storage (`prisma/schema.prisma`, `uploadWioaDocument` in
+  `src/lib/actions/wioa.ts`, "View past versions" in `WioaCaseDetailView.tsx`). One gap found and
+  **not fixed, logged as backlog** — not blocking the prototype demo:
+  1. **No cap on re-upload frequency or count per document.** A learner can re-upload the same
+     document requirement an unlimited number of times, each up to 10MB; only one file is ever
+     "current" per requirement (the DB enforces one row per case+requirement), but every prior
+     upload is now retained forever in Supabase Storage as version history. At prototype scale this
+     is harmless, but with no rate limit or max-versions cap, a script or confused/malicious user
+     could drive unbounded Storage growth/cost and clutter the version-history UI with junk entries
+     for one requirement. If tightened: cap total versions per document (e.g. 10) and/or rate-limit
+     uploads (e.g. 1/minute) in `uploadWioaDocument`.

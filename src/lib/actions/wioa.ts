@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import type { User } from '@supabase/supabase-js';
 import { prisma } from '@/lib/prisma';
-import type { WioaCaseStatus, AppointmentType } from '@/generated/prisma/enums';
+import type { WioaCaseStatus, AppointmentType, WioaDocumentStatus } from '@/generated/prisma/enums';
 import { requireUser, requireCoordinator } from './guard';
 import { getRole } from '@/lib/supabase/server';
 import { matchWorkforceOffice } from '@/lib/wioa/matching';
@@ -181,22 +181,43 @@ export async function uploadWioaDocument(documentId: string, file: File): Promis
     throw new Error('Not your document.');
   }
 
-  const path = `${user.id}/${doc.wioaCaseId}/${doc.requirementId}/${file.name}`;
+  // Each upload gets its own storage object — never overwritten or deleted — so a superseded
+  // file (e.g. one later rejected) stays retrievable via its WioaDocumentVersion snapshot below.
+  const path = `${user.id}/${doc.wioaCaseId}/${doc.requirementId}/${Date.now()}-${file.name}`;
   await uploadWioaDocumentFile(path, file);
 
-  await prisma.wioaDocument.update({
-    where: { id: documentId },
-    data: {
-      fileName: file.name,
-      storagePath: path,
-      status: 'UPLOADED',
-      uploadedAt: new Date(),
-      // A fresh upload clears any prior rejection — the resubmission is a new review, not a
-      // continuation of the rejected one (spec Section 9 — "allow re-upload when rejected").
-      rejectionReason: null,
-      reviewedAt: null,
-      reviewedBy: null,
-    },
+  await prisma.$transaction(async (tx) => {
+    // Archive the file this upload replaces (if any) before overwriting the row that pointed to
+    // it, so its status/review outcome at time of replacement is preserved for the audit history.
+    if (doc.storagePath && doc.fileName && doc.uploadedAt) {
+      await tx.wioaDocumentVersion.create({
+        data: {
+          documentId: doc.id,
+          fileName: doc.fileName,
+          storagePath: doc.storagePath,
+          uploadedAt: doc.uploadedAt,
+          status: doc.status,
+          reviewedBy: doc.reviewedBy,
+          reviewedAt: doc.reviewedAt,
+          rejectionReason: doc.rejectionReason,
+        },
+      });
+    }
+
+    await tx.wioaDocument.update({
+      where: { id: documentId },
+      data: {
+        fileName: file.name,
+        storagePath: path,
+        status: 'UPLOADED',
+        uploadedAt: new Date(),
+        // A fresh upload clears any prior rejection — the resubmission is a new review, not a
+        // continuation of the rejected one (spec Section 9 — "allow re-upload when rejected").
+        rejectionReason: null,
+        reviewedAt: null,
+        reviewedBy: null,
+      },
+    });
   });
 
   // Spec Section 9: "When all applicable documents are uploaded, change the case from Documents
@@ -228,6 +249,45 @@ export async function getWioaDocumentUrl(documentId: string): Promise<string> {
   await requireCaseAccess(doc.wioaCaseId);
   if (!doc.storagePath) throw new Error('No file uploaded for this document.');
   return getWioaDocumentSignedUrl(doc.storagePath);
+}
+
+export type WioaDocumentVersionRecord = {
+  id: string;
+  fileName: string;
+  uploadedAt: Date;
+  status: WioaDocumentStatus;
+  rejectionReason: string | null;
+};
+
+/** Past uploads for one document requirement, most recent first — the file currently on the
+ * WioaDocument row is not included (it's shown separately, not as "history"). */
+export async function getWioaDocumentVersions(
+  documentId: string,
+): Promise<WioaDocumentVersionRecord[]> {
+  const doc = await prisma.wioaDocument.findUniqueOrThrow({ where: { id: documentId } });
+  await requireCaseAccess(doc.wioaCaseId);
+
+  const versions = await prisma.wioaDocumentVersion.findMany({
+    where: { documentId },
+    orderBy: { uploadedAt: 'desc' },
+  });
+  return versions.map((v) => ({
+    id: v.id,
+    fileName: v.fileName,
+    uploadedAt: v.uploadedAt,
+    status: v.status as WioaDocumentVersionRecord['status'],
+    rejectionReason: v.rejectionReason,
+  }));
+}
+
+/** Short-lived signed URL for a specific past version, gated the same way as the current file. */
+export async function getWioaDocumentVersionUrl(versionId: string): Promise<string> {
+  const version = await prisma.wioaDocumentVersion.findUniqueOrThrow({
+    where: { id: versionId },
+    include: { document: true },
+  });
+  await requireCaseAccess(version.document.wioaCaseId);
+  return getWioaDocumentSignedUrl(version.storagePath);
 }
 
 /** Staff document review (spec Section 9/22 — accept, reject, or request resubmission), mirrors

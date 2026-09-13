@@ -34,7 +34,14 @@ export type IconName =
   | 'log-out'
   | 'search'
   | 'bell'
-  | 'panel-left';
+  | 'panel-left'
+  | 'grip-vertical'
+  | 'edit'
+  | 'trash'
+  | 'chevron-up'
+  | 'chevron-down'
+  | 'numbered-list'
+  | 'header';
 
 type IconProps = SVGProps<SVGSVGElement>;
 
@@ -245,6 +252,54 @@ const paths: Record<IconName, React.ReactNode> = {
     <>
       <rect x="3" y="3.5" width="18" height="17" rx="2.5" />
       <path d="M9.5 3.5v17" />
+    </>
+  ),
+  'grip-vertical': (
+    <>
+      <circle cx="9" cy="5.5" r="1.25" fill="currentColor" stroke="none" />
+      <circle cx="9" cy="12" r="1.25" fill="currentColor" stroke="none" />
+      <circle cx="9" cy="18.5" r="1.25" fill="currentColor" stroke="none" />
+      <circle cx="15" cy="5.5" r="1.25" fill="currentColor" stroke="none" />
+      <circle cx="15" cy="12" r="1.25" fill="currentColor" stroke="none" />
+      <circle cx="15" cy="18.5" r="1.25" fill="currentColor" stroke="none" />
+    </>
+  ),
+  edit: (
+    <>
+      <path d="M4 20h4L19.5 8.5a2 2 0 0 0 0-2.8l-1.2-1.2a2 2 0 0 0-2.8 0L4 16v4Z" />
+      <path d="M14 6l4 4" />
+    </>
+  ),
+  trash: (
+    <>
+      <path d="M5 7h14" />
+      <path d="M9 7V5.5A1.5 1.5 0 0 1 10.5 4h3A1.5 1.5 0 0 1 15 5.5V7" />
+      <path d="M6.5 7 7.3 19a2 2 0 0 0 2 1.9h5.4a2 2 0 0 0 2-1.9L17.5 7" />
+      <path d="M10 11v6M14 11v6" />
+    </>
+  ),
+  'chevron-up': (
+    <>
+      <path d="m5 15 7-7 7 7" />
+    </>
+  ),
+  'chevron-down': (
+    <>
+      <path d="m5 9 7 7 7-7" />
+    </>
+  ),
+  'numbered-list': (
+    <>
+      <path d="M9 6h12M9 12h12M9 18h12" />
+      <path d="M4 4.5h1.2v3M4 7.5h1.6" />
+      <path d="M4 14.5c0-.6.5-1 1.1-1s1.1.4 1.1 1c0 .5-.3.8-.7 1.1l-1.5 1.4h2.2" />
+    </>
+  ),
+  header: (
+    <>
+      <path d="M5 4.5v15M15 4.5v15" />
+      <path d="M5 12h10" />
+      <path d="M18 8.5v-3l-1.5 1" />
     </>
   ),
 };

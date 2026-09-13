@@ -1,16 +1,33 @@
 export type LessonType = 'video' | 'text' | 'image' | 'resource';
 
+export type ContentBlockType =
+  | 'text'
+  | 'bullet-list'
+  | 'numbered-list'
+  | 'header-1'
+  | 'header-2'
+  | 'header-3'
+  | 'image'
+  | 'video';
+
+export type ContentBlock = {
+  id: string;
+  type: ContentBlockType;
+  /** Plain text for text/header-*; caption for image/video. */
+  content: string;
+  /** Populated only for bullet-list/numbered-list. */
+  items: string[];
+  /** Populated only for image/video. */
+  url?: string;
+  order: number;
+};
+
 export type Lesson = {
   id: string;
   title: string;
   type: LessonType;
   durationMinutes: number;
-  /** Text body (type: text), caption/body accompanying video/image, or resource description. */
-  body: string;
-  /** Video URL (type: video), image URL (type: image), or resource file URL (type: resource). */
-  src?: string;
-  /** Display label for a downloadable resource, e.g. "Site Safety Checklist.pdf". */
-  resourceLabel?: string;
+  blocks: ContentBlock[];
 };
 
 export type Section = {

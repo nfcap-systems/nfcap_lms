@@ -85,18 +85,40 @@ model Lesson {
   title           String
   type            LessonType
   durationMinutes Int
-  /// Text body (type TEXT), caption/body accompanying video/image, or resource description.
-  body            String
-  /// Video URL (type VIDEO), image URL (type IMAGE), or resource file URL (type RESOURCE).
-  src             String?
-  /// Display label for a downloadable resource, e.g. "Site Safety Checklist.pdf".
-  resourceLabel   String?
   /// Display order among sibling lessons of the same section.
   order           Int
 
+  blocks      ContentBlock[]
   completions CompletedLesson[]
 
   @@index([sectionId])
+}
+
+enum ContentBlockType {
+  TEXT
+  BULLET_LIST
+  NUMBERED_LIST
+  HEADER_1
+  HEADER_2
+  HEADER_3
+  IMAGE
+  VIDEO
+}
+
+model ContentBlock {
+  id       String           @id @default(cuid())
+  lessonId String
+  lesson   Lesson           @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  type     ContentBlockType
+  /// Plain text for TEXT/HEADER_*; caption for IMAGE/VIDEO.
+  content  String
+  /// Populated only for BULLET_LIST/NUMBERED_LIST.
+  items    String[]
+  /// Populated only for IMAGE/VIDEO.
+  url      String?
+  order    Int
+
+  @@index([lessonId])
 }
 
 model Assessment {
@@ -505,9 +527,32 @@ model WioaDocument {
   rejectionReason String?
   expirationDate  DateTime?
   notes           String?
+  versions        WioaDocumentVersion[]
 
   @@unique([wioaCaseId, requirementId])
   @@index([wioaCaseId])
+}
+
+/// Audit trail of every file a learner has ever uploaded for a WioaDocument, snapshotted right
+/// before its row is overwritten by the next upload (src/lib/actions/wioa.ts, uploadWioaDocument).
+/// Storage objects are never deleted or overwritten — each upload gets a unique storagePath
+/// (src/lib/supabase/wioa-storage.ts) — so a version's file stays retrievable indefinitely, e.g. to
+/// see what was originally submitted before a rejection.
+model WioaDocumentVersion {
+  id              String             @id @default(cuid())
+  documentId      String
+  document        WioaDocument       @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  fileName        String
+  storagePath     String
+  uploadedAt      DateTime
+  /// Status the document had at the moment it was superseded (e.g. REJECTED) — the label shown
+  /// next to this version in the staff history view.
+  status          WioaDocumentStatus
+  reviewedBy      String?
+  reviewedAt      DateTime?
+  rejectionReason String?
+
+  @@index([documentId, uploadedAt])
 }
 
 // ---------------------------------------------------------------------------------------------

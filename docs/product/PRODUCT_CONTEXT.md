@@ -168,7 +168,13 @@ These are resolved decisions, not assumptions — kept explicit so they aren't s
 - Learner Profile (individual progress, evidence review/verification)
 - Analytics (future/simple)
 - Settings (future)
-- _(Future, not in prototype scope: Program/Pathway Builder — course order/sequence at the apprenticeship level)_
+- Pathway (own nav entry) — `/admin/pathway` lists the (one) pathway as a summary card (course
+  count, total learners, completion rate); opening it (`/admin/pathway/apprenticeship`) shows the
+  same stats plus a drag-to-reorder list of all courses and a per-course Open/Restricted toggle
+  (Restricted = locked until the previous course in the pathway is completed). Reuses the existing
+  `pathwayOrder`/`access` fields and lock logic already in `PathwayCourseCard.tsx` — no schema
+  change. Linear, single pathway only (no branching/conditional paths, no multiple parallel
+  programs — see Section 15).
 
 This structure may change through design exploration — discuss before changing it materially.
 
@@ -224,6 +230,7 @@ Do not silently make major product decisions or expand scope without discussing 
 - Real assignment mechanism (if/when it's needed) — deferred, no cohort/assignment engine planned for prototype.
 - Whether Practical Evidence submission is tied to a specific course step or freely added to Portfolio.
 - Whether NFCAP has any optional/supplementary courses beyond the core apprenticeship pathway (unconfirmed — affects whether Explore ever shows non-core content).
+- Whether NFCAP ever needs more than one pathway (e.g. per state or per trade) — `docs/product/NFCAP_SITE.md`'s "5 states operating in" stat is the only hint, and it's explicitly unconfirmed there too. Single-pathway model stands until this is confirmed; not building multi-pathway speculatively.
 
 ---
 

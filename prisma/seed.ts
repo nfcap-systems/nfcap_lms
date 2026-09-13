@@ -17,6 +17,22 @@ type SeedLesson = {
   src?: string;
   resourceLabel?: string;
 };
+type SeedBlock = { type: 'TEXT' | 'IMAGE' | 'VIDEO'; content: string; url?: string };
+
+// Mirrors the mapping in prisma/backfill-content-blocks.ts so freshly-seeded lessons get the same
+// block shape as backfilled ones.
+function lessonBlocks(lesson: SeedLesson): SeedBlock[] {
+  const blocks: SeedBlock[] = [{ type: 'TEXT', content: lesson.body }];
+  if (lesson.type === 'IMAGE' && lesson.src) {
+    blocks.push({ type: 'IMAGE', content: '', url: lesson.src });
+  } else if (lesson.type === 'VIDEO' && lesson.src) {
+    blocks.push({ type: 'VIDEO', content: '', url: lesson.src });
+  } else if (lesson.type === 'RESOURCE' && (lesson.src || lesson.resourceLabel)) {
+    const label = lesson.resourceLabel ?? 'Resource';
+    blocks.push({ type: 'TEXT', content: `${label}: ${lesson.src ?? ''}`.trim() });
+  }
+  return blocks;
+}
 type SeedSection = { title: string; lessons: SeedLesson[] };
 type SeedCourse = {
   slug: string;
@@ -431,10 +447,15 @@ async function main() {
               title: lesson.title,
               type: lesson.type,
               durationMinutes: lesson.durationMinutes,
-              body: lesson.body,
-              src: lesson.src,
-              resourceLabel: lesson.resourceLabel,
               order: lessonIndex,
+              blocks: {
+                create: lessonBlocks(lesson).map((block, blockIndex) => ({
+                  type: block.type,
+                  content: block.content,
+                  url: block.url,
+                  order: blockIndex,
+                })),
+              },
             })),
           },
         },

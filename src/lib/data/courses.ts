@@ -1,15 +1,31 @@
 import { prisma } from '@/lib/prisma';
 import type { CourseWhereInput } from '@/generated/prisma/models';
-import type { Course, Lesson, LessonType } from '@/lib/types';
+import type { Course, ContentBlock, ContentBlockType, Lesson, LessonType } from '@/lib/types';
 
 export type AdminCourse = Course & { published: boolean };
 
 const courseInclude = {
   sections: {
     orderBy: { order: 'asc' as const },
-    include: { lessons: { orderBy: { order: 'asc' as const } } },
+    include: {
+      lessons: {
+        orderBy: { order: 'asc' as const },
+        include: { blocks: { orderBy: { order: 'asc' as const } } },
+      },
+    },
   },
   assessment: { include: { questions: { orderBy: { order: 'asc' as const } } } },
+};
+
+const contentBlockTypeMap: Record<string, ContentBlockType> = {
+  TEXT: 'text',
+  BULLET_LIST: 'bullet-list',
+  NUMBERED_LIST: 'numbered-list',
+  HEADER_1: 'header-1',
+  HEADER_2: 'header-2',
+  HEADER_3: 'header-3',
+  IMAGE: 'image',
+  VIDEO: 'video',
 };
 
 async function findCourses(where?: CourseWhereInput) {
@@ -44,9 +60,14 @@ function mapCourse(db: DbCourse): AdminCourse {
         title: lesson.title,
         type: lesson.type.toLowerCase() as LessonType,
         durationMinutes: lesson.durationMinutes,
-        body: lesson.body,
-        src: lesson.src ?? undefined,
-        resourceLabel: lesson.resourceLabel ?? undefined,
+        blocks: lesson.blocks.map((block): ContentBlock => ({
+          id: block.id,
+          type: contentBlockTypeMap[block.type],
+          content: block.content,
+          items: block.items,
+          url: block.url ?? undefined,
+          order: block.order,
+        })),
       })),
     })),
     assessment: {
