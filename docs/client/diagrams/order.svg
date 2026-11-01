@@ -1,0 +1,64 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1130" height="540" viewBox="0 0 1130 540" font-family="'Segoe UI', Arial, sans-serif">
+<defs>
+<marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#222"/></marker>
+<pattern id="hatch" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="7" height="7" fill="#fff"/><line x1="0" y1="0" x2="0" y2="7" stroke="#222" stroke-width="2.2"/></pattern>
+</defs>
+<rect width="100%" height="100%" fill="#fff"/>
+<rect x="24" y="120" width="136" height="56" rx="5" fill="#fff" stroke="#222" stroke-width="1.6" stroke-dasharray="1.5 4" stroke-linecap="round"/>
+<text x="92" y="144" font-size="13" font-weight="600" text-anchor="middle" fill="#222">Phase 0</text>
+<text x="92" y="160" font-size="11" font-weight="400" text-anchor="middle" fill="#666">Stabilise &amp; Verify</text>
+<rect x="182" y="120" width="136" height="56" rx="5" fill="#fff" stroke="#222" stroke-width="1.6" stroke-dasharray="1.5 4" stroke-linecap="round"/>
+<text x="250" y="144" font-size="13" font-weight="600" text-anchor="middle" fill="#222">Phase 1</text>
+<text x="250" y="160" font-size="11" font-weight="400" text-anchor="middle" fill="#666">Security &amp; Data</text>
+<rect x="340" y="120" width="136" height="56" rx="5" fill="#fff" stroke="#222" stroke-width="1.6" stroke-dasharray="1.5 4" stroke-linecap="round"/>
+<text x="408" y="144" font-size="13" font-weight="600" text-anchor="middle" fill="#222">Phase 2</text>
+<text x="408" y="160" font-size="11" font-weight="400" text-anchor="middle" fill="#666">Accounts &amp; Email</text>
+<rect x="498" y="120" width="136" height="56" rx="5" fill="#fff" stroke="#222" stroke-width="2.8" stroke-dasharray="1.5 4" stroke-linecap="round"/>
+<text x="566" y="144" font-size="13" font-weight="600" text-anchor="middle" fill="#222">Phase 3 ★</text>
+<text x="566" y="160" font-size="11" font-weight="400" text-anchor="middle" fill="#666">Evidence &amp; Competency</text>
+<rect x="498" y="24" width="136" height="56" rx="5" fill="#fff" stroke="#222" stroke-width="1.6" stroke-dasharray="1.5 4" stroke-linecap="round"/>
+<text x="566" y="48" font-size="13" font-weight="600" text-anchor="middle" fill="#222">Phase 6</text>
+<text x="566" y="64" font-size="11" font-weight="400" text-anchor="middle" fill="#666">Communication &amp; Ops</text>
+<rect x="656" y="120" width="136" height="56" rx="5" fill="#fff" stroke="#222" stroke-width="1.6" stroke-dasharray="1.5 4" stroke-linecap="round"/>
+<text x="724" y="144" font-size="13" font-weight="600" text-anchor="middle" fill="#222">Phase 4</text>
+<text x="724" y="160" font-size="11" font-weight="400" text-anchor="middle" fill="#666">Credential Integrity</text>
+<rect x="656" y="216" width="136" height="56" rx="5" fill="#fff" stroke="#222" stroke-width="2.8" stroke-dasharray="1.5 4" stroke-linecap="round"/>
+<text x="724" y="240" font-size="13" font-weight="600" text-anchor="middle" fill="#222">Phase 5 ★</text>
+<text x="724" y="256" font-size="11" font-weight="400" text-anchor="middle" fill="#666">Funding Productisation</text>
+<rect x="182" y="408" width="136" height="56" rx="5" fill="#fff" stroke="#222" stroke-width="1.6" stroke-dasharray="1.5 4" stroke-linecap="round"/>
+<text x="250" y="432" font-size="13" font-weight="600" text-anchor="middle" fill="#222">Phase 7</text>
+<text x="250" y="448" font-size="11" font-weight="400" text-anchor="middle" fill="#666">Accessibility</text>
+<rect x="814" y="216" width="136" height="56" rx="5" fill="#fff" stroke="#222" stroke-width="1.6" stroke-dasharray="1.5 4" stroke-linecap="round"/>
+<text x="882" y="240" font-size="13" font-weight="600" text-anchor="middle" fill="#222">Phase 8</text>
+<text x="882" y="256" font-size="11" font-weight="400" text-anchor="middle" fill="#666">Performance &amp; Launch</text>
+<polyline points="160,148 182,148" fill="none" stroke="#222" stroke-width="1.5" stroke-linejoin="round"  marker-end="url(#ah)"/>
+<polyline points="318,148 340,148" fill="none" stroke="#222" stroke-width="1.5" stroke-linejoin="round"  marker-end="url(#ah)"/>
+<polyline points="476,148 498,148" fill="none" stroke="#222" stroke-width="1.5" stroke-linejoin="round"  marker-end="url(#ah)"/>
+<polyline points="408,120 408,52 498,52" fill="none" stroke="#222" stroke-width="1.5" stroke-linejoin="round"  marker-end="url(#ah)"/>
+<polyline points="92,176 92,436 182,436" fill="none" stroke="#222" stroke-width="1.5" stroke-linejoin="round"  marker-end="url(#ah)"/>
+<polyline points="634,148 656,148" fill="none" stroke="#222" stroke-width="1.5" stroke-linejoin="round"  marker-end="url(#ah)"/>
+<polyline points="645,148 645,244 656,244" fill="none" stroke="#222" stroke-width="1.5" stroke-linejoin="round"  marker-end="url(#ah)"/>
+<polyline points="634,52 803,52" fill="none" stroke="#222" stroke-width="1.5" stroke-linejoin="round" />
+<polyline points="792,148 803,148" fill="none" stroke="#222" stroke-width="1.5" stroke-linejoin="round" />
+<polyline points="792,244 803,244" fill="none" stroke="#222" stroke-width="1.5" stroke-linejoin="round" />
+<polyline points="318,436 803,436" fill="none" stroke="#222" stroke-width="1.5" stroke-linejoin="round" />
+<polyline points="803,52 803,436" fill="none" stroke="#222" stroke-width="1.5" stroke-linejoin="round" />
+<polyline points="803,244 814,244" fill="none" stroke="#222" stroke-width="1.5" stroke-linejoin="round"  marker-end="url(#ah)"/>
+<polyline points="882,272 882,304" fill="none" stroke="#222" stroke-width="1.5" stroke-linejoin="round"  marker-end="url(#ah)"/>
+<polygon points="882,304 948,340 882,376 816,340" fill="#fff" stroke="#222" stroke-width="2.6" stroke-dasharray="1.5 4" stroke-linecap="round"/>
+<text x="882" y="337" font-size="11" font-weight="600" text-anchor="middle" fill="#222">Data Agreement</text>
+<text x="882" y="351" font-size="11" font-weight="600" text-anchor="middle" fill="#222">signed?</text>
+<polyline points="948,340 982,340" fill="none" stroke="#222" stroke-width="1.5" stroke-linejoin="round"  marker-end="url(#ah)"/>
+<rect x="955.7" y="320" width="28.6" height="17" fill="#fff"/>
+<text x="970" y="332" font-size="11" font-weight="600" text-anchor="middle" fill="#222">Yes</text>
+<rect x="982" y="312" width="122" height="56" rx="28" fill="#fff" stroke="#222" stroke-width="2.6" stroke-dasharray="1.5 4" stroke-linecap="round"/>
+<text x="1043" y="336" font-size="13" font-weight="600" text-anchor="middle" fill="#222">Go-live</text>
+<text x="1043" y="352" font-size="11" font-weight="400" text-anchor="middle" fill="#666">with real WIOA data</text>
+<polyline points="882,376 882,408" fill="none" stroke="#222" stroke-width="1.5" stroke-linejoin="round"  marker-end="url(#ah)"/>
+<rect x="890.8" y="386" width="22.4" height="17" fill="#fff"/>
+<text x="902" y="398" font-size="11" font-weight="600" text-anchor="middle" fill="#222">No</text>
+<rect x="814" y="408" width="136" height="56" rx="5" fill="#fff" stroke="#222" stroke-width="1.6" stroke-dasharray="6 4"/>
+<text x="882" y="432" font-size="13" font-weight="600" text-anchor="middle" fill="#222">Real data blocked</text>
+<text x="882" y="448" font-size="11" font-weight="400" text-anchor="middle" fill="#666">hard gate</text>
+<text x="24" y="512" font-size="11" font-weight="400" text-anchor="start" fill="#666" font-style="italic">Reads left to right. A phase can start once everything with an arrow into it is finished; Phases 4, 5, 6 and 7 all have to finish before Phase 8.</text>
+</svg>

@@ -1,0 +1,112 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1040" height="570" viewBox="0 0 1040 570" font-family="'Segoe UI', Arial, sans-serif">
+<defs>
+<marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#222"/></marker>
+<pattern id="hatch" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="7" height="7" fill="#fff"/><line x1="0" y1="0" x2="0" y2="7" stroke="#222" stroke-width="2.2"/></pattern>
+</defs>
+<rect width="100%" height="100%" fill="#fff"/>
+<text x="20" y="26" font-size="15" font-weight="700" text-anchor="start" fill="#222">Delivery timeline — 2 engineers, about 18 weeks</text>
+<text x="1020" y="26" font-size="11" font-weight="400" text-anchor="end" fill="#666" font-style="italic">Week numbers, not calendar dates</text>
+<line x1="350" y1="48" x2="350" y2="526" stroke="#ddd" stroke-width="1" stroke-dasharray="1.5 4" stroke-linecap="round"/>
+<text x="366" y="42" font-size="10" font-weight="400" text-anchor="middle" fill="#666">1</text>
+<line x1="382" y1="48" x2="382" y2="526" stroke="#ddd" stroke-width="1" stroke-dasharray="1.5 4" stroke-linecap="round"/>
+<text x="398" y="42" font-size="10" font-weight="400" text-anchor="middle" fill="#666">2</text>
+<line x1="414" y1="48" x2="414" y2="526" stroke="#ddd" stroke-width="1" stroke-dasharray="1.5 4" stroke-linecap="round"/>
+<text x="430" y="42" font-size="10" font-weight="400" text-anchor="middle" fill="#666">3</text>
+<line x1="446" y1="48" x2="446" y2="526" stroke="#ddd" stroke-width="1" stroke-dasharray="1.5 4" stroke-linecap="round"/>
+<text x="462" y="42" font-size="10" font-weight="400" text-anchor="middle" fill="#666">4</text>
+<line x1="478" y1="48" x2="478" y2="526" stroke="#ddd" stroke-width="1" stroke-dasharray="1.5 4" stroke-linecap="round"/>
+<text x="494" y="42" font-size="10" font-weight="400" text-anchor="middle" fill="#666">5</text>
+<line x1="510" y1="48" x2="510" y2="526" stroke="#ddd" stroke-width="1" stroke-dasharray="1.5 4" stroke-linecap="round"/>
+<text x="526" y="42" font-size="10" font-weight="400" text-anchor="middle" fill="#666">6</text>
+<line x1="542" y1="48" x2="542" y2="526" stroke="#ddd" stroke-width="1" stroke-dasharray="1.5 4" stroke-linecap="round"/>
+<text x="558" y="42" font-size="10" font-weight="400" text-anchor="middle" fill="#666">7</text>
+<line x1="574" y1="48" x2="574" y2="526" stroke="#ddd" stroke-width="1" stroke-dasharray="1.5 4" stroke-linecap="round"/>
+<text x="590" y="42" font-size="10" font-weight="400" text-anchor="middle" fill="#666">8</text>
+<line x1="606" y1="48" x2="606" y2="526" stroke="#ddd" stroke-width="1" stroke-dasharray="1.5 4" stroke-linecap="round"/>
+<text x="622" y="42" font-size="10" font-weight="400" text-anchor="middle" fill="#666">9</text>
+<line x1="638" y1="48" x2="638" y2="526" stroke="#ddd" stroke-width="1" stroke-dasharray="1.5 4" stroke-linecap="round"/>
+<text x="654" y="42" font-size="10" font-weight="400" text-anchor="middle" fill="#666">10</text>
+<line x1="670" y1="48" x2="670" y2="526" stroke="#ddd" stroke-width="1" stroke-dasharray="1.5 4" stroke-linecap="round"/>
+<text x="686" y="42" font-size="10" font-weight="400" text-anchor="middle" fill="#666">11</text>
+<line x1="702" y1="48" x2="702" y2="526" stroke="#ddd" stroke-width="1" stroke-dasharray="1.5 4" stroke-linecap="round"/>
+<text x="718" y="42" font-size="10" font-weight="400" text-anchor="middle" fill="#666">12</text>
+<line x1="734" y1="48" x2="734" y2="526" stroke="#ddd" stroke-width="1" stroke-dasharray="1.5 4" stroke-linecap="round"/>
+<text x="750" y="42" font-size="10" font-weight="400" text-anchor="middle" fill="#666">13</text>
+<line x1="766" y1="48" x2="766" y2="526" stroke="#ddd" stroke-width="1" stroke-dasharray="1.5 4" stroke-linecap="round"/>
+<text x="782" y="42" font-size="10" font-weight="400" text-anchor="middle" fill="#666">14</text>
+<line x1="798" y1="48" x2="798" y2="526" stroke="#ddd" stroke-width="1" stroke-dasharray="1.5 4" stroke-linecap="round"/>
+<text x="814" y="42" font-size="10" font-weight="400" text-anchor="middle" fill="#666">15</text>
+<line x1="830" y1="48" x2="830" y2="526" stroke="#ddd" stroke-width="1" stroke-dasharray="1.5 4" stroke-linecap="round"/>
+<text x="846" y="42" font-size="10" font-weight="400" text-anchor="middle" fill="#666">16</text>
+<line x1="862" y1="48" x2="862" y2="526" stroke="#ddd" stroke-width="1" stroke-dasharray="1.5 4" stroke-linecap="round"/>
+<text x="878" y="42" font-size="10" font-weight="400" text-anchor="middle" fill="#666">17</text>
+<line x1="894" y1="48" x2="894" y2="526" stroke="#ddd" stroke-width="1" stroke-dasharray="1.5 4" stroke-linecap="round"/>
+<text x="910" y="42" font-size="10" font-weight="400" text-anchor="middle" fill="#666">18</text>
+<line x1="926" y1="48" x2="926" y2="526" stroke="#ddd" stroke-width="1" stroke-dasharray="1.5 4" stroke-linecap="round"/>
+<text x="340" y="42" font-size="10" font-weight="400" text-anchor="end" fill="#666">Week</text>
+<rect x="20" y="56" width="1000" height="24" rx="4" fill="#f3f3f3" stroke="#bbb" stroke-width="1" />
+<text x="32" y="73" font-size="11" font-weight="700" text-anchor="start" fill="#222">FOUNDATION</text>
+<text x="334" y="73" font-size="11" font-weight="700" text-anchor="end" fill="#666">406h</text>
+<text x="32" y="104" font-size="12" font-weight="700" text-anchor="start" fill="#222">P0</text>
+<text x="62" y="104" font-size="12" font-weight="400" text-anchor="start" fill="#222">Stabilise &amp; Verify</text>
+<text x="334" y="104" font-size="11.5" font-weight="400" text-anchor="end" fill="#666">142h</text>
+<rect x="350" y="89" width="56.8" height="22" rx="3" fill="#e4e4e4" stroke="#222" stroke-width="1.5" />
+<text x="414.8" y="104" font-size="10.5" font-weight="400" text-anchor="start" fill="#666">~1.8 wk</text>
+<text x="32" y="136" font-size="12" font-weight="700" text-anchor="start" fill="#222">P1</text>
+<text x="62" y="136" font-size="12" font-weight="400" text-anchor="start" fill="#222">Security &amp; Data Protection</text>
+<text x="334" y="136" font-size="11.5" font-weight="400" text-anchor="end" fill="#666">156h</text>
+<rect x="406.8" y="121" width="62.4" height="22" rx="3" fill="#e4e4e4" stroke="#222" stroke-width="1.5" />
+<text x="477.2" y="136" font-size="10.5" font-weight="400" text-anchor="start" fill="#666">~1.9 wk</text>
+<text x="32" y="168" font-size="12" font-weight="700" text-anchor="start" fill="#222">P2</text>
+<text x="62" y="168" font-size="12" font-weight="400" text-anchor="start" fill="#222">Accounts, Access &amp; Email</text>
+<text x="334" y="168" font-size="11.5" font-weight="400" text-anchor="end" fill="#666">108h</text>
+<rect x="469.2" y="153" width="43.2" height="22" rx="3" fill="#e4e4e4" stroke="#222" stroke-width="1.5" />
+<text x="520.4" y="168" font-size="10.5" font-weight="400" text-anchor="start" fill="#666">~1.4 wk</text>
+<rect x="20" y="180" width="1000" height="24" rx="4" fill="#f3f3f3" stroke="#bbb" stroke-width="1" />
+<text x="32" y="197" font-size="11" font-weight="700" text-anchor="start" fill="#222">CORE PRODUCT</text>
+<text x="334" y="197" font-size="11" font-weight="700" text-anchor="end" fill="#666">470h</text>
+<text x="32" y="228" font-size="12" font-weight="700" text-anchor="start" fill="#222">P3</text>
+<text x="62" y="228" font-size="12" font-weight="400" text-anchor="start" fill="#222">Evidence &amp; Competency ★</text>
+<text x="334" y="228" font-size="11.5" font-weight="400" text-anchor="end" fill="#666">260h</text>
+<rect x="512.4" y="213" width="104" height="22" rx="3" fill="url(#hatch)" stroke="#222" stroke-width="2" />
+<text x="624.4" y="228" font-size="10.5" font-weight="400" text-anchor="start" fill="#666">~3.3 wk</text>
+<text x="32" y="260" font-size="12" font-weight="700" text-anchor="start" fill="#222">P4</text>
+<text x="62" y="260" font-size="12" font-weight="400" text-anchor="start" fill="#222">Credential Integrity</text>
+<text x="334" y="260" font-size="11.5" font-weight="400" text-anchor="end" fill="#666">80h</text>
+<rect x="616.4" y="245" width="32" height="22" rx="3" fill="#e4e4e4" stroke="#222" stroke-width="1.5" />
+<text x="656.4" y="260" font-size="10.5" font-weight="400" text-anchor="start" fill="#666">~1.0 wk</text>
+<text x="32" y="292" font-size="12" font-weight="700" text-anchor="start" fill="#222">P5</text>
+<text x="62" y="292" font-size="12" font-weight="400" text-anchor="start" fill="#222">Funding Productisation ★</text>
+<text x="334" y="292" font-size="11.5" font-weight="400" text-anchor="end" fill="#666">130h</text>
+<rect x="648.4" y="277" width="52" height="22" rx="3" fill="url(#hatch)" stroke="#222" stroke-width="2" />
+<text x="708.4" y="292" font-size="10.5" font-weight="400" text-anchor="start" fill="#666">~1.6 wk</text>
+<rect x="20" y="304" width="1000" height="24" rx="4" fill="#f3f3f3" stroke="#bbb" stroke-width="1" />
+<text x="32" y="321" font-size="11" font-weight="700" text-anchor="start" fill="#222">OPERATIONS &amp; ACCESS</text>
+<text x="334" y="321" font-size="11" font-weight="700" text-anchor="end" fill="#666">286h</text>
+<text x="32" y="352" font-size="12" font-weight="700" text-anchor="start" fill="#222">P6</text>
+<text x="62" y="352" font-size="12" font-weight="400" text-anchor="start" fill="#222">Communication &amp; Ops</text>
+<text x="334" y="352" font-size="11.5" font-weight="400" text-anchor="end" fill="#666">184h</text>
+<rect x="700.4" y="337" width="73.6" height="22" rx="3" fill="#e4e4e4" stroke="#222" stroke-width="1.5" />
+<text x="782" y="352" font-size="10.5" font-weight="400" text-anchor="start" fill="#666">~2.3 wk</text>
+<text x="32" y="384" font-size="12" font-weight="700" text-anchor="start" fill="#222">P7</text>
+<text x="62" y="384" font-size="12" font-weight="400" text-anchor="start" fill="#222">Accessibility (WCAG 2.1 AA)</text>
+<text x="334" y="384" font-size="11.5" font-weight="400" text-anchor="end" fill="#666">102h</text>
+<rect x="774" y="369" width="40.8" height="22" rx="3" fill="#e4e4e4" stroke="#222" stroke-width="1.5" />
+<text x="822.8" y="384" font-size="10.5" font-weight="400" text-anchor="start" fill="#666">~1.3 wk</text>
+<rect x="20" y="396" width="1000" height="24" rx="4" fill="#f3f3f3" stroke="#bbb" stroke-width="1" />
+<text x="32" y="413" font-size="11" font-weight="700" text-anchor="start" fill="#222">LAUNCH</text>
+<text x="334" y="413" font-size="11" font-weight="700" text-anchor="end" fill="#666">116h</text>
+<text x="32" y="444" font-size="12" font-weight="700" text-anchor="start" fill="#222">P8</text>
+<text x="62" y="444" font-size="12" font-weight="400" text-anchor="start" fill="#222">Performance, Hardening &amp; Launch</text>
+<text x="334" y="444" font-size="11.5" font-weight="400" text-anchor="end" fill="#666">116h</text>
+<rect x="814.8" y="429" width="46.4" height="22" rx="3" fill="#e4e4e4" stroke="#222" stroke-width="1.5" />
+<text x="869.2" y="444" font-size="10.5" font-weight="400" text-anchor="start" fill="#666">~1.4 wk</text>
+<text x="32" y="476" font-size="12" font-weight="700" text-anchor="start" fill="#222">+</text>
+<text x="62" y="476" font-size="12" font-weight="400" text-anchor="start" fill="#222">Risk buffer (12%)</text>
+<text x="334" y="476" font-size="11.5" font-weight="400" text-anchor="end" fill="#666">153h</text>
+<rect x="861.2" y="461" width="61.2" height="22" rx="3" fill="#fff" stroke="#222" stroke-width="1.8" stroke-dasharray="1.5 4" stroke-linecap="round"/>
+<text x="62" y="508" font-size="12" font-weight="700" text-anchor="start" fill="#222">Data Agreement signed → go-live</text>
+<polygon points="922.4,492 935.4,504 922.4,516 909.4,504" fill="#222"/>
+<text x="334" y="508" font-size="12" font-weight="400" text-anchor="middle" fill="#222"></text>
+<text x="20" y="556" font-size="11" font-weight="400" text-anchor="start" fill="#666" font-style="italic">Phases run back to back: the two-engineer team is the constraint. Estimates assume 80 team-hours per week.</text>
+</svg>

@@ -1,0 +1,101 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1040" height="500" viewBox="0 0 1040 500" font-family="'Segoe UI', Arial, sans-serif">
+<defs>
+<marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#222"/></marker>
+<pattern id="hatch" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="7" height="7" fill="#fff"/><line x1="0" y1="0" x2="0" y2="7" stroke="#222" stroke-width="2.2"/></pattern>
+</defs>
+<rect width="100%" height="100%" fill="#fff"/>
+<rect x="20" y="20" width="1000" height="116" rx="8" fill="#fff" stroke="#999" stroke-width="1.2" />
+<text x="34" y="41" font-size="11.5" font-weight="700" text-anchor="start" fill="#666">ADMIN — runs the training</text>
+<rect x="44" y="56" width="170" height="62" rx="5" fill="#fff" stroke="#222" stroke-width="1.6" stroke-dasharray="1.5 4" stroke-linecap="round"/>
+<text x="129" y="83" font-size="13" font-weight="600" text-anchor="middle" fill="#222">1 · Build the course</text>
+<text x="129" y="99" font-size="11" font-weight="400" text-anchor="middle" fill="#666">Lessons, quiz, criteria</text>
+<rect x="178" y="47" width="28" height="18" rx="9" fill="#fff" stroke="#222" stroke-width="1.2" />
+<text x="192" y="59.5" font-size="10" font-weight="700" text-anchor="middle" fill="#222">P3</text>
+<rect x="240" y="56" width="170" height="62" rx="5" fill="#fff" stroke="#222" stroke-width="1.6" stroke-dasharray="1.5 4" stroke-linecap="round"/>
+<text x="325" y="83" font-size="13" font-weight="600" text-anchor="middle" fill="#222">2 · Set access and order</text>
+<text x="325" y="99" font-size="11" font-weight="400" text-anchor="middle" fill="#666">Open or restricted, pathway</text>
+<rect x="374" y="47" width="28" height="18" rx="9" fill="#fff" stroke="#222" stroke-width="1.2" />
+<text x="388" y="59.5" font-size="10" font-weight="700" text-anchor="middle" fill="#222">P7</text>
+<polyline points="214,87 240,87" fill="none" stroke="#222" stroke-width="1.5" stroke-linejoin="round"  marker-end="url(#ah)"/>
+<rect x="436" y="56" width="170" height="62" rx="5" fill="#fff" stroke="#222" stroke-width="1.6" stroke-dasharray="1.5 4" stroke-linecap="round"/>
+<text x="521" y="83" font-size="13" font-weight="600" text-anchor="middle" fill="#222">3 · Enrol learners</text>
+<text x="521" y="99" font-size="11" font-weight="400" text-anchor="middle" fill="#666">One by one, CSV, cohorts</text>
+<rect x="570" y="47" width="28" height="18" rx="9" fill="#fff" stroke="#222" stroke-width="1.2" />
+<text x="584" y="59.5" font-size="10" font-weight="700" text-anchor="middle" fill="#222">P6</text>
+<polyline points="410,87 436,87" fill="none" stroke="#222" stroke-width="1.5" stroke-linejoin="round"  marker-end="url(#ah)"/>
+<rect x="632" y="56" width="170" height="62" rx="5" fill="#fff" stroke="#222" stroke-width="1.6" stroke-dasharray="1.5 4" stroke-linecap="round"/>
+<text x="717" y="83" font-size="13" font-weight="600" text-anchor="middle" fill="#222">4 · Review evidence</text>
+<text x="717" y="99" font-size="11" font-weight="400" text-anchor="middle" fill="#666">Queue, Met / Not Met</text>
+<rect x="766" y="47" width="28" height="18" rx="9" fill="#fff" stroke="#222" stroke-width="1.2" />
+<text x="780" y="59.5" font-size="10" font-weight="700" text-anchor="middle" fill="#222">P3</text>
+<polyline points="606,87 632,87" fill="none" stroke="#222" stroke-width="1.5" stroke-linejoin="round"  marker-end="url(#ah)"/>
+<rect x="828" y="56" width="170" height="62" rx="5" fill="#fff" stroke="#222" stroke-width="1.6" stroke-dasharray="1.5 4" stroke-linecap="round"/>
+<text x="913" y="83" font-size="13" font-weight="600" text-anchor="middle" fill="#222">5 · Report and export</text>
+<text x="913" y="99" font-size="11" font-weight="400" text-anchor="middle" fill="#666">Progress, completion, data</text>
+<rect x="962" y="47" width="28" height="18" rx="9" fill="#fff" stroke="#222" stroke-width="1.2" />
+<text x="976" y="59.5" font-size="10" font-weight="700" text-anchor="middle" fill="#222">P6</text>
+<polyline points="802,87 828,87" fill="none" stroke="#222" stroke-width="1.5" stroke-linejoin="round"  marker-end="url(#ah)"/>
+<rect x="20" y="156" width="1000" height="116" rx="8" fill="#fff" stroke="#999" stroke-width="1.2" />
+<text x="34" y="177" font-size="11.5" font-weight="700" text-anchor="start" fill="#666">FUNDING STAFF — Partner Staff and WIOA Coordinator run the cases</text>
+<rect x="44" y="192" width="170" height="62" rx="5" fill="#fff" stroke="#222" stroke-width="1.6" stroke-dasharray="1.5 4" stroke-linecap="round"/>
+<text x="129" y="219" font-size="13" font-weight="600" text-anchor="middle" fill="#222">1 · Review documents</text>
+<text x="129" y="235" font-size="11" font-weight="400" text-anchor="middle" fill="#666">Accept, reject, resubmit</text>
+<rect x="178" y="183" width="28" height="18" rx="9" fill="#fff" stroke="#222" stroke-width="1.2" />
+<text x="192" y="195.5" font-size="10" font-weight="700" text-anchor="middle" fill="#222">P0</text>
+<rect x="240" y="192" width="170" height="62" rx="5" fill="#fff" stroke="#222" stroke-width="1.6" stroke-dasharray="1.5 4" stroke-linecap="round"/>
+<text x="325" y="219" font-size="13" font-weight="600" text-anchor="middle" fill="#222">2 · Record each status</text>
+<text x="325" y="235" font-size="11" font-weight="400" text-anchor="middle" fill="#666">Orientation to approval</text>
+<rect x="374" y="183" width="28" height="18" rx="9" fill="#fff" stroke="#222" stroke-width="1.2" />
+<text x="388" y="195.5" font-size="10" font-weight="700" text-anchor="middle" fill="#222">P0</text>
+<polyline points="214,223 240,223" fill="none" stroke="#222" stroke-width="1.5" stroke-linejoin="round"  marker-end="url(#ah)"/>
+<rect x="436" y="192" width="170" height="62" rx="5" fill="#fff" stroke="#222" stroke-width="1.6" stroke-dasharray="1.5 4" stroke-linecap="round"/>
+<text x="521" y="219" font-size="13" font-weight="600" text-anchor="middle" fill="#222">3 · Follow up stalled cases</text>
+<text x="521" y="235" font-size="11" font-weight="400" text-anchor="middle" fill="#666">Flagged when nothing moves</text>
+<rect x="570" y="183" width="28" height="18" rx="9" fill="#fff" stroke="#222" stroke-width="1.2" />
+<text x="584" y="195.5" font-size="10" font-weight="700" text-anchor="middle" fill="#222">P5</text>
+<polyline points="410,223 436,223" fill="none" stroke="#222" stroke-width="1.5" stroke-linejoin="round"  marker-end="url(#ah)"/>
+<rect x="632" y="192" width="170" height="62" rx="5" fill="#fff" stroke="#222" stroke-width="1.6" stroke-dasharray="1.5 4" stroke-linecap="round"/>
+<text x="717" y="219" font-size="13" font-weight="600" text-anchor="middle" fill="#222">4 · Track funding requests</text>
+<text x="717" y="235" font-size="11" font-weight="400" text-anchor="middle" fill="#666">Approvals and milestones</text>
+<rect x="766" y="183" width="28" height="18" rx="9" fill="#fff" stroke="#222" stroke-width="1.2" />
+<text x="780" y="195.5" font-size="10" font-weight="700" text-anchor="middle" fill="#222">P5</text>
+<polyline points="606,223 632,223" fill="none" stroke="#222" stroke-width="1.5" stroke-linejoin="round"  marker-end="url(#ah)"/>
+<rect x="828" y="192" width="170" height="62" rx="5" fill="#fff" stroke="#222" stroke-width="1.6" stroke-dasharray="1.5 4" stroke-linecap="round"/>
+<text x="913" y="219" font-size="13" font-weight="600" text-anchor="middle" fill="#222">5 · Report funding impact</text>
+<text x="913" y="235" font-size="11" font-weight="400" text-anchor="middle" fill="#666">By workforce board</text>
+<rect x="962" y="183" width="28" height="18" rx="9" fill="#fff" stroke="#222" stroke-width="1.2" />
+<text x="976" y="195.5" font-size="10" font-weight="700" text-anchor="middle" fill="#222">P5</text>
+<polyline points="802,223 828,223" fill="none" stroke="#222" stroke-width="1.5" stroke-linejoin="round"  marker-end="url(#ah)"/>
+<rect x="20" y="292" width="1000" height="116" rx="8" fill="#fff" stroke="#999" stroke-width="1.2" />
+<text x="34" y="313" font-size="11.5" font-weight="700" text-anchor="start" fill="#666">PLATFORM — always on, behind every step</text>
+<rect x="44" y="328" width="170" height="62" rx="5" fill="#fff" stroke="#222" stroke-width="1.6" stroke-dasharray="1.5 4" stroke-linecap="round"/>
+<text x="129" y="355" font-size="13" font-weight="600" text-anchor="middle" fill="#222">Sign-in and roles</text>
+<text x="129" y="371" font-size="11" font-weight="400" text-anchor="middle" fill="#666">Reset, verify, deactivate</text>
+<rect x="178" y="319" width="28" height="18" rx="9" fill="#fff" stroke="#222" stroke-width="1.2" />
+<text x="192" y="331.5" font-size="10" font-weight="700" text-anchor="middle" fill="#222">P2</text>
+<rect x="240" y="328" width="170" height="62" rx="5" fill="#fff" stroke="#222" stroke-width="1.6" stroke-dasharray="1.5 4" stroke-linecap="round"/>
+<text x="325" y="355" font-size="13" font-weight="600" text-anchor="middle" fill="#222">Audit trail and access rules</text>
+<text x="325" y="371" font-size="11" font-weight="400" text-anchor="middle" fill="#666">Who did what, who can see</text>
+<rect x="374" y="319" width="28" height="18" rx="9" fill="#fff" stroke="#222" stroke-width="1.2" />
+<text x="388" y="331.5" font-size="10" font-weight="700" text-anchor="middle" fill="#222">P1</text>
+<rect x="436" y="328" width="170" height="62" rx="5" fill="#fff" stroke="#222" stroke-width="1.6" stroke-dasharray="1.5 4" stroke-linecap="round"/>
+<text x="521" y="355" font-size="13" font-weight="600" text-anchor="middle" fill="#222">Messages and notices</text>
+<text x="521" y="371" font-size="11" font-weight="400" text-anchor="middle" fill="#666">Trainee to staff, announcements</text>
+<rect x="570" y="319" width="28" height="18" rx="9" fill="#fff" stroke="#222" stroke-width="1.2" />
+<text x="584" y="331.5" font-size="10" font-weight="700" text-anchor="middle" fill="#222">P6</text>
+<rect x="632" y="328" width="170" height="62" rx="5" fill="#fff" stroke="#222" stroke-width="1.6" stroke-dasharray="1.5 4" stroke-linecap="round"/>
+<text x="717" y="355" font-size="13" font-weight="600" text-anchor="middle" fill="#222">Monitoring and backups</text>
+<text x="717" y="371" font-size="11" font-weight="400" text-anchor="middle" fill="#666">Alerts, tested restore</text>
+<rect x="766" y="319" width="28" height="18" rx="9" fill="#fff" stroke="#222" stroke-width="1.2" />
+<text x="780" y="331.5" font-size="10" font-weight="700" text-anchor="middle" fill="#222">P0</text>
+<rect x="828" y="328" width="170" height="62" rx="5" fill="#fff" stroke="#222" stroke-width="1.6" stroke-dasharray="1.5 4" stroke-linecap="round"/>
+<text x="913" y="355" font-size="13" font-weight="600" text-anchor="middle" fill="#222">Accessible to everyone</text>
+<text x="913" y="371" font-size="11" font-weight="400" text-anchor="middle" fill="#666">WCAG 2.1 AA</text>
+<rect x="962" y="319" width="28" height="18" rx="9" fill="#fff" stroke="#222" stroke-width="1.2" />
+<text x="976" y="331.5" font-size="10" font-weight="700" text-anchor="middle" fill="#222">P7</text>
+<text x="520" y="444" font-size="11.5" font-weight="400" text-anchor="middle" fill="#666" font-style="italic">Admin and funding staff work in separate areas of the same web app. The platform row supports both.</text>
+<rect x="20" y="456" width="1000" height="36" rx="8" fill="#fff" stroke="#999" stroke-width="1.2" />
+<rect x="32" y="464" width="28" height="18" rx="9" fill="#fff" stroke="#222" stroke-width="1.2" />
+<text x="46" y="476.5" font-size="10" font-weight="700" text-anchor="middle" fill="#222">P3</text>
+<text x="72" y="479" font-size="11.5" font-weight="400" text-anchor="start" fill="#222">= phase that delivers it</text>
+</svg>

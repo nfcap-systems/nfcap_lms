@@ -3,6 +3,13 @@
 Reference material for the NFCAP LMS prototype. Code comments across `src/` and
 `prisma/` link to these files by their repo-relative path (`docs/<folder>/<file>`).
 
+**New to this project?** Start with `HANDOFF.md` — it's the single onboarding entry point and
+links out to everything below in the order you should read it.
+
+| File | Purpose |
+| --- | --- |
+| `HANDOFF.md` | Project handoff / onboarding doc — read this first. |
+
 ## product/
 
 | File | Purpose |

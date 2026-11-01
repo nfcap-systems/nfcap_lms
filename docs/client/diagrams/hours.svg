@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1040" height="444" viewBox="0 0 1040 444" font-family="'Segoe UI', Arial, sans-serif">
+<defs>
+<marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#222"/></marker>
+<pattern id="hatch" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="7" height="7" fill="#fff"/><line x1="0" y1="0" x2="0" y2="7" stroke="#222" stroke-width="2.2"/></pattern>
+</defs>
+<rect width="100%" height="100%" fill="#fff"/>
+<text x="20" y="26" font-size="15" font-weight="700" text-anchor="start" fill="#222">Estimated hours per phase</text>
+<text x="1020" y="26" font-size="11.5" font-weight="400" text-anchor="end" fill="#666">Core total 1,278h  ·  +12% buffer = 1,431h</text>
+<line x1="290" y1="48" x2="290" y2="378" stroke="#ddd" stroke-dasharray="1.5 4" stroke-linecap="round"/>
+<text x="290" y="396" font-size="10.5" font-weight="400" text-anchor="middle" fill="#666">0</text>
+<line x1="405" y1="48" x2="405" y2="378" stroke="#ddd" stroke-dasharray="1.5 4" stroke-linecap="round"/>
+<text x="405" y="396" font-size="10.5" font-weight="400" text-anchor="middle" fill="#666">50</text>
+<line x1="520" y1="48" x2="520" y2="378" stroke="#ddd" stroke-dasharray="1.5 4" stroke-linecap="round"/>
+<text x="520" y="396" font-size="10.5" font-weight="400" text-anchor="middle" fill="#666">100</text>
+<line x1="635" y1="48" x2="635" y2="378" stroke="#ddd" stroke-dasharray="1.5 4" stroke-linecap="round"/>
+<text x="635" y="396" font-size="10.5" font-weight="400" text-anchor="middle" fill="#666">150</text>
+<line x1="750" y1="48" x2="750" y2="378" stroke="#ddd" stroke-dasharray="1.5 4" stroke-linecap="round"/>
+<text x="750" y="396" font-size="10.5" font-weight="400" text-anchor="middle" fill="#666">200</text>
+<line x1="865" y1="48" x2="865" y2="378" stroke="#ddd" stroke-dasharray="1.5 4" stroke-linecap="round"/>
+<text x="865" y="396" font-size="10.5" font-weight="400" text-anchor="middle" fill="#666">250</text>
+<line x1="980" y1="48" x2="980" y2="378" stroke="#ddd" stroke-dasharray="1.5 4" stroke-linecap="round"/>
+<text x="980" y="396" font-size="10.5" font-weight="400" text-anchor="middle" fill="#666">300</text>
+<text x="20" y="76" font-size="12" font-weight="700" text-anchor="start" fill="#222">P0</text>
+<text x="52" y="76" font-size="12" font-weight="400" text-anchor="start" fill="#222">Stabilise &amp; Verify</text>
+<rect x="290" y="60" width="326.59999999999997" height="24" rx="3" fill="#e4e4e4" stroke="#222" stroke-width="1.5" />
+<text x="624.5999999999999" y="77" font-size="12" font-weight="600" text-anchor="start" fill="#222">142h</text>
+<text x="20" y="112" font-size="12" font-weight="700" text-anchor="start" fill="#222">P1</text>
+<text x="52" y="112" font-size="12" font-weight="400" text-anchor="start" fill="#222">Security &amp; Data Protection</text>
+<rect x="290" y="96" width="358.79999999999995" height="24" rx="3" fill="#e4e4e4" stroke="#222" stroke-width="1.5" />
+<text x="656.8" y="113" font-size="12" font-weight="600" text-anchor="start" fill="#222">156h</text>
+<text x="20" y="148" font-size="12" font-weight="700" text-anchor="start" fill="#222">P2</text>
+<text x="52" y="148" font-size="12" font-weight="400" text-anchor="start" fill="#222">Accounts, Access &amp; Email</text>
+<rect x="290" y="132" width="248.39999999999998" height="24" rx="3" fill="#e4e4e4" stroke="#222" stroke-width="1.5" />
+<text x="546.4" y="149" font-size="12" font-weight="600" text-anchor="start" fill="#222">108h</text>
+<text x="20" y="184" font-size="12" font-weight="700" text-anchor="start" fill="#222">P3</text>
+<text x="52" y="184" font-size="12" font-weight="400" text-anchor="start" fill="#222">Evidence &amp; Competency ★</text>
+<rect x="290" y="168" width="598" height="24" rx="3" fill="url(#hatch)" stroke="#222" stroke-width="2" />
+<text x="896" y="185" font-size="12" font-weight="600" text-anchor="start" fill="#222">260h</text>
+<text x="20" y="220" font-size="12" font-weight="700" text-anchor="start" fill="#222">P4</text>
+<text x="52" y="220" font-size="12" font-weight="400" text-anchor="start" fill="#222">Credential Integrity</text>
+<rect x="290" y="204" width="184" height="24" rx="3" fill="#e4e4e4" stroke="#222" stroke-width="1.5" />
+<text x="482" y="221" font-size="12" font-weight="600" text-anchor="start" fill="#222">80h</text>
+<text x="20" y="256" font-size="12" font-weight="700" text-anchor="start" fill="#222">P5</text>
+<text x="52" y="256" font-size="12" font-weight="400" text-anchor="start" fill="#222">Funding Productisation ★</text>
+<rect x="290" y="240" width="299" height="24" rx="3" fill="url(#hatch)" stroke="#222" stroke-width="2" />
+<text x="597" y="257" font-size="12" font-weight="600" text-anchor="start" fill="#222">130h</text>
+<text x="20" y="292" font-size="12" font-weight="700" text-anchor="start" fill="#222">P6</text>
+<text x="52" y="292" font-size="12" font-weight="400" text-anchor="start" fill="#222">Communication &amp; Ops</text>
+<rect x="290" y="276" width="423.2" height="24" rx="3" fill="#e4e4e4" stroke="#222" stroke-width="1.5" />
+<text x="721.2" y="293" font-size="12" font-weight="600" text-anchor="start" fill="#222">184h</text>
+<text x="20" y="328" font-size="12" font-weight="700" text-anchor="start" fill="#222">P7</text>
+<text x="52" y="328" font-size="12" font-weight="400" text-anchor="start" fill="#222">Accessibility (WCAG 2.1 AA)</text>
+<rect x="290" y="312" width="234.6" height="24" rx="3" fill="#e4e4e4" stroke="#222" stroke-width="1.5" />
+<text x="532.6" y="329" font-size="12" font-weight="600" text-anchor="start" fill="#222">102h</text>
+<text x="20" y="364" font-size="12" font-weight="700" text-anchor="start" fill="#222">P8</text>
+<text x="52" y="364" font-size="12" font-weight="400" text-anchor="start" fill="#222">Performance &amp; Launch</text>
+<rect x="290" y="348" width="266.79999999999995" height="24" rx="3" fill="#e4e4e4" stroke="#222" stroke-width="1.5" />
+<text x="564.8" y="365" font-size="12" font-weight="600" text-anchor="start" fill="#222">116h</text>
+<text x="635" y="422" font-size="11" font-weight="400" text-anchor="middle" fill="#666">Hours</text>
+</svg>
