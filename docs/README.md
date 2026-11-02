@@ -28,8 +28,19 @@ links out to everything below in the order you should read it.
 
 | File | Purpose |
 | --- | --- |
-| `build/BUILD_WORKFLOW.md` | General phase plan for the LMS build. |
+| `build/BUILD_WORKFLOW.md` | General phase plan for the LMS build (historical record of the prototype build). |
 | `build/WIOA_BUILD_WORKFLOW.md` | Phase plan + closed decisions for the WIOA funding module. |
+| `build/CURRICULUM_BUILDER_REDESIGN_PLAN.md` | Master-detail curriculum editor + block content redesign. |
+| `build/PERFORMANCE_PLAN.md` | Performance findings (F1–F9) mapped onto the client scope plan's phases. Read with `client/NFCAP_LMS_Production_Scope_Summary_Client.md`. |
+
+## client/
+
+The approved production build plan. Client-facing — figures and phases here are committed.
+
+| File | Purpose |
+| --- | --- |
+| `client/NFCAP_LMS_Production_Scope_Summary_Client.md` | **The build plan** — 65 features, 9 phases, ~1,431h. Source of truth for scope and order. |
+| `client/NFCAP_LMS_Feature_Detail_Client.md` | Per-feature detail appendix behind that plan. |
 
 ## wioa/
 

@@ -91,6 +91,8 @@ Dotted boxes are parts of the system, tagged with the phase that delivers them (
 
 Nine phases in four stages, built back to back by a two-engineer team (80 team-hours a week). Each phase names the journey steps it delivers.
 
+> ⚡ **Performance:** a codebase audit (`docs/build/PERFORMANCE_PLAN.md`) maps nine findings onto the phases below. Most sit inside line items already costed here. Phases marked ⚡ carry a note; two pending changes (one scope addition before Phase 1, one correction to the Phase 0 staging estimate) are **not yet reflected in the hours on this page**.
+
 | Phase | What it delivers | Journey | Features | Hours | ~Weeks |
 |:---:|---|---|---:|---:|---:|
 | | **Stage 1 · Foundation** — tested, secure and operable by real people | | **22** | **406** | **5.1** |
@@ -146,6 +148,11 @@ The plan for each phase follows. Full descriptions, roles, complexity and risk n
 - [ ] A broken change cannot reach the live site
 - [ ] Errors are tracked and alerted on; a restore from backup has been proven in a drill
 
+> ⚡ **Performance** — see `docs/build/PERFORMANCE_PLAN.md` §3, §5.3:
+> - *Error Handling, Logging & Monitoring* must include **self-hosted source-map upload**, or stack traces stay minified and this line item delivers unreadable errors.
+> - *Staging Environment & Migration Strategy* is budgeted **20h**; on a VPS + Docker target the realistic figure is **~40h** (Dockerfile, TLS proxy, Redis service, zero-downtime deploys, CI pipeline, Redis cache handler). **Pending acceptance.**
+> - Finding **F4** — a verified one-line connection-string fix — should be the first task of this phase, so later measurements are taken on the correct configuration.
+
 <a id="phase-1"></a>
 
 ### Phase 1 — Security & Data Protection
@@ -174,6 +181,11 @@ The plan for each phase follows. Full descriptions, roles, complexity and risk n
 - [ ] Terms and privacy policy are live; secrets and rate limits are hardened
 
 > ⚠️ **Decision needed:** does NFCAP need more than one training pathway? (affects *Pathway Structure Seam*)
+
+> ⚡ **Performance** — see `docs/build/PERFORMANCE_PLAN.md` §4:
+> - A **~24–32h data-layer block must land before this phase** (findings F1, F2, F3, F5). *Row-Level Access Rules* (36h) attaches policy predicates to every query; building and testing RLS against the current query shapes — one that fetches the whole curriculum tree on 13 pages, another that fires one query per learner — is materially more expensive than against fixed ones, and every policy would need re-verifying after a later fix. **Pending acceptance.**
+> - *Secrets, Environment & Rate Limiting* already covers finding **F9**: there is no rate limiting anywhere today, including on `/login`, `/signup`, and the 10MB document-upload action.
+> - *Hour-Derivable Progress History* modifies the same progress code the block above rewrites — schedule them together or that code gets edited twice.
 
 <a id="phase-2"></a>
 
@@ -231,6 +243,10 @@ The plan for each phase follows. Full descriptions, roles, complexity and risk n
 - [ ] A rejected trainee sees exactly what failed and re-shoots only that
 
 > ⚠️ **Depends on NFCAP:** trade experts must author the assessment criteria. The feature is only as credible as the criteria.
+
+> ⚡ **Performance** — see `docs/build/PERFORMANCE_PLAN.md` §5.2:
+> - The **media delivery decision belongs in this phase**, not at launch. Journey step 8 accepts photo *or video*, and storage architecture is expensive to change once the features here depend on it. Options: Cloudflare Stream (flat per-minute, no egress fees) or Mux (per-minute, free monthly allowance, stronger analytics). Adaptive HLS either way.
+> - Self-hosting makes image optimization a **CPU cost on our own server** — it runs in-process rather than on a managed platform. Resolve inside *Image Downscaling & Storage Cost Control*: transform at upload time and/or serve media from a CDN, rather than optimizing per request.
 
 <a id="phase-4"></a>
 
@@ -360,6 +376,10 @@ The plan for each phase follows. Full descriptions, roles, complexity and risk n
 - [ ] Acceptance testing is signed off and the system is live with monitoring and a tested recovery path
 
 > 🚧 **Hard gate:** the signed Workforce Board Data Agreement. Real WIOA data cannot enter the system without it.
+
+> ⚡ **Performance** — see `docs/build/PERFORMANCE_PLAN.md` §5.1:
+> - *Caching & Media Delivery* is budgeted **16h**, which is realistic for **tuning** an application that already has cache boundaries — and far short of **retrofitting** caching into 65 features each built without them. The caching pattern is therefore established in Phase 0/1 and applied as each feature is built, leaving this line item to do the tuning it was costed for.
+> - *Load Testing & Database Tuning* depends on the **scale target** decision below; it also now sets server sizing and instance count, since the deployment is self-hosted.
 
 ## 7. Add-Ons (Quoted Separately)
 
