@@ -4,7 +4,7 @@ import { Pool } from 'pg';
 
 function makePrisma() {
   const pool = new Pool({
-    connectionString: process.env.DIRECT_URL!,
+    connectionString: process.env.DATABASE_URL!,
     // Supabase free tier caps concurrent connections low — keep this pool small so a single
     // request burst doesn't exhaust the project's connection limit.
     max: 4,

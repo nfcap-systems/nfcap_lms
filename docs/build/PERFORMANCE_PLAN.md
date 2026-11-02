@@ -10,6 +10,12 @@ routing, and build config.
 
 Status legend: ✅ done · 🔲 not started · ⚠️ blocked on an open decision
 
+**Procedure:** this doc is the *what/where/when* — the stack-agnostic *how to execute a pass*
+lives in `C:\Users\sthas\Projects\healthcare-hrms\docs\features\PERFORMANCE-OPTIMIZATION-PLAYBOOK.md`
+(10-step checklist: instrument → find waste → fix → verify → track deferrals). Run Bucket B (§4)
+and Phase 8 through it rather than ad hoc. Two items it surfaced that nothing here tracked yet are
+folded into §4 and §5.1 below.
+
 ---
 
 ## 1. Headline
@@ -119,6 +125,8 @@ blocks on the complete data fetch before painting. Primary cause of *perceived* 
 3. Collapse the double full-tree scan on learner home; `Promise.all` the three independent
    follow-ups. **(F2, F3)**
 4. Add the indexes `EXPLAIN` proves necessary — start with `Enrollment.courseId`. **(F8)**
+5. Run the real bundle analyzer (`ANALYZE=true next build`) and compare similar routes for an
+   unexplained size gap, per the playbook's Step 6. Not previously tracked anywhere in this plan.
 
 **Why this cannot wait for Phase 8**
 
@@ -155,6 +163,12 @@ Instead:
 - **Phases 2–7:** every new page is built on that pattern — cached shell, per-user dynamic holes
   under Suspense. Near-zero marginal cost per feature.
 - **Phase 8:** the 16h does what it was budgeted for — tuning and media delivery against real data.
+
+**Before shipping the curriculum cache, audit every consumer of that data** (the playbook's Step
+2 safety check) — not just the learner pages being optimized. WIOA eligibility matching and
+funding-gating logic may read course/curriculum data through a different code path; if any of it
+would see a stale value, that consumer must call the uncached function directly, as an explicit
+decision, not an accident.
 
 Same logic applies to **F7**: `loading.tsx` and Suspense boundaries are free if applied as each
 route is built, and a full sweep if deferred. Adopt as a standing convention from Phase 0 onward.
