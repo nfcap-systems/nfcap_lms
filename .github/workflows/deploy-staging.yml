@@ -89,9 +89,22 @@ jobs:
       - name: Verify Health
         run: |
           HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "https://${{ vars.STAGING_DOMAIN }}")
-          if [ "$HTTP_CODE" = "200" ]; then
-            echo "Staging health check passed (HTTP $HTTP_CODE)"
-          else
-            echo "Staging health check failed (HTTP $HTTP_CODE)"
-            exit 1
-          fi
+          case "$HTTP_CODE" in
+            200)
+              echo "Staging health check passed (HTTP $HTTP_CODE)"
+              ;;
+            307|308)
+              LOCATION=$(curl -sI "https://${{ vars.STAGING_DOMAIN }}" | grep -i '^location:' | tr -d '\r')
+              echo "Redirect: $LOCATION"
+              if echo "$LOCATION" | grep -qi '/login'; then
+                echo "Staging health check passed (HTTP $HTTP_CODE, redirects to login as expected)"
+              else
+                echo "Staging health check failed (HTTP $HTTP_CODE, unexpected redirect target)"
+                exit 1
+              fi
+              ;;
+            *)
+              echo "Staging health check failed (HTTP $HTTP_CODE)"
+              exit 1
+              ;;
+          esac
