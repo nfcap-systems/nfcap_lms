@@ -1,0 +1,36 @@
+services:
+  nfcap-lms-dev:
+    container_name: nfcap-lms-dev
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL}
+        NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY}
+    env_file:
+      - .env
+    networks:
+      - hosting
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://127.0.0.1:3000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=hosting"
+      - "traefik.http.routers.nfcap-lms-dev.rule=Host(`dev-nfcap.corecloud365.com`)"
+      - "traefik.http.routers.nfcap-lms-dev.entrypoints=websecure"
+      - "traefik.http.routers.nfcap-lms-dev.tls=true"
+      - "traefik.http.routers.nfcap-lms-dev.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.nfcap-lms-dev-http.rule=Host(`dev-nfcap.corecloud365.com`)"
+      - "traefik.http.routers.nfcap-lms-dev-http.entrypoints=web"
+      - "traefik.http.routers.nfcap-lms-dev-http.middlewares=nfcap-lms-dev-redirect"
+      - "traefik.http.middlewares.nfcap-lms-dev-redirect.redirectscheme.scheme=https"
+      - "traefik.http.services.nfcap-lms-dev.loadbalancer.server.port=3000"
+
+networks:
+  hosting:
+    external: true
