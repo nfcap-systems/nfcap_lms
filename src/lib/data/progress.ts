@@ -85,15 +85,22 @@ export async function getLearnerProgressMap(
 }
 
 /** Admin views that render every learner's progress at once (Dashboard, Learners roster) — one
- * progress map per learner id, keyed the same way as getLearnerProgressMap. */
+ * query for every learner's enrollments, grouped in memory, instead of one query per learner. */
 export async function getProgressByLearner(
   learnerIds: string[],
 ): Promise<Record<string, Record<string, CourseProgress>>> {
-  const maps = await Promise.all(learnerIds.map((id) => getLearnerProgressMap(id)));
   const result: Record<string, Record<string, CourseProgress>> = {};
-  learnerIds.forEach((id, i) => {
-    result[id] = maps[i];
+  for (const id of learnerIds) result[id] = {};
+
+  if (learnerIds.length === 0) return result;
+
+  const enrollments = await prisma.enrollment.findMany({
+    where: { learnerId: { in: learnerIds } },
+    include: { ...progressInclude, course: { select: { slug: true } } },
   });
+  for (const enrollment of enrollments) {
+    result[enrollment.learnerId][enrollment.course.slug] = mapEnrollment(enrollment);
+  }
   return result;
 }
 

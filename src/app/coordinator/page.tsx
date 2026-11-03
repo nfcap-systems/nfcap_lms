@@ -1,14 +1,13 @@
+import { connection } from 'next/server';
 import { getWioaCases } from '@/lib/data/wioa';
 import { getPartnerStaffRoster } from '@/lib/data/learners';
 import { WioaCaseListView } from '@/components/wioa/WioaCaseListView';
 
-export const dynamic = 'force-dynamic';
-
 export default async function CoordinatorPage() {
-  const [cases, partnerStaffRoster] = await Promise.all([
-    getWioaCases(),
-    getPartnerStaffRoster(),
-  ]);
+  // getPartnerStaffRoster comes from Supabase Auth directly (src/lib/data/learners.ts), which has
+  // no revalidatePath hook on signup — see src/app/admin/page.tsx.
+  await connection();
+  const [cases, partnerStaffRoster] = await Promise.all([getWioaCases(), getPartnerStaffRoster()]);
 
   return (
     <div className="flex flex-col gap-4">
@@ -20,7 +19,11 @@ export default async function CoordinatorPage() {
         </p>
       </div>
 
-      <WioaCaseListView cases={cases} basePath="/coordinator" partnerStaffRoster={partnerStaffRoster} />
+      <WioaCaseListView
+        cases={cases}
+        basePath="/coordinator"
+        partnerStaffRoster={partnerStaffRoster}
+      />
     </div>
   );
 }

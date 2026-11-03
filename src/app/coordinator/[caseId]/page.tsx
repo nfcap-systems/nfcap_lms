@@ -1,15 +1,17 @@
 import { notFound } from 'next/navigation';
+import { connection } from 'next/server';
 import { getWioaCaseDetail } from '@/lib/data/wioa';
 import { getPartnerStaffRoster } from '@/lib/data/learners';
 import { WioaCaseDetailView } from '@/components/wioa/WioaCaseDetailView';
-
-export const dynamic = 'force-dynamic';
 
 export default async function CoordinatorCaseDetailPage({
   params,
 }: {
   params: Promise<{ caseId: string }>;
 }) {
+  // getPartnerStaffRoster comes from Supabase Auth directly (src/lib/data/learners.ts), which has
+  // no revalidatePath hook on signup — see src/app/admin/page.tsx.
+  await connection();
   const { caseId } = await params;
   const [wioaCase, partnerStaffRoster] = await Promise.all([
     getWioaCaseDetail(caseId, { includeFunding: true }),

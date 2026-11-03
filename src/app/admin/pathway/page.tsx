@@ -1,9 +1,11 @@
+import { connection } from 'next/server';
 import { getPathwaySummary } from '@/lib/data/pathway';
 import { PathwayListView } from './PathwayListView';
 
-export const dynamic = 'force-dynamic';
-
 export default async function AdminPathwayListPage() {
+  // getPathwaySummary folds in the learner roster (src/lib/data/learners.ts), which comes from
+  // Supabase Auth directly and has no revalidatePath hook on signup — see src/app/admin/page.tsx.
+  await connection();
   const summary = await getPathwaySummary();
   return (
     <div className="flex flex-col gap-4">

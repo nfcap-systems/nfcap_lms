@@ -2,8 +2,6 @@ import { requirePartnerStaff } from '@/lib/actions/guard';
 import { getWioaCases } from '@/lib/data/wioa';
 import { WioaCaseListView } from '@/components/wioa/WioaCaseListView';
 
-export const dynamic = 'force-dynamic';
-
 export default async function PartnerPage() {
   const user = await requirePartnerStaff();
   const cases = await getWioaCases({ assignedPartnerStaffId: user.id });

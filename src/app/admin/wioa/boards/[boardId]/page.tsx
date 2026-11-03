@@ -2,8 +2,6 @@ import { notFound } from 'next/navigation';
 import { getWorkforceBoardDetail } from '@/lib/data/wioa-boards';
 import { BoardDetailView } from './BoardDetailView';
 
-export const dynamic = 'force-dynamic';
-
 export default async function AdminWioaBoardDetailPage({
   params,
 }: {

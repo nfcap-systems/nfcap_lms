@@ -2,8 +2,6 @@ import { requireCoordinator } from '@/lib/actions/guard';
 import { getWioaReportingSummary } from '@/lib/data/wioa';
 import { WioaReportsView } from '@/components/wioa/WioaReportsView';
 
-export const dynamic = 'force-dynamic';
-
 export default async function CoordinatorReportsPage() {
   await requireCoordinator();
   const summary = await getWioaReportingSummary({ includeFunding: true });
