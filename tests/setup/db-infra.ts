@@ -1,9 +1,11 @@
 import { execSync } from 'node:child_process';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import dotenv from 'dotenv';
 
-const envPath = path.resolve(__dirname, '../../.env.test');
-const repoRoot = path.resolve(__dirname, '../..');
+const dirname = path.dirname(fileURLToPath(import.meta.url));
+const envPath = path.resolve(dirname, '../../.env.test');
+const repoRoot = path.resolve(dirname, '../..');
 
 /** Brings up the test Postgres database and runs migrations against it. Shared by Vitest's and
  * Playwright's global setup so both suites point at the same isolated database. */

@@ -4,7 +4,7 @@ const PORT = 3100;
 
 export default defineConfig({
   testDir: './tests/e2e',
-  globalSetup: require.resolve('./tests/e2e/setup/global-setup.ts'),
+  globalSetup: './tests/e2e/setup/global-setup.ts',
   fullyParallel: false,
   workers: 1,
   retries: process.env.CI ? 1 : 0,
