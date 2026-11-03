@@ -5,6 +5,7 @@ import {
   createDocumentRequirement,
   createWioaCase,
   createWorkforceBoard,
+  fakeUserId,
 } from '../setup/fixtures';
 import { WIOA_STATUS_LABEL } from '@/lib/wioa/status';
 import { E2eTestUser } from './setup/supabase-test-user';
@@ -15,7 +16,7 @@ test.describe('WIOA funding status changes', () => {
     const course = await createCourse({ access: 'RESTRICTED' });
     const coordinator = await E2eTestUser.create('WIOA_COORDINATOR');
     const wioaCase = await createWioaCase({
-      learnerId: 'e2e-learner-placeholder',
+      learnerId: fakeUserId(),
       courseId: course.id,
       status: 'REGISTERED',
     });
@@ -51,7 +52,7 @@ test.describe('WIOA funding status changes', () => {
     const board = await createWorkforceBoard();
     const coordinator = await E2eTestUser.create('WIOA_COORDINATOR');
     const wioaCase = await createWioaCase({
-      learnerId: 'e2e-learner-placeholder',
+      learnerId: fakeUserId(),
       courseId: course.id,
       workforceBoardId: board.id,
       status: 'ELIGIBILITY_UNDER_REVIEW',
