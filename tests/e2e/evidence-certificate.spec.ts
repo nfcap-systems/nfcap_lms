@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './setup/base';
 import { prisma } from '@/lib/prisma';
 import { createCourseWithOneLesson, enrollAndCompleteLesson } from '../setup/fixtures';
 import { E2eTestUser } from './setup/supabase-test-user';

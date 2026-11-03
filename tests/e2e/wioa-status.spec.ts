@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './setup/base';
 import { prisma } from '@/lib/prisma';
 import {
   createCourse,
@@ -74,10 +74,17 @@ test.describe('WIOA funding status changes', () => {
       await page.getByLabel('Advance to').selectOption({ label: WIOA_STATUS_LABEL.WIOA_ELIGIBLE });
       await page.getByRole('button', { name: 'Confirm status change' }).click();
 
-      await expect(page.getByText(/still need to be accepted/i)).toBeVisible();
+      // Don't assert the exact server error text — Next.js may redact a thrown Server Action
+      // error's message in a production build, so the UI text isn't a reliable signal here. The
+      // invariant that actually matters is the DB write being blocked.
+      await expect(page.locator('p.text-status-danger-text')).toBeVisible();
 
-      const unchanged = await prisma.wioaCase.findUniqueOrThrow({ where: { id: wioaCase.id } });
-      expect(unchanged.status).toBe('ELIGIBILITY_UNDER_REVIEW');
+      await expect
+        .poll(
+          async () =>
+            (await prisma.wioaCase.findUniqueOrThrow({ where: { id: wioaCase.id } })).status,
+        )
+        .toBe('ELIGIBILITY_UNDER_REVIEW');
     } finally {
       await coordinator.delete();
     }

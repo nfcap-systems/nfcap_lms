@@ -1,5 +1,6 @@
 import { afterEach, vi } from 'vitest';
 import { prisma } from '@/lib/prisma';
+import { resetDatabase } from './db-reset';
 
 // Server actions call revalidatePath/revalidateTag as a side effect; outside a real Next request
 // context those throw, so every unit test gets a no-op stub rather than mocking it per file.
@@ -17,11 +18,5 @@ vi.mock('@/lib/supabase/server', () => ({
 }));
 
 afterEach(async () => {
-  const tables = await prisma.$queryRaw<{ tablename: string }[]>`
-    SELECT tablename FROM pg_tables
-    WHERE schemaname = 'public' AND tablename != '_prisma_migrations'
-  `;
-  if (tables.length === 0) return;
-  const names = tables.map((t) => `"public"."${t.tablename}"`).join(', ');
-  await prisma.$executeRawUnsafe(`TRUNCATE TABLE ${names} RESTART IDENTITY CASCADE`);
+  await resetDatabase(prisma);
 });

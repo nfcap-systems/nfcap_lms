@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './setup/base';
 import { prisma } from '@/lib/prisma';
 import { createCourse } from '../setup/fixtures';
 import { E2eTestUser } from './setup/supabase-test-user';
@@ -45,7 +45,8 @@ test.describe('enrollment gating', () => {
       await loginAs(adminPage, admin);
       await adminPage.goto(`/admin/learners/${learner.id}`);
       await adminPage.getByRole('button', { name: 'Grant access' }).click();
-      await expect(adminPage.getByText('Unlocked')).toBeVisible();
+      // exact: true — otherwise this also matches the "Unlocked via Admin assignment" caption.
+      await expect(adminPage.getByText('Unlocked', { exact: true })).toBeVisible();
       await adminContext.close();
 
       await page.reload();
