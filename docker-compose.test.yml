@@ -1,0 +1,17 @@
+services:
+  nfcap-lms-test-db:
+    image: postgres:17-alpine
+    container_name: nfcap-lms-test-db
+    environment:
+      POSTGRES_USER: test
+      POSTGRES_PASSWORD: test
+      POSTGRES_DB: nfcap_test
+    ports:
+      - '55432:5432'
+    tmpfs:
+      - /var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U test -d nfcap_test']
+      interval: 2s
+      timeout: 3s
+      retries: 20
