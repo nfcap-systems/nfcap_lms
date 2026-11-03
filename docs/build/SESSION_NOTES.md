@@ -112,14 +112,41 @@ gets lost between sessions. Append a dated entry per session; don't rewrite hist
   Playwright browser install → `npm run test:e2e`. Needs `SUPABASE_SERVICE_ROLE_KEY` added to
   the job env (now wired to `secrets.STAGING_SUPABASE_SERVICE_ROLE_KEY`, alongside the existing
   `NEXT_PUBLIC_SUPABASE_URL`/`ANON_KEY`).
-- **Not yet verified anywhere** — this machine has no Docker install, so nothing has run locally.
-  First real signal is the CI run after this gets pushed.
+- **Verified green in CI as of this session** (PR #1, `feature/phase-0-quality-foundations` →
+  `stage`) — 22 Vitest unit tests + 5 Playwright E2E specs, after six iterations fixing real bugs
+  surfaced by actually running the suite in CI (this machine has no Docker, so nothing could be
+  checked locally first):
+  1. Prisma 7's `prisma-client` generator outputs ESM-only code (`import.meta.url`); Next.js and
+     Vite/Vitest handle that via their own bundlers, but Playwright's Node loader needed
+     `package.json`'s `"type": "module"` set explicitly. Repo's own source had zero CJS files, so
+     this was safe — verified with a full `next build` + `tsc --noEmit` afterward.
+  2. `getByLabel('Password')` without `exact: true` also matched the "Show password" toggle
+     button's `aria-label` (substring match).
+  3. A WIOA fixture used a literal placeholder string instead of a real UUID for `learnerId`;
+     `src/lib/data/learners.ts:33`'s `admin.auth.admin.getUserById()` throws synchronously on a
+     non-UUID string, crashing the coordinator case page.
+  4. Nothing truncated the database between Playwright tests (unlike Vitest's per-test reset), so
+     a failed test's retry re-ran its own fixture creation on top of the previous attempt's
+     leftover rows. Fixed with a shared `tests/setup/db-reset.ts` and a Playwright auto-fixture
+     (`tests/e2e/setup/base.ts`).
+  5. **Real accessibility bug found, not a test bug:** `EvidenceView.tsx`'s "Description" `Field`
+     never passed `htmlFor`, and its `Textarea` had no matching `id` — the label was visually
+     present but not programmatically associated with the control at all, which would affect a
+     real screen-reader user identically to `getByLabel()`. Fixed to match the `Field`/`Input`
+     `htmlFor`/`id` convention already used in `LoginForm.tsx`. Worth a broader sweep later: 11
+     files use `<Field label=...>`, and this is exactly the kind of defect Phase 7
+     (Accessibility, WCAG 2.1 AA) exists to catch systematically — not fixed elsewhere now, flagged
+     here instead.
+  6. Also relaxed one E2E assertion that checked a thrown Server Action's exact error-message
+     text, since Next.js may redact it in a production build — the test now checks the actual
+     invariant (status write blocked) plus a generic visible-error signal instead.
+  - `.github/workflows/ci.yml`'s `test` job now also uploads the Playwright HTML report as an
+    artifact on every run, so a future failure's trace is directly downloadable.
 
 **Not yet done / next session should pick up here:**
 
-- **Confirm the CI run on this push actually passes** (`test` job) — this is unverified infra;
-  expect to debug on the first real run (global setup script paths, Playwright webServer timing,
-  Supabase admin API calls needing the right secret name in the `staging` GitHub environment).
+- PR #1 is open against `stage`, CI green — merge it (or continue stacking more Phase 0 work on
+  the branch first, user's call).
 - Rest of Phase 0, in order: WIOA Funding Module Sign-Off (24h), Error Handling/Logging/
   Monitoring (24h — Sentry + OTel, self-hosted source maps per `PERFORMANCE_PLAN.md`), Backup/
   Restore/Recovery Drill (14h). None started yet.
