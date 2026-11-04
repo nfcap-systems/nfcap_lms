@@ -1,8 +1,6 @@
 import { getWioaEmailTemplate } from '@/lib/data/wioa-email-template';
 import { WioaEmailTemplateAdminView } from './WioaEmailTemplateAdminView';
 
-export const dynamic = 'force-dynamic';
-
 export default async function AdminWioaEmailTemplatePage() {
   const template = await getWioaEmailTemplate();
 

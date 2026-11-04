@@ -3,8 +3,6 @@ import { requirePartnerStaff } from '@/lib/actions/guard';
 import { getWioaCaseDetail } from '@/lib/data/wioa';
 import { WioaCaseDetailView } from '@/components/wioa/WioaCaseDetailView';
 
-export const dynamic = 'force-dynamic';
-
 export default async function PartnerCaseDetailPage({
   params,
 }: {

@@ -89,9 +89,11 @@ export function EvidenceView({
 
       <Field
         label="Description"
+        htmlFor="evidence-description"
         hint="Describe the work shown and how it demonstrates what you learned."
       >
         <Textarea
+          id="evidence-description"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           placeholder="Describe your practical evidence..."

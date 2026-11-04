@@ -43,3 +43,117 @@ gets lost between sessions. Append a dated entry per session; don't rewrite hist
   24h) per the plan's own note that F4 should precede later measurements (already true).
 - Two items still pending **client acceptance**: Bucket B (~24–32h) and the Phase 0 staging
   estimate correction (20h → ~40h).
+
+---
+
+## 2026-11-03
+
+**State at end of session:**
+
+- **F4 confirmed still in place** on the current `stage` branch (re-checked directly:
+  `src/lib/prisma.ts:7` reads `DATABASE_URL`). Survived the branch rename below.
+- **Repo infra changed since 2026-11-02, outside this session.** Default branch renamed
+  `dev` → `stage`; `origin/main` now also exists. New commits landed on top of `1810108`:
+  `23f150b` added a CI/CD pipeline (`Dockerfile`, `docker-compose.dev.yml`, `.github/workflows/
+  ci.yml` + `deploy-staging.yml` — builds on every PR, deploys `stage` pushes to the Corecloud
+  VPS via SSH + Docker Compose, Traefik handles TLS). Committed under the `manjila` git identity
+  with a Claude co-author trailer, **not** from Sadin's NFCAP-2 work (checked — NFCAP-2 is still
+  unstarted in Plane). No Redis cache handler yet (flagged as required in `PERFORMANCE_PLAN.md`
+  §5.3), and migrations aren't run automatically in the deploy step.
+- **Demo data seeded** into the Supabase DB: 4 courses (`prisma:seed`), 4 demo learners
+  (`seed-demo-learners`, password `Demo1234!`), 5 WIOA workforce boards + jurisdictions
+  (`prisma:seed-wioa`), WIOA coordinator + partner staff accounts (`seed-wioa-staff`), one WIOA
+  learner matched to LA County (`seed-wioa-learner`). All reversible/re-runnable (upserts).
+- **Plane investigated for NFCAP.** Project exists (key `NFCAP`) but is essentially empty: only
+  2 work items (`NFCAP-1` "Initiation Planning", empty/unassigned; `NFCAP-2` Plane/repo workflow
+  setup, assigned to **Sadin**, unstarted). Zero labels, missing `In Review`/`On Stage` states,
+  no epics, no `.claude/skills/project-pm/`, no `tasks/TRACKER.md`. NFCAP-2's own description
+  explicitly reassigned ownership from Manjila to Sadin on 2026-11-02 ("done the way SuperRank
+  was... so Manjila joins a ready project instead of building it").
+- **Decision: finish Phase 0 + some UI/UX work directly in this session/chat**, not through
+  Plane — UX has no separate budget line, folds into feature hours, reuses the locked design
+  system in `docs/design/NFCAP_DESIGN_SYSTEM.md`. Once that's done, **switch to Plane
+  (`mcp__plane__*` tools) to track remaining phases 1–8** instead of chat coordination — check
+  for an existing NFCAP project first (it exists, see above) before creating epics/work items.
+  Saved as memory: `project_phase0_plane_workflow.md`.
+
+**Known open items, not yet acted on:**
+
+1. **Module/phase mismatch in the scope doc:** `NFCAP_LMS_Production_Scope_Summary_Client.md`
+   line 77 lists Phase 1 as a delivery phase for the *Reporting & Data* module, but Phase 1's own
+   feature table has no Reporting line item. **Flag to the client — don't fix unilaterally,**
+   since it's their approved, client-facing doc.
+2. Bucket B (~24–32h) and the Phase 0 staging correction (20h → ~40h) remain **pending client
+   acceptance** — still not reflected in the scope doc's hour totals.
+
+**Automated Test Suite — Critical Paths (40h): infra + first pass built, same session.**
+
+- Installed Vitest + Playwright (`@types/node` bumped `^20` → `^22`, a vitest peer requirement).
+- Test DB: disposable local Postgres via `docker-compose.test.yml` (port 55432) for local runs;
+  GitHub Actions' native `postgres:` service container in CI (`tests/setup/db-infra.ts` branches
+  on `process.env.CI`) — migrated fresh each run, truncated between test files.
+  Decision: **local Docker Postgres, not a Supabase project/schema**, since none of the three
+  critical flows depend on RLS or Supabase Auth yet (Phase 1 hasn't landed) — revisit once it
+  does.
+- Vitest unit tests (`tests/unit/*.test.ts`, 20 cases) call the real exported server actions
+  (`src/lib/actions/progress.ts`, `src/lib/actions/wioa.ts`) against the real test Postgres;
+  `getAuthUser`/`getRole` (`@/lib/supabase/server`) are mocked (`tests/setup/auth-mock.ts`) so
+  real DB-level gating logic runs without a live Supabase session. Covers all three "Done when"
+  flows: enrollment gating (OPEN/RESTRICTED + CourseUnlock), evidence → certificate (submit,
+  approve/retract), WIOA status transitions (linear order, `WIOA_ELIGIBLE` document gate,
+  `TUITION_APPROVED` → `CourseUnlock`, partner-staff case-assignment enforcement).
+- Playwright E2E (`tests/e2e/*.spec.ts`, 5 cases) drives the same three flows through the real
+  UI. Login goes through real Supabase Auth, so **E2E creates/deletes a throwaway Supabase Auth
+  user per test via the service-role admin API** (`tests/e2e/setup/supabase-test-user.ts`) —
+  confirmed with the user this is acceptable since app data (courses/enrollments/WIOA cases)
+  stays isolated in the ephemeral test Postgres; only Auth user rows touch the real (staging)
+  Supabase project, and they're cleaned up immediately after each test.
+- `.github/workflows/ci.yml` gained a `test` job: Postgres service container → `npm run test` →
+  Playwright browser install → `npm run test:e2e`. Needs `SUPABASE_SERVICE_ROLE_KEY` added to
+  the job env (now wired to `secrets.STAGING_SUPABASE_SERVICE_ROLE_KEY`, alongside the existing
+  `NEXT_PUBLIC_SUPABASE_URL`/`ANON_KEY`).
+- **Verified green in CI as of this session** (PR #1, `feature/phase-0-quality-foundations` →
+  `stage`) — 22 Vitest unit tests + 5 Playwright E2E specs, after six iterations fixing real bugs
+  surfaced by actually running the suite in CI (this machine has no Docker, so nothing could be
+  checked locally first):
+  1. Prisma 7's `prisma-client` generator outputs ESM-only code (`import.meta.url`); Next.js and
+     Vite/Vitest handle that via their own bundlers, but Playwright's Node loader needed
+     `package.json`'s `"type": "module"` set explicitly. Repo's own source had zero CJS files, so
+     this was safe — verified with a full `next build` + `tsc --noEmit` afterward.
+  2. `getByLabel('Password')` without `exact: true` also matched the "Show password" toggle
+     button's `aria-label` (substring match).
+  3. A WIOA fixture used a literal placeholder string instead of a real UUID for `learnerId`;
+     `src/lib/data/learners.ts:33`'s `admin.auth.admin.getUserById()` throws synchronously on a
+     non-UUID string, crashing the coordinator case page.
+  4. Nothing truncated the database between Playwright tests (unlike Vitest's per-test reset), so
+     a failed test's retry re-ran its own fixture creation on top of the previous attempt's
+     leftover rows. Fixed with a shared `tests/setup/db-reset.ts` and a Playwright auto-fixture
+     (`tests/e2e/setup/base.ts`).
+  5. **Real accessibility bug found, not a test bug:** `EvidenceView.tsx`'s "Description" `Field`
+     never passed `htmlFor`, and its `Textarea` had no matching `id` — the label was visually
+     present but not programmatically associated with the control at all, which would affect a
+     real screen-reader user identically to `getByLabel()`. Fixed to match the `Field`/`Input`
+     `htmlFor`/`id` convention already used in `LoginForm.tsx`. Worth a broader sweep later: 11
+     files use `<Field label=...>`, and this is exactly the kind of defect Phase 7
+     (Accessibility, WCAG 2.1 AA) exists to catch systematically — not fixed elsewhere now, flagged
+     here instead.
+  6. Also relaxed one E2E assertion that checked a thrown Server Action's exact error-message
+     text, since Next.js may redact it in a production build — the test now checks the actual
+     invariant (status write blocked) plus a generic visible-error signal instead.
+  - `.github/workflows/ci.yml`'s `test` job now also uploads the Playwright HTML report as an
+    artifact on every run, so a future failure's trace is directly downloadable.
+
+**Not yet done / next session should pick up here:**
+
+- PR #1 is open against `stage`, CI green — merge it (or continue stacking more Phase 0 work on
+  the branch first, user's call).
+- Rest of Phase 0, in order: WIOA Funding Module Sign-Off (24h), Error Handling/Logging/
+  Monitoring (24h — Sentry + OTel, self-hosted source maps per `PERFORMANCE_PLAN.md`), Backup/
+  Restore/Recovery Drill (14h). None started yet.
+- Staging Environment & Migration Strategy item is still only partially done: no Redis cache
+  handler yet, migrations aren't run automatically in `deploy-staging.yml`'s deploy step.
+- UI/UX work alongside Phase 0, against `docs/design/NFCAP_DESIGN_SYSTEM.md` — not yet scoped to
+  specific screens in this session.
+- Once Phase 0 + UI work wraps: set up Plane epics (one per module or phase — module was the
+  leaning, since modules span multiple phases) and backfill tickets from the scope doc + this
+  file's open items, inside the existing NFCAP Plane project (don't create a new one).

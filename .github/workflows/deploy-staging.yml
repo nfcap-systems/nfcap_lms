@@ -59,32 +59,63 @@ jobs:
             git checkout stage
             git pull origin stage
 
-            # Write build-time + runtime secrets to .env (overwritten each deploy)
+            # Write build-time + runtime secrets to .env (overwritten each deploy). docker compose
+            # reads this same file for both its own build-arg substitution (docker-compose.dev.yml's
+            # `args:`) and the container's runtime env (`env_file:`) — one file, both purposes.
             cat > .env << ENVEOF
             DATABASE_URL=${{ secrets.STAGING_DATABASE_URL }}
             DIRECT_URL=${{ secrets.STAGING_DIRECT_URL }}
             NEXT_PUBLIC_SUPABASE_URL=${{ secrets.STAGING_SUPABASE_URL }}
             NEXT_PUBLIC_SUPABASE_ANON_KEY=${{ secrets.STAGING_SUPABASE_ANON_KEY }}
             SUPABASE_SERVICE_ROLE_KEY=${{ secrets.STAGING_SUPABASE_SERVICE_ROLE_KEY }}
+            SENTRY_DSN=${{ secrets.STAGING_SENTRY_DSN }}
+            NEXT_PUBLIC_SENTRY_DSN=${{ secrets.STAGING_SENTRY_DSN }}
+            SENTRY_ORG=${{ secrets.STAGING_SENTRY_ORG }}
+            SENTRY_PROJECT=${{ secrets.STAGING_SENTRY_PROJECT }}
+            SENTRY_AUTH_TOKEN=${{ secrets.STAGING_SENTRY_AUTH_TOKEN }}
             ENVEOF
 
-            docker compose -f docker-compose.dev.yml up -d --build
+            # Zero-downtime swap: Traefik already fronts this service (docker-compose.dev.yml's
+            # labels) and merges every container sharing those labels into one backend pool, so
+            # running the same compose file under a second project name starts a second,
+            # independent container that Traefik picks up automatically — without touching the
+            # container currently live. Once the new one passes its health check, the old one is
+            # torn down; until then, the old one keeps serving all traffic untouched. State (which
+            # color is live) persists in .deploy-color between deploys.
+            COLOR_FILE="$DIR/.deploy-color"
+            CURRENT=$(cat "$COLOR_FILE" 2>/dev/null || echo "none")
+            if [ "$CURRENT" = "blue" ]; then NEW="green"; else NEW="blue"; fi
+            echo "Current live color: $CURRENT — deploying $NEW"
 
-            echo "Waiting for container to be healthy..."
+            docker compose -p "nfcap-lms-$NEW" -f docker-compose.dev.yml up -d --build
+
+            CONTAINER=$(docker compose -p "nfcap-lms-$NEW" -f docker-compose.dev.yml ps -q nfcap-lms-dev)
+            echo "Waiting for $NEW ($CONTAINER) to be healthy..."
             sleep 10
-            CONTAINER="nfcap-lms-dev"
+            HEALTHY=0
             for i in $(seq 1 12); do
               STATUS=$(docker inspect --format='{{.State.Health.Status}}' "$CONTAINER" 2>/dev/null || echo "unknown")
               if [ "$STATUS" = "healthy" ]; then
-                echo "Container is healthy!"
-                exit 0
+                echo "$NEW is healthy!"
+                HEALTHY=1
+                break
               fi
               echo "Attempt $i/12: Status is $STATUS, waiting..."
               sleep 10
             done
-            echo "Container did not become healthy within 2 minutes"
-            docker logs "$CONTAINER" --tail 50
-            exit 1
+
+            if [ "$HEALTHY" -ne 1 ]; then
+              echo "$NEW did not become healthy within 2 minutes — rolling back, $CURRENT stays live"
+              docker logs "$CONTAINER" --tail 50
+              docker compose -p "nfcap-lms-$NEW" -f docker-compose.dev.yml down
+              exit 1
+            fi
+
+            if [ "$CURRENT" != "none" ]; then
+              echo "Tearing down previous color ($CURRENT)"
+              docker compose -p "nfcap-lms-$CURRENT" -f docker-compose.dev.yml down
+            fi
+            echo "$NEW" > "$COLOR_FILE"
 
       - name: Verify Health
         run: |

@@ -2,8 +2,6 @@ import { requirePartnerStaff } from '@/lib/actions/guard';
 import { getWioaReportingSummary } from '@/lib/data/wioa';
 import { WioaReportsView } from '@/components/wioa/WioaReportsView';
 
-export const dynamic = 'force-dynamic';
-
 export default async function PartnerReportsPage() {
   const user = await requirePartnerStaff();
   const summary = await getWioaReportingSummary({ assignedPartnerStaffId: user.id });

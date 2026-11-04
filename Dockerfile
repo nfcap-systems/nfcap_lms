@@ -16,6 +16,19 @@ ARG NEXT_PUBLIC_SUPABASE_ANON_KEY
 ENV NEXT_PUBLIC_SUPABASE_URL=$NEXT_PUBLIC_SUPABASE_URL
 ENV NEXT_PUBLIC_SUPABASE_ANON_KEY=$NEXT_PUBLIC_SUPABASE_ANON_KEY
 
+# Sentry: NEXT_PUBLIC_SENTRY_DSN inlines into the client bundle like the vars above.
+# SENTRY_ORG/PROJECT/AUTH_TOKEN are build-time only, used by next.config.ts's withSentryConfig to
+# upload source maps — never baked into any output, just read by the build process. All four are
+# optional; without them withSentryConfig's upload step no-ops and the build is unaffected.
+ARG NEXT_PUBLIC_SENTRY_DSN
+ARG SENTRY_ORG
+ARG SENTRY_PROJECT
+ARG SENTRY_AUTH_TOKEN
+ENV NEXT_PUBLIC_SENTRY_DSN=$NEXT_PUBLIC_SENTRY_DSN
+ENV SENTRY_ORG=$SENTRY_ORG
+ENV SENTRY_PROJECT=$SENTRY_PROJECT
+ENV SENTRY_AUTH_TOKEN=$SENTRY_AUTH_TOKEN
+
 RUN npx prisma generate
 RUN npm run build
 

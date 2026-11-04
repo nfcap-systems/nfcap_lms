@@ -2,8 +2,6 @@ import { getAllWioaDocumentRequirements } from '@/lib/data/wioa-document-require
 import { getWorkforceBoards } from '@/lib/data/wioa-boards';
 import { DocumentRequirementsAdminView } from './DocumentRequirementsAdminView';
 
-export const dynamic = 'force-dynamic';
-
 export default async function AdminWioaDocumentRequirementsPage() {
   const [requirements, boards] = await Promise.all([
     getAllWioaDocumentRequirements(),
