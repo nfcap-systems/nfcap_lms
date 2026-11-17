@@ -23,13 +23,15 @@ export function ensureTestDatabase() {
   // Sets app_runtime's password so src/lib/db/rls.ts's second connection can actually log in —
   // migrate deploy creates the role with LOGIN but no password (see
   // prisma/migrations/20261105120000_add_rls_wioa_pii). Via `prisma db execute` against the
-  // plain (postgres-role) DATABASE_URL rather than a migration, since this value must never be
-  // committed for the real database.
+  // plain (postgres-role) connection rather than a migration, since this value must never be
+  // committed for the real database. Prisma 7's `db execute` takes no `--url` — it reads the
+  // datasource URL prisma.config.ts points at (DIRECT_URL), which .env.test/ci.yml set to the
+  // same test database as DATABASE_URL.
   const setAppRuntimePassword = () => {
     const sqlPath = path.join(repoRoot, '.app-runtime-test-password.sql');
     writeFileSync(sqlPath, `ALTER ROLE app_runtime WITH PASSWORD '${TEST_APP_RUNTIME_PASSWORD}';`);
     try {
-      run(`npx prisma db execute --file "${sqlPath}" --url "${process.env.DATABASE_URL}"`);
+      run(`npx prisma db execute --file "${sqlPath}"`);
     } finally {
       rmSync(sqlPath, { force: true });
     }
