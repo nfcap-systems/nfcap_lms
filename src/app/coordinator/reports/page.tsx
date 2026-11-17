@@ -3,8 +3,11 @@ import { getWioaReportingSummary } from '@/lib/data/wioa';
 import { WioaReportsView } from '@/components/wioa/WioaReportsView';
 
 export default async function CoordinatorReportsPage() {
-  await requireCoordinator();
-  const summary = await getWioaReportingSummary({ includeFunding: true });
+  const coordinator = await requireCoordinator();
+  const summary = await getWioaReportingSummary(
+    { userId: coordinator.id, role: 'WIOA_COORDINATOR' },
+    { includeFunding: true },
+  );
 
   return (
     <div className="flex flex-col gap-4">

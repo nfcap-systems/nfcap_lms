@@ -1,5 +1,5 @@
 import { LearnerShell } from '@/components/layout/LearnerShell';
-import { getAuthUser } from '@/lib/supabase/server';
+import { getAuthUser, getRole } from '@/lib/supabase/server';
 import { getLearnerProfile } from '@/lib/data/wioa';
 
 export default async function LearnerLayout({ children }: { children: React.ReactNode }) {
@@ -8,7 +8,9 @@ export default async function LearnerLayout({ children }: { children: React.Reac
   const learnerName = name ?? user?.email ?? 'Learner';
   const learnerEmail = user?.email ?? '';
   const learnerInitial = learnerName.charAt(0).toUpperCase();
-  const profile = user ? await getLearnerProfile(user.id) : null;
+  const profile = user
+    ? await getLearnerProfile({ userId: user.id, role: getRole(user) ?? 'LEARNER' }, user.id)
+    : null;
 
   return (
     <LearnerShell

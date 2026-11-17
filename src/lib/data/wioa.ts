@@ -1,7 +1,7 @@
-import { prisma } from '@/lib/prisma';
 import { getLearnerById } from '@/lib/data/learners';
 import type { WioaCaseStatus, WioaDocumentStatus, AppointmentType } from '@/generated/prisma/enums';
 import { WIOA_STATUS_PHASE, WIOA_UI_PHASES, type WioaUiPhase } from '@/lib/wioa/status';
+import { withRlsContext, type SessionContext } from '@/lib/db/rls';
 
 export type LearnerProfile = {
   learnerId: string;
@@ -18,8 +18,11 @@ export type LearnerProfile = {
   mobilePhone: string | null;
 };
 
-export async function getLearnerProfile(learnerId: string): Promise<LearnerProfile | null> {
-  return prisma.learnerProfile.findUnique({ where: { learnerId } });
+export async function getLearnerProfile(
+  viewer: SessionContext,
+  learnerId: string,
+): Promise<LearnerProfile | null> {
+  return withRlsContext(viewer, (tx) => tx.learnerProfile.findUnique({ where: { learnerId } }));
 }
 
 export type WioaCommunicationRecord = {
@@ -32,11 +35,16 @@ export type WioaCommunicationRecord = {
   sentAt: Date;
 };
 
-export async function getWioaCommunications(learnerId: string): Promise<WioaCommunicationRecord[]> {
-  return prisma.wioaCommunication.findMany({
-    where: { learnerId },
-    orderBy: { sentAt: 'desc' },
-  });
+export async function getWioaCommunications(
+  viewer: SessionContext,
+  learnerId: string,
+): Promise<WioaCommunicationRecord[]> {
+  return withRlsContext(viewer, (tx) =>
+    tx.wioaCommunication.findMany({
+      where: { learnerId },
+      orderBy: { sentAt: 'desc' },
+    }),
+  );
 }
 
 export type WioaDocumentRecord = {
@@ -78,19 +86,24 @@ export type WioaCaseRecord = {
 /** Every WIOA case for a learner, one per restricted course they've started outreach for
  * (WIOA_INTEGRATION_PLAN.md Section 5 — case scope is per learner per course). Feeds the
  * learner-facing consolidated activity feed (Section 7). */
-export async function getWioaCasesForLearner(learnerId: string): Promise<WioaCaseRecord[]> {
-  const cases = await prisma.wioaCase.findMany({
-    where: { learnerId },
-    orderBy: { createdAt: 'desc' },
-    include: {
-      course: { select: { slug: true, title: true } },
-      workforceBoard: { select: { name: true } },
-      ajccCenter: { select: { name: true } },
-      contact: { select: { name: true } },
-      documents: { include: { requirement: true } },
-      appointments: { orderBy: { scheduledAt: 'asc' } },
-    },
-  });
+export async function getWioaCasesForLearner(
+  viewer: SessionContext,
+  learnerId: string,
+): Promise<WioaCaseRecord[]> {
+  const cases = await withRlsContext(viewer, (tx) =>
+    tx.wioaCase.findMany({
+      where: { learnerId },
+      orderBy: { createdAt: 'desc' },
+      include: {
+        course: { select: { slug: true, title: true } },
+        workforceBoard: { select: { name: true } },
+        ajccCenter: { select: { name: true } },
+        contact: { select: { name: true } },
+        documents: { include: { requirement: true } },
+        appointments: { orderBy: { scheduledAt: 'asc' } },
+      },
+    }),
+  );
 
   return cases.map((c) => ({
     id: c.id,
@@ -118,10 +131,11 @@ export async function getWioaCasesForLearner(learnerId: string): Promise<WioaCas
 }
 
 export async function getWioaCaseForLearnerAndCourse(
+  viewer: SessionContext,
   learnerId: string,
   courseId: string,
 ): Promise<WioaCaseRecord | null> {
-  const cases = await getWioaCasesForLearner(learnerId);
+  const cases = await getWioaCasesForLearner(viewer, learnerId);
   return cases.find((c) => c.courseId === courseId && !c.closedAt) ?? null;
 }
 
@@ -143,20 +157,29 @@ export type WioaCaseSummary = {
  * account's assigned cases (docs/build/WIOA_BUILD_WORKFLOW.md Phase 3 — replaces the Phase 2
  * /admin/wioa stepping stone's getAllWioaCases). No pagination — prototype scale, same
  * assumption getLearnerRoster already makes. */
-export async function getWioaCases(opts?: {
-  assignedPartnerStaffId?: string;
-}): Promise<WioaCaseSummary[]> {
-  const cases = await prisma.wioaCase.findMany({
-    where: opts?.assignedPartnerStaffId
-      ? { assignedPartnerStaffId: opts.assignedPartnerStaffId }
-      : undefined,
-    orderBy: { createdAt: 'desc' },
-    include: {
-      course: { select: { title: true } },
-      workforceBoard: { select: { name: true } },
-      documents: { select: { status: true } },
-    },
-  });
+export async function getWioaCases(
+  viewer: SessionContext,
+  opts?: {
+    assignedPartnerStaffId?: string;
+  },
+): Promise<WioaCaseSummary[]> {
+  // The RLS read is just the one findMany — the name lookups below hit the Supabase Auth Admin
+  // API per case (src/lib/data/learners.ts), which must not run inside the transaction
+  // withRlsContext opens (CLAUDE.md performance conventions — never hold a pooler slot across a
+  // network call).
+  const cases = await withRlsContext(viewer, (tx) =>
+    tx.wioaCase.findMany({
+      where: opts?.assignedPartnerStaffId
+        ? { assignedPartnerStaffId: opts.assignedPartnerStaffId }
+        : undefined,
+      orderBy: { createdAt: 'desc' },
+      include: {
+        course: { select: { title: true } },
+        workforceBoard: { select: { name: true } },
+        documents: { select: { status: true } },
+      },
+    }),
+  );
 
   const users = new Map<string, { name: string; email: string }>();
   async function nameOf(userId: string): Promise<{ name: string; email: string }> {
@@ -222,23 +245,29 @@ export type WioaCaseDetail = WioaCaseRecord & {
 };
 
 export async function getWioaCaseDetail(
+  viewer: SessionContext,
   caseId: string,
   opts?: { includeFunding?: boolean },
 ): Promise<WioaCaseDetail | null> {
-  const c = await prisma.wioaCase.findUnique({
-    where: { id: caseId },
-    include: {
-      course: { select: { slug: true, title: true } },
-      workforceBoard: { select: { name: true } },
-      ajccCenter: { select: { name: true } },
-      contact: { select: { name: true } },
-      documents: { include: { requirement: true } },
-      appointments: { orderBy: { scheduledAt: 'asc' } },
-      statusHistory: { orderBy: { changedAt: 'asc' } },
-      communications: { orderBy: { sentAt: 'desc' } },
-      fundingRequest: { include: { authorization: true } },
-    },
-  });
+  // `findUnique` returns null for a case this viewer can't see under app_can_access_case, same
+  // as a case that doesn't exist at all — callers already treat both as not-found (see
+  // src/app/partner/[caseId]/page.tsx's notFound() check), so this isn't a behavior change.
+  const c = await withRlsContext(viewer, (tx) =>
+    tx.wioaCase.findUnique({
+      where: { id: caseId },
+      include: {
+        course: { select: { slug: true, title: true } },
+        workforceBoard: { select: { name: true } },
+        ajccCenter: { select: { name: true } },
+        contact: { select: { name: true } },
+        documents: { include: { requirement: true } },
+        appointments: { orderBy: { scheduledAt: 'asc' } },
+        statusHistory: { orderBy: { changedAt: 'asc' } },
+        communications: { orderBy: { sentAt: 'desc' } },
+        fundingRequest: { include: { authorization: true } },
+      },
+    }),
+  );
   if (!c) return null;
 
   const learner = await getLearnerById(c.learnerId);
@@ -361,22 +390,32 @@ export type WioaReportingSummary = {
  * the full case list rather than SQL aggregation — prototype scale, same no-pagination assumption
  * as getWioaCases. Follow-up reasons reuse the exact triggers from spec §18 (Automation & Follow-Up
  * Rules) so this reporting view and any future automation agree on what "needs follow-up" means. */
-export async function getWioaReportingSummary(opts?: {
-  assignedPartnerStaffId?: string;
-  includeFunding?: boolean;
-}): Promise<WioaReportingSummary> {
-  const cases = await prisma.wioaCase.findMany({
-    where: opts?.assignedPartnerStaffId
-      ? { assignedPartnerStaffId: opts.assignedPartnerStaffId }
-      : undefined,
-    include: {
-      course: { select: { title: true } },
-      workforceBoard: { select: { name: true } },
-      documents: { select: { status: true } },
-      statusHistory: { select: { status: true, changedAt: true }, orderBy: { changedAt: 'asc' } },
-      fundingRequest: { select: { id: true } },
-    },
-  });
+export async function getWioaReportingSummary(
+  viewer: SessionContext,
+  opts?: {
+    assignedPartnerStaffId?: string;
+    includeFunding?: boolean;
+  },
+): Promise<WioaReportingSummary> {
+  // Same ordering rule as getWioaCases — only the findMany runs inside the RLS transaction; the
+  // nameOf() loop below hits the Supabase Auth Admin API per case and must run after it closes.
+  const cases = await withRlsContext(viewer, (tx) =>
+    tx.wioaCase.findMany({
+      where: opts?.assignedPartnerStaffId
+        ? { assignedPartnerStaffId: opts.assignedPartnerStaffId }
+        : undefined,
+      include: {
+        course: { select: { title: true } },
+        workforceBoard: { select: { name: true } },
+        documents: { select: { status: true } },
+        statusHistory: {
+          select: { status: true, changedAt: true },
+          orderBy: { changedAt: 'asc' },
+        },
+        fundingRequest: { select: { id: true } },
+      },
+    }),
+  );
 
   const ALL_PHASES: WioaUiPhase[] = [...WIOA_UI_PHASES, 'Closed'];
   const phaseCounts = Object.fromEntries(ALL_PHASES.map((p) => [p, 0])) as Record<
@@ -469,7 +508,9 @@ export async function getWioaReportingSummary(opts?: {
         b.eligibleCases += 1;
         const eligibleEntry = c.statusHistory.find((h) => h.status === 'WIOA_ELIGIBLE');
         if (eligibleEntry) {
-          b.daysToEligible.push((eligibleEntry.changedAt.getTime() - c.createdAt.getTime()) / DAY_MS);
+          b.daysToEligible.push(
+            (eligibleEntry.changedAt.getTime() - c.createdAt.getTime()) / DAY_MS,
+          );
         }
       }
       if (WIOA_TUITION_APPROVED_OR_LATER.includes(c.status)) b.tuitionApprovedCases += 1;

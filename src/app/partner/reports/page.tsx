@@ -4,7 +4,10 @@ import { WioaReportsView } from '@/components/wioa/WioaReportsView';
 
 export default async function PartnerReportsPage() {
   const user = await requirePartnerStaff();
-  const summary = await getWioaReportingSummary({ assignedPartnerStaffId: user.id });
+  const summary = await getWioaReportingSummary(
+    { userId: user.id, role: 'PARTNER_STAFF' },
+    { assignedPartnerStaffId: user.id },
+  );
 
   return (
     <div className="flex flex-col gap-4">
