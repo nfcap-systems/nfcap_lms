@@ -58,6 +58,7 @@ export const adminNav: NavEntry[] = [
     ],
   },
   { label: 'Analytics', href: '/admin/analytics', icon: 'bar-chart' },
+  { label: 'Audit Log', href: '/admin/audit', icon: 'lock' },
   { label: 'Settings', href: '/admin/settings', icon: 'settings' },
 ];
 

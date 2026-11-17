@@ -3,7 +3,13 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { prisma } from '@/lib/prisma';
+import { withRlsContext } from '@/lib/db/rls';
+import { enforceRateLimit } from '@/lib/rate-limit';
+
+const LOGIN_LIMIT = 10;
+const LOGIN_WINDOW_MS = 15 * 60 * 1000;
+const SIGNUP_LIMIT = 5;
+const SIGNUP_WINDOW_MS = 60 * 60 * 1000;
 
 export type AuthFormState = { error?: string };
 
@@ -16,6 +22,12 @@ export async function login(_prevState: AuthFormState, formData: FormData): Prom
   const email = String(formData.get('email') ?? '');
   const password = String(formData.get('password') ?? '');
   const next = String(formData.get('next') ?? '');
+
+  try {
+    await enforceRateLimit(email.toLowerCase(), 'login', LOGIN_LIMIT, LOGIN_WINDOW_MS);
+  } catch {
+    return { error: 'Too many login attempts. Please wait a few minutes and try again.' };
+  }
 
   const supabase = await createClient();
   const { error } = await supabase.auth.signInWithPassword({ email, password });
@@ -39,6 +51,12 @@ export async function signup(
 
   if (!name) return { error: 'Name is required.' };
 
+  try {
+    await enforceRateLimit(email.toLowerCase(), 'signup', SIGNUP_LIMIT, SIGNUP_WINDOW_MS);
+  } catch {
+    return { error: 'Too many signup attempts from this address. Please try again later.' };
+  }
+
   const supabase = await createClient();
   const { data, error } = await supabase.auth.signUp({
     email,
@@ -60,22 +78,28 @@ export async function signup(
   // branch there.
   const pursuingWioa = formData.get('pursuingWioa') === 'on';
   const dateOfBirth = String(formData.get('dateOfBirth') ?? '');
-  await prisma.learnerProfile.create({
-    data: {
-      learnerId: data.user.id,
-      fundingSource: pursuingWioa ? 'WIOA_PENDING' : 'SELF_PAY',
-      streetAddress: orNull(formData.get('streetAddress')),
-      city: orNull(formData.get('city')),
-      state: orNull(formData.get('state')),
-      zip: orNull(formData.get('zip')),
-      preferredLanguage: orNull(formData.get('preferredLanguage')),
-      employmentStatus: orNull(formData.get('employmentStatus')),
-      unemploymentInsuranceStatus: orNull(formData.get('unemploymentInsuranceStatus')),
-      trainingApprenticeshipInterest: orNull(formData.get('trainingApprenticeshipInterest')),
-      mobilePhone: orNull(formData.get('mobilePhone')),
-      dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : null,
-    },
-  });
+  const learnerId = data.user.id;
+  // RLS-scoped (docs/build/PHASE_1_DB_ACCESS_DECISION.md) — the signing-up user is always
+  // creating their own profile, so `role` just needs to be a value `app_can_access_learner`
+  // recognizes; LEARNER is also simply correct here.
+  await withRlsContext({ userId: learnerId, role: 'LEARNER' }, (tx) =>
+    tx.learnerProfile.create({
+      data: {
+        learnerId,
+        fundingSource: pursuingWioa ? 'WIOA_PENDING' : 'SELF_PAY',
+        streetAddress: orNull(formData.get('streetAddress')),
+        city: orNull(formData.get('city')),
+        state: orNull(formData.get('state')),
+        zip: orNull(formData.get('zip')),
+        preferredLanguage: orNull(formData.get('preferredLanguage')),
+        employmentStatus: orNull(formData.get('employmentStatus')),
+        unemploymentInsuranceStatus: orNull(formData.get('unemploymentInsuranceStatus')),
+        trainingApprenticeshipInterest: orNull(formData.get('trainingApprenticeshipInterest')),
+        mobilePhone: orNull(formData.get('mobilePhone')),
+        dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : null,
+      },
+    }),
+  );
 
   if (data.session) {
     // Email confirmation is off, so signUp already established a session — but its JWT was

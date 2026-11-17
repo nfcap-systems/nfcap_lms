@@ -10,6 +10,9 @@ import { matchWorkforceOffice } from '@/lib/wioa/matching';
 import { shouldRequireEdd, EDD_REQUIREMENT_NAME } from '@/lib/wioa/documents';
 import { nextStatusOptions } from '@/lib/wioa/status';
 import { uploadWioaDocumentFile, getWioaDocumentSignedUrl } from '@/lib/supabase/wioa-storage';
+import { logAuditEvent } from './audit';
+import { containsSsnPattern } from '@/lib/pii';
+import { enforceRateLimit } from '@/lib/rate-limit';
 
 /** Case-level authorization for staff actions (docs/build/WIOA_BUILD_WORKFLOW.md Phase 3 — every
  * transition is staff-driven: Coordinator for any case, Partner Staff only for their assigned
@@ -172,6 +175,7 @@ export async function sendWioaOutreach(
  * assumed from what the UI shows. */
 export async function uploadWioaDocument(documentId: string, file: File): Promise<void> {
   const user = await requireUser();
+  await enforceRateLimit(user.id, 'wioa-document-upload', 20, 15 * 60 * 1000);
 
   const doc = await prisma.wioaDocument.findUniqueOrThrow({
     where: { id: documentId },
@@ -246,8 +250,14 @@ export async function uploadWioaDocument(documentId: string, file: File): Promis
  * carries no access control. */
 export async function getWioaDocumentUrl(documentId: string): Promise<string> {
   const doc = await prisma.wioaDocument.findUniqueOrThrow({ where: { id: documentId } });
-  await requireCaseAccess(doc.wioaCaseId);
+  const staff = await requireCaseAccess(doc.wioaCaseId);
   if (!doc.storagePath) throw new Error('No file uploaded for this document.');
+  await logAuditEvent({
+    actor: staff,
+    action: 'VIEW_FUNDING_DOCUMENT',
+    targetType: 'WioaDocument',
+    targetId: documentId,
+  });
   return getWioaDocumentSignedUrl(doc.storagePath);
 }
 
@@ -301,6 +311,11 @@ export async function setWioaDocumentStatus(
 ): Promise<void> {
   const doc = await prisma.wioaDocument.findUniqueOrThrow({ where: { id: documentId } });
   const staff = await requireCaseAccess(doc.wioaCaseId);
+  const resolvedRejectionReason =
+    status === 'REJECTED' ? rejectionReason?.trim() || 'Resubmission required.' : null;
+  if (resolvedRejectionReason && containsSsnPattern(resolvedRejectionReason)) {
+    throw new Error('Rejection reason cannot contain a Social Security Number.');
+  }
 
   await prisma.wioaDocument.update({
     where: { id: documentId },
@@ -308,9 +323,16 @@ export async function setWioaDocumentStatus(
       status,
       reviewedBy: staff.id,
       reviewedAt: new Date(),
-      rejectionReason:
-        status === 'REJECTED' ? rejectionReason?.trim() || 'Resubmission required.' : null,
+      rejectionReason: resolvedRejectionReason,
     },
+  });
+
+  await logAuditEvent({
+    actor: staff,
+    action: 'REVIEW_WIOA_DOCUMENT',
+    targetType: 'WioaDocument',
+    targetId: documentId,
+    metadata: { status },
   });
 
   revalidatePath('/coordinator');
@@ -366,6 +388,14 @@ export async function advanceWioaCaseStatus(
     data: { wioaCaseId: caseId, status: nextStatus, changedBy: staff.id },
   });
 
+  await logAuditEvent({
+    actor: staff,
+    action: 'ADVANCE_WIOA_CASE_STATUS',
+    targetType: 'WioaCase',
+    targetId: caseId,
+    metadata: { from: current.status, to: nextStatus },
+  });
+
   // WIOA_INTEGRATION_PLAN.md Section 4 — the WIOA module's only write into Enrollment's world.
   // Reaching Tuition Approved unlocks the case's course; preserves an existing unlock (e.g. an
   // earlier ADMIN_ASSIGNMENT grant) instead of overwriting its source.
@@ -386,12 +416,16 @@ export async function advanceWioaCaseStatus(
   }
 
   if (appointment) {
+    const notes = appointment.notes?.trim() || undefined;
+    if (notes && containsSsnPattern(notes)) {
+      throw new Error('Appointment notes cannot contain a Social Security Number.');
+    }
     await prisma.appointment.create({
       data: {
         wioaCaseId: caseId,
         type: appointment.type,
         scheduledAt: new Date(appointment.scheduledAt),
-        notes: appointment.notes?.trim() || undefined,
+        notes,
       },
     });
   }
@@ -487,6 +521,14 @@ export async function assignWioaCasePartnerStaff(
   await prisma.wioaCase.update({
     where: { id: caseId },
     data: { assignedPartnerStaffId: partnerStaffId },
+  });
+
+  await logAuditEvent({
+    actor: user,
+    action: 'ASSIGN_WIOA_CASE_PARTNER_STAFF',
+    targetType: 'WioaCase',
+    targetId: caseId,
+    metadata: { partnerStaffId },
   });
 
   revalidatePath('/coordinator');
