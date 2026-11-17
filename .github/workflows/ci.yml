@@ -52,6 +52,8 @@ jobs:
       CI: true
       DATABASE_URL: postgresql://test:test@localhost:5432/nfcap_test
       DIRECT_URL: postgresql://test:test@localhost:5432/nfcap_test
+      # Password must match TEST_APP_RUNTIME_PASSWORD in tests/setup/db-infra.ts.
+      APP_RUNTIME_DATABASE_URL: postgresql://app_runtime:test-app-runtime-password@localhost:5432/nfcap_test
       NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.STAGING_SUPABASE_URL }}
       NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.STAGING_SUPABASE_ANON_KEY }}
       SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.STAGING_SUPABASE_SERVICE_ROLE_KEY }}
