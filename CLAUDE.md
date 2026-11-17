@@ -16,25 +16,44 @@ Read `docs/HANDOFF.md` first — it is the onboarding entry point. Then, by ques
 | Product scope, roles, feature decisions | `docs/product/PRODUCT_CONTEXT.md` |
 | Performance findings + how they map onto the build plan | `docs/build/PERFORMANCE_PLAN.md` |
 | Phase 0 execution status — what's done, what's open, why | `docs/build/PHASE_0_PROGRESS.md` |
+| Phase 1 execution status — what's done, what's open, why | `docs/build/PHASE_1_PROGRESS.md` |
 | WIOA module shape and closed decisions | `docs/wioa/WIOA_INTEGRATION_PLAN.md`, `docs/build/WIOA_BUILD_WORKFLOW.md` |
 | Design system / tokens | `docs/design/NFCAP_DESIGN_SYSTEM.md` |
 
 Do not reopen decisions already closed in `PRODUCT_CONTEXT.md` or the client scope doc.
 
-## Current state (as of 2026-11-03)
+## Current state (as of 2026-11-05)
 
-- **The client scope plan is approved.** 65 features, 9 phases, ~1,431h. **Phase 0 code work is
-  functionally complete** — see `docs/build/PHASE_0_PROGRESS.md` for the full breakdown. Nothing in
-  Phases 1–8 has started; Phase 1 is unblocked and can start.
+- **The client scope plan is approved.** 65 features, 9 phases, ~1,431h. **Phase 0 is in progress,
+  not complete** — 3 of its 6 scoped features are done (Automated Test Suite, Automated Checks/CI,
+  Error Handling & Monitoring); see `docs/build/PHASE_0_PROGRESS.md` for the full per-feature
+  breakdown, including the 3 that are still open or uncredited (Staging Environment & Migration
+  Strategy is partial — migrations aren't automated in the deploy step; WIOA Funding Module
+  Sign-Off has real verification work behind it but was never formally credited against this item;
+  Backup, Restore & Recovery Drill is deferred to pre-launch).
+- **Phase 1 (Security & Data Protection) is also in progress, not complete** — 8 of 9 scoped
+  features have real, DB-verified shipped work (Database Access-Rule Decision, Hour-Derivable
+  Progress History [already satisfied by the existing schema], No-SSN Rule & PII Boundary, Terms
+  of Service & Privacy Policy, Pathway Structure Seam, Platform-Wide Audit Trail,
+  Secrets/Environment/Rate Limiting); see `docs/build/PHASE_1_PROGRESS.md` for the full breakdown.
+  All three Phase 1 migrations are applied to the live DB and functionally verified (not just
+  inspected) as of 2026-11-05. The one remaining gap: **Row-Level Access Rules is only partially
+  done** — the DB-level policies are live and verified, but `src/lib/actions/wioa.ts`'s ~12
+  functions and `src/lib/data/wioa.ts`'s read paths still use the RLS-bypassing `prisma` client
+  rather than `src/lib/db/rls.ts`'s `withRlsContext`, deliberately — that module has real manual
+  QA behind it and no Docker/Playwright was available in-session to verify a rewrite didn't
+  regress it. Nothing in Phases 2–8 has started.
 - **Deployment: self-hosted, VPS + Docker.** Supabase is retained for database and object storage.
   Deploy target was decided 2026-11-01 (VPS + Docker). Replica count is still undecided but isn't a
   blocker — **build for 2+ instances** is already the working assumption everything is built
   against; the final number waits on the Phase 8 scale target.
 - The performance audit (`docs/build/PERFORMANCE_PLAN.md`) found 9 issues, F1–F9. **F1–F7 are all
-  resolved.** Only two Phase 0 items remain, both genuinely blocked rather than outstanding effort
-  (detail in `docs/build/PHASE_0_PROGRESS.md`): Redis + `'use cache'`/`cacheTag` on the curriculum
-  layer (blocked on a WIOA-consumer audit), and duplicating the staging environment (blocked on a
-  prod environment existing to duplicate against).
+  resolved** — this is a narrower claim than "Phase 0 is done" (see above); don't conflate the two.
+  Three items remain open, each deliberately deferred rather than outstanding effort (detail in
+  `docs/build/PHASE_0_PROGRESS.md`): Redis + `'use cache'`/`cacheTag` on the curriculum layer
+  (blocked on a WIOA-consumer audit), duplicating the staging environment, and the Backup/Restore/
+  Recovery Drill (the latter two both blocked on a prod environment existing to duplicate/drill
+  against).
 
 ## Performance conventions — apply to all new code
 
@@ -70,6 +89,13 @@ to Phase 8.
   mode) rather than `DIRECT_URL`. The `max: 4` pool cap and the retry extension in that file were
   originally workarounds for the wrong connection string; whether they're still needed with the fix
   in place hasn't been re-evaluated.
+- **`next.config.ts`'s Sentry wrapping is gated to `NODE_ENV === 'production'`** (fixed 2026-11-17).
+  `withSentryConfig` only earns its keep when `SENTRY_AUTH_TOKEN` is set (CI/deploy, for source-map
+  upload), but it was running its bundler instrumentation on every `next dev` cold compile regardless
+  — that was the entire cause of ~15-20s first-loads per route in dev (e.g. `/login` took 18.9s, 17.9s
+  of it in Next.js itself). Gating it to production dropped that to ~1-2s per route, with zero change
+  to production builds, CI, or deploys. Don't remove the gate to "simplify" the config — dev was never
+  using what it bought.
 
 ## Conventions
 
