@@ -9,6 +9,14 @@ export async function createCourse(
   overrides: Partial<{ slug: string; access: 'OPEN' | 'RESTRICTED' }> = {},
 ) {
   const slug = overrides.slug ?? `course-${randomUUID()}`;
+  // The migration seeds 'default-pathway', but tests/setup/db-reset.ts truncates every table
+  // (Pathway included) after each test — upsert it back rather than relying on the one-time
+  // migration seed to survive past the first test in the suite.
+  await prisma.pathway.upsert({
+    where: { id: 'default-pathway' },
+    update: {},
+    create: { id: 'default-pathway', name: 'Flooring Apprenticeship', isDefault: true },
+  });
   return prisma.course.create({
     data: {
       slug,
