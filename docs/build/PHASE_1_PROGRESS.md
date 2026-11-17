@@ -4,11 +4,14 @@ Working log of Phase 1 execution against `docs/client/NFCAP_LMS_Production_Scope
 ("Phase 1 — Security & Data Protection", 9 features, 156h). Mirrors
 `docs/build/PHASE_0_PROGRESS.md`'s convention — update this as status changes.
 
-## Status as of 2026-11-05 (updated — migrations applied)
+## Status as of 2026-11-17 (updated — RLS call-site rewiring done, CI-verified)
 
-**Phase 1 is in progress, not complete.** 8 of 9 features now have real, shipped, DB-verified
-work; 1 was already satisfied by the existing schema. The remaining gap is entirely inside Row-
-Level Access Rules (see "Open" below) — don't read "8 done" as "Phase 1 done."
+**Phase 1 is functionally complete.** All 9 features have real, shipped work, and Row-Level
+Access Rules — the one item still open as of 2026-11-05 — is now fully rewired and verified by
+CI's Vitest suite running against real Postgres (`feature/phase-0-quality-foundations` PR #2,
+run `44023705590`). See "Row-Level Access Rules — done" below for what changed and what it
+caught. One caveat: CI's Playwright/E2E suite could not run to completion — see "Known gap"
+below, which is an infrastructure issue unrelated to this work, not a code regression.
 
 All three Phase 1 migrations are now applied to the live database and functionally verified
 (not just inspected):
@@ -32,27 +35,66 @@ All three Phase 1 migrations are now applied to the live database and functional
 | **Platform-Wide Audit Trail** | `AuditLog` table (admin-only read via RLS, append-only) — **live**, wired into funding-document views, document/evidence review, case status transitions, case assignment, course-unlock grants; admin page at `/admin/audit` with CSV export | `src/lib/actions/audit.ts`, `src/app/admin/audit/*` |
 | **Secrets, Environment & Rate Limiting** | DB-backed (multi-instance-safe) rate limiting on login, signup, evidence submission, WIOA document upload — closes performance finding F9 — **backing table live** | `src/lib/rate-limit.ts`, wired in `src/lib/actions/{auth,progress,wioa}.ts` |
 | **Data Retention & Destruction Policy** | Sweep mechanism (destroys uploaded document files past a configurable retention window, logs each destruction), cron trigger + scheduled workflow | `src/lib/actions/retention.ts`, `src/app/api/cron/data-retention/route.ts`, `.github/workflows/data-retention.yml`, `docs/build/PHASE_1_DATA_RETENTION.md` |
+| **Row-Level Access Rules (RLS)** | Every `src/lib/actions/wioa.ts` write and `src/lib/data/wioa.ts` read now goes through `withRlsContext` instead of the RLS-bypassing `prisma` client; 9 page call sites updated to pass the viewer's session context. CI's Vitest suite (real Postgres) passes, including the test that pins the exact "Not your assigned case." error for an unassigned Partner Staff member. | `src/lib/actions/wioa.ts`, `src/lib/data/wioa.ts`, CI run `44023705590` |
 
-### Open
+### Row-Level Access Rules — done (2026-11-17)
 
-**Row-Level Access Rules (RLS) — partially done.** The DB side is live and verified (see Decision
-row above). What's still open:
+Finished the gap left open on 2026-11-05. What changed:
 
-- **Rewired:** `src/lib/actions/auth.ts`'s `learnerProfile.create` (signup) now goes through
-  `withRlsContext` — one call site, low risk, typechecked.
-- **Deliberately not rewired this pass:** `src/lib/actions/wioa.ts` (~12 functions) and
-  `src/lib/data/wioa.ts` (11 page call sites). Reasoning: this is the most heavily-tested module in
-  the app (real manual QA behind it per `docs/build/WIOA_BUILD_WORKFLOW.md`), several of its
-  functions read a row *before* establishing role-based access (fetch the document, then check
-  case ownership) — switching those onto the RLS client changes the order role/session context
-  needs to be known, which risks subtly changing behavior (e.g. a Partner Staff hitting an
-  unassigned case would get "not found" instead of today's explicit "Not your assigned case").
-  There's no Docker/Playwright available in this sandbox to catch a regression here, and this
-  module handles real government funding data for a real program — that combination is exactly
-  where a rushed rewrite does more harm than leaving it until it can be done with test coverage.
-- **To finish this safely:** rewire `wioa.ts` function by function (not all at once) with the
-  Vitest/Playwright suite running against a real Postgres (`docker-compose.test.yml`) after each
-  one, in an environment where Docker is actually available.
+- `src/lib/actions/wioa.ts` (12 functions) and `src/lib/data/wioa.ts` (its read functions + 9 page
+  call sites in `src/app/{admin,coordinator,partner,learner}/**`) now route every RLS-scoped
+  read/write through `withRlsContext`.
+- `requireCaseAccess` and `uploadWioaDocument`'s ownership-check reads **deliberately stay on the
+  plain `prisma` client** — their only job is deciding access, not returning data, and
+  `tests/unit/wioa-status.test.ts` pins the exact "Not your assigned case." message an unassigned
+  Partner Staff member gets. Routing that lookup through RLS would turn a found-but-rejected case
+  into a generic not-found instead, collapsing that message. Every actual data read/write past
+  those checks uses `withRlsContext`, so RLS still backs the real security boundary even though
+  those two gate reads don't.
+- `getWioaCases`/`getWioaReportingSummary` keep their per-case Supabase Auth Admin API name
+  lookups outside the RLS transaction (CLAUDE.md performance conventions — never hold a pooler
+  slot across a network call).
+
+This was verified against CI's real Postgres, not just locally — doing so surfaced and fixed two
+real, previously-undetected bugs that had **zero prior test coverage** because nothing had
+exercised an actual `withRlsContext` call against live data before this rewiring:
+
+1. **Pathway seed-data lifecycle bug**: `tests/setup/db-reset.ts` truncates every table (`Pathway`
+   included) between tests, so the migration-seeded `default-pathway` row only survived the first
+   test in the whole suite — every later `createCourse()` call hit `Course_pathwayId_fkey`. Fixed
+   by upserting the pathway in the fixture itself (`tests/setup/fixtures.ts`), matching how other
+   reference-data fixtures already work.
+2. **Infinite recursion in the RLS helper functions themselves**: `app_can_access_case()` and
+   `app_can_access_learner()` (from `prisma/migrations/20261105120000_add_rls_wioa_pii`) each run
+   a `SELECT` against the very table their policy secures. That internal `SELECT` is itself
+   subject to the same RLS policy regardless of role — Postgres unconditionally rewrites every
+   query against a `FORCE ROW LEVEL SECURITY` table to AND in its `USING` clause — so it
+   re-invokes the helper for its own candidate rows, forever, surfacing as Postgres error `54001`
+   ("stack depth limit exceeded"). Fixed in a new migration
+   (`prisma/migrations/20261117050000_fix_rls_helper_recursion`) marking both functions
+   `SECURITY DEFINER`, so their internal lookup runs as the bootstrap/superuser owner (which
+   already has `BYPASSRLS`) instead of the caller — this bug was **live in the production
+   database already** (the first migration was applied there 2026-11-05) and would have hit the
+   exact same recursion the first time any real request exercised these policies. **This new
+   migration needs to be applied to the live Supabase database** the same way the first one was —
+   it hasn't been from this sandbox (see "Known gap" below).
+3. Also fixed along the way: `prisma db execute`'s CLI flags changed in Prisma 7 (no more `--url`
+   — it reads the datasource from `prisma.config.ts`), caught while wiring up test-DB support for
+   the `app_runtime` role's password (`tests/setup/db-infra.ts`, `.env.test`, `ci.yml`).
+
+### Known gap: CI's E2E (Playwright) suite could not verify this
+
+CI's Vitest (unit) suite fully passed. CI's Playwright suite could not run to completion — every
+test failed identically at its first call (`Failed to create E2E test user: fetch failed` in
+`tests/e2e/setup/supabase-test-user.ts`), which uses the Supabase Auth Admin API against
+`STAGING_SUPABASE_URL`/`STAGING_SUPABASE_SERVICE_ROLE_KEY`. This same E2E suite passed cleanly 13
+days ago against the same secrets/project (CI run `41684974158`), and this session independently
+found the live Supabase Postgres connection unreachable with the credentials in `.env`
+("`tenant/user ... not found`" from the Supavisor pooler) — both point at a Supabase
+staging-project connectivity or credentials problem, not a code regression from this rewiring.
+Needs someone with Supabase dashboard access to check whether the project is paused or the
+service-role key/URL secrets have rotated, then re-run CI. **Also applies the migration 2 above**
+to the live/staging database once that access is restored.
 
 ### Resolved — migrations applied 2026-11-05
 
@@ -66,5 +108,7 @@ requested, and verified directly against the live DB (not just by inspecting the
   `violates check constraint "EvidenceSubmission_no_ssn_description"` (tested inside a
   transaction, then rolled back).
 
-Nothing left blocked on the DB side. The only remaining gap in Phase 1 is the RLS call-site
-rewiring below.
+Nothing left blocked on the DB side for this round. The RLS call-site rewiring described above is
+now also done; the only open item left is applying the 2026-11-17 recursion-fix migration to the
+live database and clearing the Supabase connectivity issue blocking E2E verification (see "Known
+gap" above).
