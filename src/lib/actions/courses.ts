@@ -51,6 +51,8 @@ export async function createCourse(input: NewCourseInput): Promise<{ slug: strin
       title: input.title,
       description: input.description,
       category: input.category,
+      // Single seeded pathway until the multi-pathway decision lands (docs/build/PHASE_1_DB_ACCESS_DECISION.md).
+      pathwayId: 'default-pathway',
       access:
         input.access === 'restricted' ? PrismaCourseAccess.RESTRICTED : PrismaCourseAccess.OPEN,
       pathwayOrder,

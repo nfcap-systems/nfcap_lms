@@ -16,6 +16,7 @@ export async function createCourse(
       description: 'A course for tests.',
       category: 'General',
       access: overrides.access ?? 'OPEN',
+      pathwayId: 'default-pathway',
       pathwayOrder: 1,
       evidencePrompt: 'Submit a photo of the finished work.',
     },

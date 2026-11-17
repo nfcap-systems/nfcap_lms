@@ -426,6 +426,7 @@ async function main() {
         description: c.description,
         category: c.category,
         access: c.access,
+        pathwayId: 'default-pathway',
         pathwayOrder: c.pathwayOrder,
         evidencePrompt: c.evidencePrompt,
       },
