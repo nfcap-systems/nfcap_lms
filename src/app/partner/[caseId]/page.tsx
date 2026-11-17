@@ -10,7 +10,7 @@ export default async function PartnerCaseDetailPage({
 }) {
   const user = await requirePartnerStaff();
   const { caseId } = await params;
-  const wioaCase = await getWioaCaseDetail(caseId);
+  const wioaCase = await getWioaCaseDetail({ userId: user.id, role: 'PARTNER_STAFF' }, caseId);
   // Partner Staff only ever sees their own assigned cases — a case ID typed/pasted for someone
   // else's case renders as not-found rather than leaking whether it exists.
   if (!wioaCase || wioaCase.assignedPartnerStaffId !== user.id) notFound();

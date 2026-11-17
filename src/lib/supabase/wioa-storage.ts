@@ -59,6 +59,16 @@ export async function uploadWioaDocumentFile(path: string, file: File): Promise<
   if (error) throw error;
 }
 
+/** Data Retention & Destruction Policy (docs/build/PHASE_1_DATA_RETENTION.md) — permanently
+ * removes a document's stored bytes from the private bucket. Called only by the retention sweep
+ * (src/lib/actions/retention.ts); nothing else in the app deletes a WIOA document's file. */
+export async function deleteWioaDocumentFile(path: string): Promise<void> {
+  await ensureBucket();
+  const supabase = createAdminClient();
+  const { error } = await supabase.storage.from(WIOA_DOCUMENTS_BUCKET).remove([path]);
+  if (error) throw error;
+}
+
 /** Short-lived signed URL for staff review — never a public URL
  * (WIOA_INTEGRATION_PLAN.md Section 10). */
 export async function getWioaDocumentSignedUrl(path: string): Promise<string> {

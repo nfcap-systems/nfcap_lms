@@ -4,7 +4,10 @@ import { WioaCaseListView } from '@/components/wioa/WioaCaseListView';
 
 export default async function PartnerPage() {
   const user = await requirePartnerStaff();
-  const cases = await getWioaCases({ assignedPartnerStaffId: user.id });
+  const cases = await getWioaCases(
+    { userId: user.id, role: 'PARTNER_STAFF' },
+    { assignedPartnerStaffId: user.id },
+  );
 
   return (
     <div className="flex flex-col gap-4">

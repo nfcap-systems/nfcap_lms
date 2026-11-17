@@ -1,4 +1,4 @@
-import { getAuthUser } from '@/lib/supabase/server';
+import { getAuthUser, getRole } from '@/lib/supabase/server';
 import { getAllCourses } from '@/lib/data/courses';
 import { getLearnerProfile, getWioaCommunications, getWioaCasesForLearner } from '@/lib/data/wioa';
 import { getWioaEmailTemplate } from '@/lib/data/wioa-email-template';
@@ -8,12 +8,13 @@ import { FundingView } from './FundingView';
 export default async function FundingPage() {
   const user = await getAuthUser();
   if (!user) return null;
+  const viewer = { userId: user.id, role: getRole(user) ?? 'LEARNER' };
 
   const [profile, courses, communications, cases, emailTemplate] = await Promise.all([
-    getLearnerProfile(user.id),
+    getLearnerProfile(viewer, user.id),
     getAllCourses(),
-    getWioaCommunications(user.id),
-    getWioaCasesForLearner(user.id),
+    getWioaCommunications(viewer, user.id),
+    getWioaCasesForLearner(viewer, user.id),
     getWioaEmailTemplate(),
   ]);
 

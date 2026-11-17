@@ -38,6 +38,21 @@ enum FundingSource {
   WIOA_PENDING
 }
 
+/// Phase 1 "Pathway Structure Seam" (docs/build/PHASE_1_DB_ACCESS_DECISION.md's sibling features) —
+/// a formal pathway record so a second apprenticeship pathway is a new row, not a schema change.
+/// Whether NFCAP needs more than one is still an open client decision; this exists either way,
+/// seeded with exactly one row so nothing behaves differently until that decision lands.
+model Pathway {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  isDefault   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  courses Course[]
+}
+
 model Course {
   id             String       @id @default(cuid())
   /// Human-readable route/lookup key (e.g. "safety-tools"). Distinct from `id` so routes stay
@@ -47,6 +62,8 @@ model Course {
   description    String
   category       String
   access         CourseAccess @default(OPEN)
+  pathwayId      String
+  pathway        Pathway      @relation(fields: [pathwayId], references: [id])
   /// Position in the apprenticeship pathway, for display ordering only.
   pathwayOrder   Int
   evidencePrompt String
@@ -631,4 +648,46 @@ model CourseUnlock {
 
   @@unique([learnerId, courseId])
   @@index([learnerId])
+}
+
+// ---------------------------------------------------------------------------------------------
+// Phase 1 — Security & Data Protection (docs/build/PHASE_1_DB_ACCESS_DECISION.md and siblings).
+// ---------------------------------------------------------------------------------------------
+
+/// Platform-Wide Audit Trail. Append-only (no update/delete in application code — see
+/// src/lib/actions/audit.ts) record of sensitive activity: viewing a funding document, role
+/// changes, evidence approval/rejection, WIOA status transitions, data exports, destruction-policy
+/// runs. `metadata` carries action-specific detail (e.g. previous/new role, document id) so this
+/// stays one table instead of one per action type.
+model AuditLog {
+  id         String   @id @default(cuid())
+  /// Supabase auth.users.id of the actor, or "system" for automated runs (e.g. the retention
+  /// sweep) — same app-enforced-FK pattern as Enrollment.learnerId.
+  actorId    String
+  actorRole  String
+  action     String
+  targetType String
+  targetId   String?
+  metadata   Json?
+  createdAt  DateTime @default(now())
+
+  @@index([action, createdAt])
+  @@index([targetType, targetId])
+}
+
+/// Secrets, Environment & Rate Limiting. Shared, DB-backed sliding window instead of in-memory —
+/// required because the deploy target is 2+ app instances (CLAUDE.md), and in-memory counters
+/// don't see traffic that landed on a different instance. `identifier` is an IP or email depending
+/// on the action (src/lib/rate-limit.ts); `windowStart` buckets requests into fixed windows rather
+/// than a true sliding log, which is enough precision for login/signup/upload abuse and avoids an
+/// unbounded row-per-request table.
+model RateLimitBucket {
+  id          String   @id @default(cuid())
+  identifier  String
+  action      String
+  windowStart DateTime
+  count       Int      @default(1)
+
+  @@unique([identifier, action, windowStart])
+  @@index([windowStart])
 }

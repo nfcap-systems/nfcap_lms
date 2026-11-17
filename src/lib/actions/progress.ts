@@ -4,6 +4,9 @@ import { revalidatePath } from 'next/cache';
 import { prisma } from '@/lib/prisma';
 import { EvidenceStatus as PrismaEvidenceStatus } from '@/generated/prisma/enums';
 import { requireAdmin, requireUser } from './guard';
+import { logAuditEvent } from './audit';
+import { containsSsnPattern } from '@/lib/pii';
+import { enforceRateLimit } from '@/lib/rate-limit';
 
 function buildCertificateCode(courseSlug: string): string {
   return `NFCAP-${courseSlug.toUpperCase().replace(/[^A-Z0-9]/g, '-')}`;
@@ -64,6 +67,13 @@ export async function grantCourseUnlock(learnerId: string, courseSlug: string): 
     update: {},
     create: { learnerId, courseId: course.id, source: 'ADMIN_ASSIGNMENT', grantedBy: admin.id },
   });
+  await logAuditEvent({
+    actor: admin,
+    action: 'GRANT_COURSE_UNLOCK',
+    targetType: 'CourseUnlock',
+    targetId: course.id,
+    metadata: { learnerId, courseSlug },
+  });
   revalidateLearnerViews(learnerId, courseSlug);
 }
 
@@ -101,6 +111,10 @@ export async function submitEvidence(
   fileName?: string,
 ): Promise<void> {
   const user = await requireUser();
+  await enforceRateLimit(user.id, 'submit-evidence', 20, 15 * 60 * 1000);
+  if (containsSsnPattern(description)) {
+    throw new Error('Evidence description cannot contain a Social Security Number.');
+  }
   const enrollment = await getOrCreateEnrollment(user.id, courseSlug);
   await prisma.evidenceSubmission.create({
     data: {
@@ -121,7 +135,7 @@ export async function setEvidenceStatus(
   courseSlug: string,
   status: 'approved' | 'rejected',
 ): Promise<void> {
-  await requireAdmin();
+  const admin = await requireAdmin();
 
   const enrollment = await prisma.enrollment.findFirstOrThrow({
     where: { learnerId, course: { slug: courseSlug } },
@@ -151,6 +165,14 @@ export async function setEvidenceStatus(
     // Admin flipping an approved submission back to rejected retracts the certificate it earned.
     await prisma.certificate.deleteMany({ where: { enrollmentId: enrollment.id } });
   }
+
+  await logAuditEvent({
+    actor: admin,
+    action: 'REVIEW_EVIDENCE',
+    targetType: 'EvidenceSubmission',
+    targetId: evidence.id,
+    metadata: { status, learnerId, courseSlug },
+  });
 
   revalidateLearnerViews(learnerId, courseSlug);
 }

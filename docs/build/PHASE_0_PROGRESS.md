@@ -5,10 +5,13 @@ changes; `CLAUDE.md` links here instead of restating detail.
 
 ## Status as of 2026-11-03
 
-**Phase 0 code work is functionally complete.** Everything below that's marked done was verified
-this session (typecheck, lint, and either a real build or, where noted, reasoning from traced code
-— see each item). Two items remain, both genuinely blocked rather than outstanding effort — see
-"Open" below.
+**Phase 0 is in progress, not complete** — 3 of 6 scoped features are done. Everything below that's
+marked done was verified this session (typecheck, lint, and either a real build or, where noted,
+reasoning from traced code — see each item). The performance-audit work (F1–F7) is fully resolved,
+which is a narrower claim than "Phase 0 is done" — three items remain open below, all deliberately
+deferred rather than outstanding effort, plus the WIOA Funding Module Sign-Off and the Staging
+Environment & Migration Strategy items need attention (see "Open" and the client scope doc's own
+checklist in `docs/client/NFCAP_LMS_Production_Scope_Summary_Client.md`).
 
 ### Done
 
@@ -27,7 +30,7 @@ this session (typecheck, lint, and either a real build or, where noted, reasonin
 | **`output: 'standalone'` + `sharp`** | `Dockerfile` copied `.next/standalone`, but `next.config.ts` never set `output: 'standalone'` — the Docker build would have failed outright at that `COPY` step. Fixed; confirmed `.next/standalone/server.js` now exists after `next build`. Added `sharp` as an explicit dependency (was only transitive via `next`) for production `next/image` optimization |
 | Test infra (Vitest + Playwright) + CI | Already existed: `tests/unit/*`, `tests/e2e/*`, `.github/workflows/ci.yml` (build + test), `.github/workflows/deploy-staging.yml`. **Could not actually run `npm run test`** — it needs a local Docker Postgres (`docker-compose.test.yml`) and Docker isn't available in this sandbox. Structurally sound on inspection; unverified by execution here |
 
-### Open — both are blocked, not pending effort
+### Open — all three are blocked, not pending effort
 
 1. **Redis + `'use cache'`/`cacheTag` on the curriculum layer.** No Redis service exists, and
    nothing uses `'use cache'` yet — deliberately. Sequencing reason: curriculum data is read by
@@ -40,6 +43,13 @@ this session (typecheck, lint, and either a real build or, where noted, reasonin
 2. **"Duplicate staging environment"** (`PERFORMANCE_PLAN.md` §5.3 line item). Only one
    environment exists today (`dev-nfcap.corecloud365.com`). There's no prod environment yet to
    duplicate staging *from/against* — this becomes real work once there's an actual go-live target.
+3. **Backup, Restore & Recovery Drill** (client scope doc, Phase 0, 14h). No real prod database
+   exists yet, so there's nothing valuable to lose and no real recovery procedure to rehearse
+   against. Deliberately deferred to just before go-live, same reasoning as item 2 above: a drill
+   run now would only prove the mechanism against a disposable dev DB, not the thing that'll
+   actually matter. Risk window: real WIOA/PII data starts landing at Phase 1, before this drill
+   is proven against prod — accepted as reasonable, but backups should still be *configured*
+   (not necessarily drilled) by the time that data arrives.
 
 ### Corrections made to stale tracking during this session
 

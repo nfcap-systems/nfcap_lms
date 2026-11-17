@@ -7,8 +7,11 @@ import { WioaReportsView } from '@/components/wioa/WioaReportsView';
  * already owns the WorkforceBoard CRUD these board-performance numbers are about. Separate from
  * /admin/analytics, which is the general LMS (courses/learners) analytics placeholder, not WIOA. */
 export default async function AdminWioaReportsPage() {
-  await requireAdmin();
-  const summary = await getWioaReportingSummary({ includeFunding: true });
+  const admin = await requireAdmin();
+  const summary = await getWioaReportingSummary(
+    { userId: admin.id, role: 'ADMIN' },
+    { includeFunding: true },
+  );
 
   return (
     <div className="flex flex-col gap-4">

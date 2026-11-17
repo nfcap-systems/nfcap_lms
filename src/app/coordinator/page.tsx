@@ -1,13 +1,18 @@
 import { connection } from 'next/server';
 import { getWioaCases } from '@/lib/data/wioa';
 import { getPartnerStaffRoster } from '@/lib/data/learners';
+import { requireCoordinator } from '@/lib/actions/guard';
 import { WioaCaseListView } from '@/components/wioa/WioaCaseListView';
 
 export default async function CoordinatorPage() {
   // getPartnerStaffRoster comes from Supabase Auth directly (src/lib/data/learners.ts), which has
   // no revalidatePath hook on signup — see src/app/admin/page.tsx.
   await connection();
-  const [cases, partnerStaffRoster] = await Promise.all([getWioaCases(), getPartnerStaffRoster()]);
+  const coordinator = await requireCoordinator();
+  const [cases, partnerStaffRoster] = await Promise.all([
+    getWioaCases({ userId: coordinator.id, role: 'WIOA_COORDINATOR' }),
+    getPartnerStaffRoster(),
+  ]);
 
   return (
     <div className="flex flex-col gap-4">

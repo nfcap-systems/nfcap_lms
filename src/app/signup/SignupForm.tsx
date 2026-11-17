@@ -1,6 +1,7 @@
 'use client';
 
 import { useActionState, useState } from 'react';
+import Link from 'next/link';
 import { signup, type AuthFormState } from '@/lib/actions/auth';
 import { Field } from '@/components/ui/Field';
 import { Input, Select, Checkbox } from '@/components/ui/Input';
@@ -149,6 +150,18 @@ export function SignupForm() {
       )}
 
       {state.error && <p className="text-sm text-status-danger-text">{state.error}</p>}
+
+      <p className="text-xs text-text-secondary">
+        By signing up, you agree to the{' '}
+        <Link href="/terms" className="font-medium text-brand-accent hover:text-brand-accent-hover">
+          Terms of Service
+        </Link>{' '}
+        and{' '}
+        <Link href="/privacy" className="font-medium text-brand-accent hover:text-brand-accent-hover">
+          Privacy Policy
+        </Link>
+        .
+      </p>
 
       <Button type="submit" size="lg" className="mt-2 w-full" disabled={pending}>
         {pending ? 'Creating account…' : 'Sign up'}
