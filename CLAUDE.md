@@ -31,21 +31,19 @@ Do not reopen decisions already closed in `PRODUCT_CONTEXT.md` or the client sco
   Strategy is partial — migrations aren't automated in the deploy step; WIOA Funding Module
   Sign-Off has real verification work behind it but was never formally credited against this item;
   Backup, Restore & Recovery Drill is deferred to pre-launch).
-- **Phase 1 (Security & Data Protection) is functionally complete** as of 2026-11-17, pending PR
-  #2 merge — all 9 scoped features have real, shipped work; see `docs/build/PHASE_1_PROGRESS.md`
-  for the full breakdown. Row-Level Access Rules (the item still open as of 2026-11-05) is now
-  rewired end-to-end: `src/lib/actions/wioa.ts` and `src/lib/data/wioa.ts` go through
-  `src/lib/db/rls.ts`'s `withRlsContext` instead of the RLS-bypassing `prisma` client, verified by
-  CI's Vitest suite against real Postgres (not available in every agent sandbox — CI has it).
-  That run also surfaced and fixed two previously-uncaught bugs with zero prior test coverage: a
-  test-fixture/seed-data lifecycle bug, and **infinite recursion in the RLS helper functions
-  themselves** (`app_can_access_case`/`app_can_access_learner`, fixed in migration
-  `20261117050000_fix_rls_helper_recursion` — this recursion bug is live in the production
-  database already and still needs that migration applied there). CI's Playwright/E2E suite could
-  not verify this round — every E2E test failed identically on its first Supabase Auth Admin API
-  call, which also passed cleanly 13 days earlier against the same secrets, pointing at a Supabase
-  staging-project connectivity/credentials issue rather than a code regression. Nothing in Phases
-  2–8 has started.
+- **Phase 1 (Security & Data Protection) is complete** as of 2026-11-17, pending PR #2 merge —
+  all 9 scoped features have real, shipped work; see `docs/build/PHASE_1_PROGRESS.md` for the
+  full breakdown. Row-Level Access Rules (the item still open as of 2026-11-05) is now rewired
+  end-to-end: `src/lib/actions/wioa.ts` and `src/lib/data/wioa.ts` go through `src/lib/db/rls.ts`'s
+  `withRlsContext` instead of the RLS-bypassing `prisma` client, verified by CI's full suite
+  (Vitest + Playwright/E2E) against real Postgres and a live Supabase project. That work surfaced
+  and fixed two previously-uncaught bugs with zero prior test coverage: a test-fixture/seed-data
+  lifecycle bug, and **infinite recursion in the RLS helper functions themselves**
+  (`app_can_access_case`/`app_can_access_learner`, fixed in migration
+  `20261117050000_fix_rls_helper_recursion`, applied to the live database and functionally
+  verified 2026-11-17). CI's E2E suite briefly couldn't run because the Supabase staging project
+  had gone unreachable (consistent with a free-tier auto-pause) — resumed from the dashboard, then
+  CI re-ran fully green. Nothing in Phases 2–8 has started.
 - **Deployment: self-hosted, VPS + Docker.** Supabase is retained for database and object storage.
   Deploy target was decided 2026-11-01 (VPS + Docker). Replica count is still undecided but isn't a
   blocker — **build for 2+ instances** is already the working assumption everything is built

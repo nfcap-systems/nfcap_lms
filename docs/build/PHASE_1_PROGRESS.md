@@ -4,14 +4,14 @@ Working log of Phase 1 execution against `docs/client/NFCAP_LMS_Production_Scope
 ("Phase 1 — Security & Data Protection", 9 features, 156h). Mirrors
 `docs/build/PHASE_0_PROGRESS.md`'s convention — update this as status changes.
 
-## Status as of 2026-11-17 (updated — RLS call-site rewiring done, CI-verified)
+## Status as of 2026-11-17 (updated — RLS call-site rewiring done, CI-verified end to end)
 
-**Phase 1 is functionally complete.** All 9 features have real, shipped work, and Row-Level
-Access Rules — the one item still open as of 2026-11-05 — is now fully rewired and verified by
-CI's Vitest suite running against real Postgres (`feature/phase-0-quality-foundations` PR #2,
-run `44023705590`). See "Row-Level Access Rules — done" below for what changed and what it
-caught. One caveat: CI's Playwright/E2E suite could not run to completion — see "Known gap"
-below, which is an infrastructure issue unrelated to this work, not a code regression.
+**Phase 1 is complete.** All 9 features have real, shipped work. Row-Level Access Rules — the
+one item still open as of 2026-11-05 — is now fully rewired, with CI's full suite (Vitest +
+Playwright/E2E) passing against real Postgres and a live Supabase project
+(`feature/phase-0-quality-foundations` PR #2, run `44024258923`). See "Row-Level Access Rules —
+done" below for what changed and what it caught, and "Resolved — Supabase project was paused"
+for why E2E needed a second pass.
 
 All three Phase 1 migrations are now applied to the live database and functionally verified
 (not just inspected):
@@ -75,26 +75,30 @@ exercised an actual `withRlsContext` call against live data before this rewiring
    `SECURITY DEFINER`, so their internal lookup runs as the bootstrap/superuser owner (which
    already has `BYPASSRLS`) instead of the caller — this bug was **live in the production
    database already** (the first migration was applied there 2026-11-05) and would have hit the
-   exact same recursion the first time any real request exercised these policies. **This new
-   migration needs to be applied to the live Supabase database** the same way the first one was —
-   it hasn't been from this sandbox (see "Known gap" below).
+   exact same recursion the first time any real request exercised these policies. Applied to the
+   live database on 2026-11-17 via `npx prisma migrate deploy`, and functionally verified (both
+   functions confirmed `SECURITY DEFINER`; a real RLS-context query under `PARTNER_STAFF` — the
+   path most exposed to the recursion — completes without error).
 3. Also fixed along the way: `prisma db execute`'s CLI flags changed in Prisma 7 (no more `--url`
    — it reads the datasource from `prisma.config.ts`), caught while wiring up test-DB support for
    the `app_runtime` role's password (`tests/setup/db-infra.ts`, `.env.test`, `ci.yml`).
 
-### Known gap: CI's E2E (Playwright) suite could not verify this
+### Resolved — Supabase project was paused; now fully green (2026-11-17)
 
-CI's Vitest (unit) suite fully passed. CI's Playwright suite could not run to completion — every
-test failed identically at its first call (`Failed to create E2E test user: fetch failed` in
-`tests/e2e/setup/supabase-test-user.ts`), which uses the Supabase Auth Admin API against
-`STAGING_SUPABASE_URL`/`STAGING_SUPABASE_SERVICE_ROLE_KEY`. This same E2E suite passed cleanly 13
-days ago against the same secrets/project (CI run `41684974158`), and this session independently
-found the live Supabase Postgres connection unreachable with the credentials in `.env`
-("`tenant/user ... not found`" from the Supavisor pooler) — both point at a Supabase
-staging-project connectivity or credentials problem, not a code regression from this rewiring.
-Needs someone with Supabase dashboard access to check whether the project is paused or the
-service-role key/URL secrets have rotated, then re-run CI. **Also applies the migration 2 above**
-to the live/staging database once that access is restored.
+The connectivity gap above turned out to be exactly what it looked like: the Supabase staging
+project had gone unreachable (DNS for the project hostname returned `ENOTFOUND` even via public
+resolvers, and the Postgres pooler rejected the tenant id) — consistent with the free-tier project
+having been auto-paused. Once resumed from the Supabase dashboard:
+
+- The RLS recursion-fix migration (`20261117050000_fix_rls_helper_recursion`) was applied to the
+  live database via `npx prisma migrate deploy`, and functionally verified directly: both helper
+  functions now show `prosecdef = true`, and a real `withRlsContext`-style query against
+  `WioaCase`/`LearnerProfile` under the `PARTNER_STAFF` role (the path most exposed to the
+  recursion) completes without the `54001` stack-depth error.
+- CI was re-run on PR #2 (run `44024258923`) with Supabase reachable — **both the Vitest and
+  Playwright/E2E suites now pass in full.**
+
+Phase 1 — Security & Data Protection is complete and CI-verified end to end, pending PR #2 merge.
 
 ### Resolved — migrations applied 2026-11-05
 
