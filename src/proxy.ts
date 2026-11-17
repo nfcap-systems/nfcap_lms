@@ -8,6 +8,14 @@ export async function proxy(request: NextRequest) {
   const { supabaseResponse, user } = await updateSession(request);
   const { pathname } = request.nextUrl;
 
+  // /api/cron/* has no Supabase session at all (triggered by a scheduled job, not a browser) —
+  // it authenticates itself via CRON_SECRET (src/app/api/cron/data-retention/route.ts), so it's
+  // exempt from the session-based checks below rather than being 401'd before it can even run
+  // its own check.
+  if (pathname.startsWith('/api/cron')) {
+    return supabaseResponse;
+  }
+
   // /api/* is never a browser page navigation — an unauthenticated hit gets a 401 JSON body,
   // not a login-page redirect.
   if (pathname.startsWith('/api') && !user) {

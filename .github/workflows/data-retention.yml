@@ -1,0 +1,23 @@
+name: Data Retention Sweep
+
+on:
+  schedule:
+    # Daily at 09:00 UTC. The sweep itself is a no-op on any day with nothing past the retention
+    # window (docs/build/PHASE_1_DATA_RETENTION.md) — daily just keeps the lag small once
+    # something does become eligible.
+    - cron: '0 9 * * *'
+  workflow_dispatch: {}
+
+jobs:
+  sweep:
+    name: Run retention sweep
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Call retention endpoint
+        run: |
+          curl --fail-with-body -sS -X POST "${APP_URL}/api/cron/data-retention" \
+            -H "Authorization: Bearer ${CRON_SECRET}"
+        env:
+          APP_URL: ${{ secrets.APP_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
