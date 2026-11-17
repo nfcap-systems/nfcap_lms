@@ -40,9 +40,19 @@ export async function withRlsContext<T>(
   ctx: SessionContext,
   fn: (tx: PrismaClient) => Promise<T>,
 ): Promise<T> {
-  return rlsPrisma.$transaction(async (tx) => {
-    await tx.$executeRaw`SELECT set_config('app.user_id', ${ctx.userId}, true)`;
-    await tx.$executeRaw`SELECT set_config('app.user_role', ${ctx.role}, true)`;
-    return fn(tx as PrismaClient);
-  });
+  return rlsPrisma.$transaction(
+    async (tx) => {
+      await tx.$executeRaw`SELECT set_config('app.user_id', ${ctx.userId}, true)`;
+      await tx.$executeRaw`SELECT set_config('app.user_role', ${ctx.role}, true)`;
+      return fn(tx as PrismaClient);
+    },
+    // Prisma's defaults (maxWait: 2000ms, timeout: 5000ms) are too tight here — a plain
+    // connection to Supabase from this environment alone measures ~1.7-2s (see the
+    // connectionTimeoutMillis comment on the pool above), so acquiring a pooled connection can
+    // occasionally spill past 2000ms under ordinary network jitter, surfacing as Prisma P2028
+    // ("Unable to start a transaction in the given time") even though nothing is actually wrong
+    // (confirmed: a fresh connection outside this pool starts a transaction fine; pg_stat_activity
+    // shows no connection leak). Matches the 20s connectionTimeoutMillis already set above.
+    { maxWait: 10_000, timeout: 20_000 },
+  );
 }

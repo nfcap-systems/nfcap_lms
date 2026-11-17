@@ -55,6 +55,17 @@ function ProfileMenu({
             <p className="truncate text-xs text-text-muted">{roleLabel}</p>
           </div>
           <div className="border-t border-border-subtle p-1.5">
+            <Link
+              href={`/${role}/account`}
+              role="menuitem"
+              onClick={() => setOpen(false)}
+              className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-left text-sm font-medium text-text-secondary transition-colors hover:bg-bg-subtle hover:text-text-primary"
+            >
+              <Icon name="settings" className="h-4.5 w-4.5" />
+              Account Settings
+            </Link>
+          </div>
+          <div className="border-t border-border-subtle p-1.5">
             <LogoutButton
               role="menuitem"
               className="flex w-full cursor-pointer items-center gap-2.5 rounded-xl px-3 py-2 text-left text-sm font-medium text-text-secondary transition-colors hover:bg-bg-subtle hover:text-text-primary"
@@ -170,9 +181,7 @@ export function Sidebar({
               <div key={entry.label}>
                 <button
                   type="button"
-                  onClick={() =>
-                    setOpenGroups((prev) => ({ ...prev, [entry.label]: !expanded }))
-                  }
+                  onClick={() => setOpenGroups((prev) => ({ ...prev, [entry.label]: !expanded }))}
                   className={cn(linkClasses(false, false), 'w-full justify-between')}
                   aria-expanded={expanded}
                 >
@@ -226,7 +235,12 @@ export function Sidebar({
       </nav>
 
       <div className="shrink-0 p-3">
-        <ProfileMenu userName={userName} userEmail={userEmail} role={role} collapsed={isCollapsed} />
+        <ProfileMenu
+          userName={userName}
+          userEmail={userEmail}
+          role={role}
+          collapsed={isCollapsed}
+        />
       </div>
     </div>
   );

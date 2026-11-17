@@ -2,9 +2,10 @@
 
 import { useActionState, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
+import Link from 'next/link';
 import { login, type AuthFormState } from '@/lib/actions/auth';
 import { Field } from '@/components/ui/Field';
-import { Input, Checkbox } from '@/components/ui/Input';
+import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { MailIcon, LockIcon, EyeIcon, EyeOffIcon, ArrowRightIcon } from './icons';
 
@@ -14,6 +15,8 @@ export function LoginForm() {
   const searchParams = useSearchParams();
   const next = searchParams.get('next') ?? '';
   const justSignedUp = searchParams.get('confirm') === '1';
+  const justReset = searchParams.get('reset') === '1';
+  const linkExpired = searchParams.get('error') === 'link-expired';
   const [state, formAction, pending] = useActionState(login, initialState);
   const [showPassword, setShowPassword] = useState(false);
 
@@ -24,6 +27,18 @@ export function LoginForm() {
       {justSignedUp && (
         <p className="rounded-md bg-status-info-bg px-3 py-2 text-sm text-status-info-text">
           Account created. Check your email to confirm it, then log in below.
+        </p>
+      )}
+
+      {justReset && (
+        <p className="rounded-md bg-status-success-bg px-3 py-2 text-sm text-status-success-text">
+          Password updated. Sign in with your new password.
+        </p>
+      )}
+
+      {linkExpired && (
+        <p className="rounded-md bg-status-danger-bg px-3 py-2 text-sm text-status-danger-text">
+          That link has expired or already been used. Request a new one below.
         </p>
       )}
 
@@ -66,30 +81,18 @@ export function LoginForm() {
         </div>
       </Field>
 
-      <div className="flex items-center justify-between text-sm">
-        <label className="flex items-center gap-2 text-text-secondary">
-          <Checkbox name="rememberMe" />
-          Remember me
-        </label>
-        <button
-          type="button"
-          disabled
-          title="Coming soon"
-          className="font-medium text-brand-accent underline-offset-2 hover:underline disabled:cursor-not-allowed disabled:text-text-muted disabled:no-underline"
+      <div className="flex items-center justify-end text-sm">
+        <Link
+          href="/forgot-password"
+          className="font-medium text-brand-accent underline-offset-2 hover:underline"
         >
           Forgot your password?
-        </button>
+        </Link>
       </div>
 
       {state.error && <p className="text-sm text-status-danger-text">{state.error}</p>}
 
-      <Button
-        type="submit"
-        variant="primary"
-        size="lg"
-        className="w-full gap-2"
-        disabled={pending}
-      >
+      <Button type="submit" variant="primary" size="lg" className="w-full gap-2" disabled={pending}>
         {pending ? 'Signing in…' : 'Sign in'}
         {!pending && <ArrowRightIcon className="h-4 w-4" />}
       </Button>

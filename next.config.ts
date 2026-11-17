@@ -29,12 +29,16 @@ const nextConfig: NextConfig = {
 // Self-hosted (VPS + Docker, not Vercel) has no automatic source-map upload at build time — this
 // wrapper is that missing hook. It only uploads when SENTRY_AUTH_TOKEN is present (CI/deploy);
 // without it, this no-ops and the build is unaffected (docs/build/PERFORMANCE_PLAN.md §5.3).
-export default withSentryConfig(nextConfig, {
-  org: process.env.SENTRY_ORG,
-  project: process.env.SENTRY_PROJECT,
-  authToken: process.env.SENTRY_AUTH_TOKEN,
-  silent: true,
-  // Removes the wrapping's bundled copy of source maps from the client-facing output after
-  // upload, so minified-but-mapped files aren't themselves served publicly.
-  sourcemaps: { deleteSourcemapsAfterUpload: true },
-});
+// Skipped outside production: the wrapper still instruments every route during `next dev`'s
+// cold compiles even though dev never uploads source maps, so it's pure dev-mode overhead.
+export default process.env.NODE_ENV === 'production'
+  ? withSentryConfig(nextConfig, {
+      org: process.env.SENTRY_ORG,
+      project: process.env.SENTRY_PROJECT,
+      authToken: process.env.SENTRY_AUTH_TOKEN,
+      silent: true,
+      // Removes the wrapping's bundled copy of source maps from the client-facing output after
+      // upload, so minified-but-mapped files aren't themselves served publicly.
+      sourcemaps: { deleteSourcemapsAfterUpload: true },
+    })
+  : nextConfig;

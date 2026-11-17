@@ -3,6 +3,7 @@ import { cookies } from 'next/headers';
 import { cache } from 'react';
 import type { User } from '@supabase/supabase-js';
 import { isRole, type Role } from '@/lib/roles';
+import { AUTH_COOKIE_OPTIONS, withSessionMaxAge } from './session';
 
 export async function createClient() {
   const cookieStore = await cookies();
@@ -11,6 +12,7 @@ export async function createClient() {
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
+      cookieOptions: AUTH_COOKIE_OPTIONS,
       cookies: {
         getAll() {
           return cookieStore.getAll();
@@ -18,7 +20,7 @@ export async function createClient() {
         setAll(cookiesToSet) {
           try {
             cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, options),
+              cookieStore.set(name, value, withSessionMaxAge(options)),
             );
           } catch {
             // Called from a Server Component that can't set cookies — middleware refreshes
