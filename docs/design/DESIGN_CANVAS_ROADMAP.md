@@ -222,15 +222,147 @@ JPEG q60 none of these bite.
 
 ### Housekeeping — these files now contradict the above
 
-- `docs/design/NFCAP_DESIGN_SYSTEM.md` still says **"Status: decided and implemented."** It is
-  superseded for colour and type. Not yet edited.
-- `docs/build/UI_REVAMP_SESSION_LOG.md` still records Coursera-primary / Udemy-sidebar-only and
-  lists the locked-brand question as unresolved. Both out of date.
+*Both resolved 2026-11-18 (commit `d496b8e`):*
 
-## Next step
+- `docs/design/NFCAP_DESIGN_SYSTEM.md` now carries a superseded banner naming what survives (the
+  WCAG contrast computations, the dual-tone focus ring, the four card states) and what is
+  historical.
+- `docs/build/UI_REVAMP_SESSION_LOG.md`'s learner section is banner-ed as superseded, pointing at
+  this file and `LEARNER_UI_REFERENCES.md`, and its next-session list is rewritten.
 
-1. Run the capture — the six no-login references plus the admin template need nothing from anyone.
-2. Answer open questions 1–3.
-3. Create the canvas: `project/nfcap-app.css`, then the `fnd` page.
+## Execution checklist
 
-Recommended order: 1, then 2 and 3 together (the palette wants the captures on screen).
+Run top to bottom. **After every task**, report in this format, then continue — never batch several
+tasks into one report:
+
+```
+DONE <task id> — <what was produced>
+EVIDENCE — <file paths, board names, or URL>
+NEXT — <task id and one line>
+BLOCKED — <nothing, or the exact question needed>
+```
+
+### Hard stop rules
+
+1. **⚑ STOP before creating the canvas artifact (task 2.1).** Say that the artifact is about to be
+   created, with its intended title, and wait for an explicit go. It is the one irreversible,
+   outward-facing step in this plan.
+2. **⚑ STOP before any browser action that writes to a real account** — starting a quiz, marking a
+   lesson complete, submitting a form. Screenshots are read-only; those are not. Name the exact
+   action and wait.
+3. **⚑ STOP before locking the palette (task 4.1).** The accent is a one-way door for every board
+   after it. Show the candidate against the captures and wait for a yes.
+4. **Never two file writes in a row** when building artboards — write one, publish it, then the
+   next. The artifact type forbids batching.
+5. **Never verify unless asked** — do not read boards back, re-render, screenshot the canvas or open
+   it to check. If verification seems needed, ask first.
+6. **One page at a time.** Do not start a later page because an earlier one is blocked. Report the
+   block.
+7. **Do not commit or push** unless asked.
+8. **⚑ NOTHING IS DRAWN INTO THE CANVAS UNTIL THE DESIGN IS APPROVED.** The canvas holds *final*
+   design only. For every screen or page, first produce **2–3 mockup variants as throwaway
+   previews**, show them, and wait. Only the chosen variant becomes a board. Variants live outside
+   the canvas — local HTML files in the scratchpad or a gstack comparison board — never as extra
+   artboards. This applies to the `fnd`, `trainee`, `admin`, `staff` and `journeys` pages. The
+   `refs` page is exempt: it holds captured screenshots, not design.
+
+### Stage 0 — Setup
+
+| Task | Do | Needs user |
+| --- | --- | --- |
+| 0.1 | Decide the capture directory. **Use the session scratchpad, not the repo** — the files are disposable once uploaded and nothing binary belongs near git. If the repo is used anyway, add `.gstack/` to `.gitignore` first. | no |
+| 0.2 | Build gstack's browser: `cd ~/.claude/skills/gstack/browse && ./setup`, then confirm `READY: <path>`. `bun` and `node` are already installed. | no |
+
+### Stage 1 — Captures that need no login
+
+`$B responsive <prefix>` wherever mobile/tablet/desktop matters; JPEG quality 60.
+
+| Task | Target | Shots |
+| --- | --- | --: |
+| 1.1 | **Codecademy** — career-path syllabus with completed + current + locked steps in one frame; what a locked step says when clicked | 3 |
+| 1.2 | **Moodle** `demo.moodle.net` — set an access restriction as teacher, then capture the **student-side** locked state; plus activity-completion settings | 4 |
+| 1.3 | **OneFile** — public provider guides (Lincoln resources hub, NHS NSHCS): the trainee upload/mapping flow **and** the assessor review flow | 6 |
+| 1.4 | **GOV.UK Design System** — one-thing-per-page, task list, check-your-answers, error summary | 4 |
+| 1.5 | **Credly** — a public badge verification page, as an anonymous visitor | 2 |
+| 1.6 | **Canvas** — rubric, submission and quiz-settings documentation | 3 |
+| 1.7 | **`studio-admin.arhamkhnz.com`** — sidebar/shell, `/dashboard/default` (all three components), one data-table page. Responsive. | 6 |
+
+Report the file list with each image shown inline, so the user sees what was captured before
+anything is uploaded.
+
+### Stage 2 — Create the canvas and build `refs`
+
+| Task | Do | Needs user |
+| --- | --- | --- |
+| 2.1 | **⚑ STOP.** Announce: about to create a Design canvas titled **`NFCAP LMS Design`**. Wait for go. | **yes** |
+| 2.2 | Create it from the Design artifact type with that title. Record the URL. | no |
+| 2.3 | Upload the Stage 1 captures as assets, batches of ≤25. Record each `/_blob/<id>` against its shot. | no |
+| 2.4 | Write `project/canvas.json` (six pages, band notes) then `NF-R01` … `NF-R09`, **one board per publish**. `R01`–`R03` stay placeholders until Stage 5. | no |
+| 2.5 | Report the canvas URL and board count. | no |
+
+### Stage 3 — Decision gate (blocking)
+
+| Task | Do | Needs user |
+| --- | --- | --- |
+| 3.1 | Ask open questions **1, 2 and 3** (open-course discovery; Home vs My Learning; palette propagation into admin). Do not proceed on assumptions. | **yes** |
+
+### Stage 4 — Foundations
+
+| Task | Do | Needs user |
+| --- | --- | --- |
+| 4.1 | Run **`/design-consultation`** (gstack) against `LEARNER_UI_REFERENCES.md`'s brand direction and the `refs` boards. It proposes a complete system and generates font + colour previews. | no |
+| 4.2 | **⚑ STOP.** Show **2–3 palette/type variants** as previews — not boards. Wait for the pick. The accent is a one-way door for every board after it. | **yes** |
+| 4.3 | Write `project/nfcap-app.css` from the approved variant. Everything inherits from it. | no |
+| 4.4 | **⚑ STOP.** Draw 2–3 variants of **one** representative component sheet (`F06-CardsCourse`, the four states) as previews. Wait for the pick — it sets the house style for the other 13. | **yes** |
+| 4.5 | `F01` … `F14`, one board per publish, in the approved style. `F14-Density` depends on question 3. | no |
+| 4.6 | Run **`/design-review`** (gstack) over the finished page and fix what it finds. | no |
+
+### Stage 5 — Captures that need a login
+
+| Task | Do | Needs user |
+| --- | --- | --- |
+| 5.1 | `$B connect` for the headed window; the user signs into Coursera and Udemy (`$B handoff` → sign in → `$B resume`). Never type their credentials. | **yes** |
+| 5.2 | Capture the 13 shots listed in `LEARNER_UI_REFERENCES.md`. **⚑ STOP before any quiz attempt** (rule 2). | partly |
+| 5.3 | Upload, then fill in boards `R01`–`R03`. | no |
+| 5.4 | If the sites block the automated Chromium: stop, report it, switch to the Claude-in-Chrome fallback or manual capture. Do not retry repeatedly. | **yes** |
+
+### Stages 6–10 — Screens
+
+| Stage | Page | Boards | Depends on |
+| --- | --- | --: | --- |
+| 6 | `trainee` | 24 | Questions 1 and 2; Stage 4 |
+| 7 | `journeys` `J06`–`J10` | 5 | Stage 6 — validates it against the build plan's own steps |
+| 8 | `admin` | 16 | Stage 4. **`A01-Dashboard` draws the decided `/dashboard/default` structure, not the dashboard in the codebase** |
+| 9 | `staff` | 12 | Stage 8 |
+| 10 | `journeys` `J01`–`J05` | 5 | Stage 9 |
+
+Before starting any of these stages, write a short per-board brief — two or three lines each: what
+the screen shows, which reference it draws on, which states appear. The board names above are a
+list, not a spec; 24 trainee boards drawn from names alone will drift.
+
+### The design loop, per page
+
+Every screen page runs this loop. **Nothing enters the canvas before step 4.**
+
+| Step | Do | Tool | Needs user |
+| --: | --- | --- | --- |
+| 1 | Write the per-board briefs for the page. | — | no |
+| 2 | Pick the 2–3 **anchor screens** for the page (for `trainee`: `T01-Home`, `T04-Player`, `T06b-EvidenceCapture`) and produce **2–3 variants of each** as throwaway previews. | **`/design-shotgun`** — generates variants, opens a comparison board, collects structured feedback | no |
+| 3 | **⚑ STOP.** Show the variants. Wait for the pick, including any "variant 2's header with variant 1's card" style mixing. | — | **yes** |
+| 4 | Draw the page's boards in the approved style, one board per publish. Derivative screens follow the anchors without their own variant round. | **`/design-html`** for production-quality markup | no |
+| 5 | Review the finished page and fix what it finds. | **`/design-review`** | no |
+
+Available gstack design skills, and what each is for here: **`/design-consultation`** (propose a
+system, font and colour previews — Stage 4) · **`/design-shotgun`** (2–3 variants, comparison board,
+structured feedback — step 2 above) · **`/design-html`** (production-quality HTML/CSS — step 4) ·
+**`/design-review`** (visual QA: spacing, hierarchy, inconsistency, AI-slop patterns — step 5) ·
+**`/ui-ux-pro-max`** and **`/impeccable`** (pattern and palette reference when a specific question
+comes up).
+
+Variants are **not** artboards. They live as local HTML in the scratchpad or on a gstack comparison
+board, and they are thrown away once the pick is made. The canvas gets the winner only.
+
+### Effort
+
+Roughly eight to nine sessions end to end. The canvas exists and is useful after Stage 2 — the
+`refs` page is what the Stage 4 palette decision gets made against.
