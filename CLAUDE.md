@@ -18,12 +18,13 @@ Read `docs/HANDOFF.md` first — it is the onboarding entry point. Then, by ques
 | Phase 0 execution status — what's done, what's open, why | `docs/build/PHASE_0_PROGRESS.md` |
 | Phase 1 execution status — what's done, what's open, why | `docs/build/PHASE_1_PROGRESS.md` |
 | Phase 2 execution status — what's done, what's open, why | `docs/build/PHASE_2_PROGRESS.md` |
+| Phase 3 execution status — what's done, what's open, why | `docs/build/PHASE_3_PROGRESS.md` |
 | WIOA module shape and closed decisions | `docs/wioa/WIOA_INTEGRATION_PLAN.md`, `docs/build/WIOA_BUILD_WORKFLOW.md` |
 | Design system / tokens | `docs/design/NFCAP_DESIGN_SYSTEM.md` |
 
 Do not reopen decisions already closed in `PRODUCT_CONTEXT.md` or the client scope doc.
 
-## Current state (as of 2026-11-17)
+## Current state (as of 2026-11-18)
 
 - **The client scope plan is approved.** 65 features, 9 phases, ~1,431h. **Phase 0 is in progress,
   not complete** — 3 of its 6 scoped features are done (Automated Test Suite, Automated Checks/CI,
@@ -45,20 +46,28 @@ Do not reopen decisions already closed in `PRODUCT_CONTEXT.md` or the client sco
   verified 2026-11-17). CI's E2E suite briefly couldn't run because the Supabase staging project
   had gone unreachable (consistent with a free-tier auto-pause) — resumed from the dashboard, then
   CI re-ran fully green.
-- **Phase 2 (Accounts, Access & Email) is in progress** as of 2026-11-17 — 3 of 7 features done
-  and manually verified end-to-end: Transactional Email Infrastructure (Resend, wired into both
+- **Phase 2 (Accounts, Access & Email) is complete** as of 2026-11-18 — all 7 scoped features done
+  and manually verified: Transactional Email Infrastructure (Resend, wired into both
   `src/lib/email.ts` for app-triggered email and Supabase Auth's SMTP for its own auth emails),
   Password Reset (`/forgot-password` → email → `src/app/auth/confirm/route.ts` → `/reset-password`),
-  and Email Verification (same `/auth/confirm` route, `type=signup`; confirming logs the learner
-  straight into `/learner`). Testing the latter surfaced a real bug: `src/lib/db/rls.ts`'s
-  `withRlsContext` had no explicit transaction timeout, so it used Prisma's tight defaults
-  (2s/5s) against an environment whose baseline Supabase connection latency is already ~1.7-2s —
-  fixed with a 10s/20s allowance. See `docs/build/PHASE_2_PROGRESS.md` for the full breakdown,
-  including required manual Supabase
+  Email Verification (same `/auth/confirm` route, `type=signup`; confirming logs the learner
+  straight into `/learner`), Session & Login Hardening (`httpOnly`/`secure`/`sameSite` cookies,
+  30-day cap replacing `@supabase/ssr`'s 400-day default — see `src/lib/supabase/session.ts`),
+  Account Settings (`/{role}/account` for all four roles — name/email/password, reauth-gated, plus
+  Learner contact info), Role Management Screen (`/admin/roles` — replaces
+  `scripts/promote-role.ts` with a real UI), and User Deactivation & Offboarding (same
+  `/admin/roles` screen, Supabase's `ban_duration` admin API — deactivate/reactivate, nothing
+  deleted). Testing this phase surfaced a real bug: `src/lib/db/rls.ts`'s `withRlsContext` had no
+  explicit transaction timeout, so it used Prisma's tight defaults (2s/5s) against an environment
+  whose baseline Supabase connection latency is already ~1.7-2s — fixed with a 10s/20s allowance.
+  See `docs/build/PHASE_2_PROGRESS.md` for the full breakdown, including required manual Supabase
   dashboard configuration (not in git) and the one known limitation: no sending domain is verified
   in Resend yet (no DNS access available to any candidate domain), so real email delivery is
   restricted to one test address until that's resolved — not a blocker for continued dev, but must
-  be fixed before any real trainee/staff email can go out. Nothing in Phases 3–8 has started.
+  be fixed before any real trainee/staff email can go out, and is specifically why Account
+  Settings' email-change confirmation couldn't be delivery-tested end-to-end. **Phase 3 (Evidence
+  & Competency) has not started** — see `docs/build/PHASE_3_PROGRESS.md`. Nothing in Phases 4–8
+  has started either.
 - **Deployment: self-hosted, VPS + Docker.** Supabase is retained for database and object storage.
   Deploy target was decided 2026-11-01 (VPS + Docker). Replica count is still undecided but isn't a
   blocker — **build for 2+ instances** is already the working assumption everything is built

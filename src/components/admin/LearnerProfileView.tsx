@@ -2,14 +2,29 @@
 
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { Badge, Button, Card, CardContent, CardHeader, CardTitle, ProgressBar } from '@/components/ui';
-import { Icon } from '@/components/icons';
+import { Check, Clipboard, Paperclip, X } from 'lucide-react';
+
+import { Badge, type badgeVariants } from '@/components/admin-ui/badge';
+import { Button } from '@/components/admin-ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/admin-ui/card';
+import { Progress } from '@/components/admin-ui/progress';
 import type { AdminCourse } from '@/lib/data/courses';
 import type { LearnerRecord } from '@/lib/data/learners';
 import type { CourseProgress, CourseUnlockRecord } from '@/lib/data/progress';
 import { setEvidenceStatus, grantCourseUnlock } from '@/lib/actions/progress';
 import { courseLessonCount } from '@/lib/types';
 import { getCourseStatus, courseStatusLabel, courseStatusTone } from '@/lib/course-status';
+import type { StatusTone } from '@/components/ui/Badge';
+import type { VariantProps } from 'class-variance-authority';
+
+const toneToBadgeVariant: Record<StatusTone, VariantProps<typeof badgeVariants>['variant']> = {
+  neutral: 'outline',
+  info: 'outline',
+  pending: 'warning',
+  success: 'success',
+  danger: 'destructive',
+  restricted: 'outline',
+};
 
 export function LearnerProfileView({
   learner,
@@ -48,103 +63,109 @@ export function LearnerProfileView({
 
       {enrolledCourses.length === 0 ? (
         <Card>
-          <CardContent className="py-10 text-center text-sm text-text-secondary">
+          <CardContent className="py-10 text-center text-sm text-muted-foreground">
             {learner.name} isn&apos;t enrolled in any courses yet.
           </CardContent>
         </Card>
       ) : (
         enrolledCourses.map((course) => {
-        const courseProgress = progress[course.id];
-        const total = courseLessonCount(course);
-        const done = courseProgress?.completedLessonIds.length ?? 0;
-        const status = getCourseStatus(course, courseProgress);
-        const evidence = courseProgress?.evidence;
+          const courseProgress = progress[course.id];
+          const total = courseLessonCount(course);
+          const done = courseProgress?.completedLessonIds.length ?? 0;
+          const percent = total === 0 ? 0 : Math.min(100, Math.max(0, (done / total) * 100));
+          const status = getCourseStatus(course, courseProgress);
+          const evidence = courseProgress?.evidence;
 
-        return (
-          <Card key={course.id}>
-            <CardContent className="flex flex-col gap-4">
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div>
-                  <p className="text-xs font-medium uppercase tracking-wide text-text-muted">
-                    {course.category}
-                  </p>
-                  <h3 className="text-base font-semibold text-brand-heading">{course.title}</h3>
-                </div>
-                <Badge tone={courseStatusTone[status]}>{courseStatusLabel[status]}</Badge>
-              </div>
-
-              <ProgressBar
-                value={done}
-                max={total}
-                label={`${done} of ${total} lessons`}
-                showPercentage
-              />
-
-              {courseProgress?.quizAttempt && (
-                <div className="flex items-center gap-2 text-sm text-text-secondary">
-                  <Icon name="clipboard" className="size-4 text-text-muted" />
-                  Knowledge Assessment: {courseProgress.quizAttempt.scorePercent}%
-                  {courseProgress.quizAttempt.passed ? ' (passed)' : ' (not passed)'}
-                </div>
-              )}
-
-              {evidence && (
-                <div className="flex flex-col gap-3 rounded-xl border border-border-subtle bg-bg-subtle p-4">
-                  <div className="flex items-center justify-between gap-3">
-                    <p className="text-sm font-medium text-text-primary">Practical Evidence</p>
-                    <span className="text-xs text-text-muted">
-                      Submitted{' '}
-                      {new Date(evidence.submittedAt).toLocaleDateString(undefined, {
-                        month: 'short',
-                        day: 'numeric',
-                        year: 'numeric',
-                      })}
-                    </span>
+          return (
+            <Card key={course.id}>
+              <CardContent className="flex flex-col gap-4">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+                      {course.category}
+                    </p>
+                    <h3 className="text-base font-semibold text-foreground">{course.title}</h3>
                   </div>
-                  <p className="text-sm text-text-secondary">{evidence.description}</p>
-                  {evidence.fileName && (
-                    <div className="flex w-fit items-center gap-2 rounded-lg border border-border-subtle bg-bg-card px-3 py-2 text-sm text-text-secondary">
-                      <Icon name="paperclip" className="size-4 shrink-0 text-brand-primary" />
-                      {evidence.fileName}
-                    </div>
-                  )}
-
-                  {evidence.status === 'pending' ? (
-                    <div className="flex gap-2 pt-1">
-                      <Button size="sm" onClick={() => updateStatus(course.id, 'approved')}>
-                        <Icon name="check" className="size-4" />
-                        Approve
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => updateStatus(course.id, 'rejected')}
-                      >
-                        <Icon name="x" className="size-4" />
-                        Reject
-                      </Button>
-                    </div>
-                  ) : (
-                    <div className="pt-1">
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() =>
-                          updateStatus(
-                            course.id,
-                            evidence.status === 'approved' ? 'rejected' : 'approved',
-                          )
-                        }
-                      >
-                        Change to {evidence.status === 'approved' ? 'Rejected' : 'Approved'}
-                      </Button>
-                    </div>
-                  )}
+                  <Badge variant={toneToBadgeVariant[courseStatusTone[status]]}>
+                    {courseStatusLabel[status]}
+                  </Badge>
                 </div>
-              )}
-            </CardContent>
-          </Card>
-        );
+
+                <div>
+                  <div className="mb-1.5 flex items-center justify-between text-xs text-muted-foreground">
+                    <span>
+                      {done} of {total} lessons
+                    </span>
+                    <span className="font-medium text-foreground">{Math.round(percent)}%</span>
+                  </div>
+                  <Progress value={percent} />
+                </div>
+
+                {courseProgress?.quizAttempt && (
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Clipboard className="size-4" />
+                    Knowledge Assessment: {courseProgress.quizAttempt.scorePercent}%
+                    {courseProgress.quizAttempt.passed ? ' (passed)' : ' (not passed)'}
+                  </div>
+                )}
+
+                {evidence && (
+                  <div className="flex flex-col gap-3 rounded-xl border bg-muted/30 p-4">
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="text-sm font-medium text-foreground">Practical Evidence</p>
+                      <span className="text-xs text-muted-foreground">
+                        Submitted{' '}
+                        {new Date(evidence.submittedAt).toLocaleDateString(undefined, {
+                          month: 'short',
+                          day: 'numeric',
+                          year: 'numeric',
+                        })}
+                      </span>
+                    </div>
+                    <p className="text-sm text-muted-foreground">{evidence.description}</p>
+                    {evidence.fileName && (
+                      <div className="flex w-fit items-center gap-2 rounded-lg border bg-card px-3 py-2 text-sm text-muted-foreground">
+                        <Paperclip className="size-4 shrink-0 text-primary" />
+                        {evidence.fileName}
+                      </div>
+                    )}
+
+                    {evidence.status === 'pending' ? (
+                      <div className="flex gap-2 pt-1">
+                        <Button size="sm" onClick={() => updateStatus(course.id, 'approved')}>
+                          <Check className="size-4" />
+                          Approve
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => updateStatus(course.id, 'rejected')}
+                        >
+                          <X className="size-4" />
+                          Reject
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="pt-1">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() =>
+                            updateStatus(
+                              course.id,
+                              evidence.status === 'approved' ? 'rejected' : 'approved',
+                            )
+                          }
+                        >
+                          Change to {evidence.status === 'approved' ? 'Rejected' : 'Approved'}
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          );
         })
       )}
     </div>
@@ -184,19 +205,19 @@ function CourseAccessCard({
           return (
             <div
               key={course.id}
-              className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border-subtle p-3"
+              className="flex flex-wrap items-center justify-between gap-2 rounded-lg border p-3"
             >
               <div>
-                <p className="text-sm font-medium text-text-primary">{course.title}</p>
+                <p className="text-sm font-medium text-foreground">{course.title}</p>
                 {unlock && (
-                  <p className="text-xs text-text-muted">
+                  <p className="text-xs text-muted-foreground">
                     Unlocked via{' '}
                     {unlock.source === 'WIOA_FUNDING' ? 'WIOA funding' : 'Admin assignment'}
                   </p>
                 )}
               </div>
               {unlock ? (
-                <Badge tone="success">Unlocked</Badge>
+                <Badge variant="success">Unlocked</Badge>
               ) : (
                 <Button
                   size="sm"

@@ -16,9 +16,10 @@ import {
   arrayMove,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { Badge, Card } from '@/components/ui';
+import { Badge } from '@/components/admin-ui/badge';
+import { Card } from '@/components/admin-ui/card';
 import { Icon } from '@/components/icons';
-import { cn } from '@/lib/cn';
+import { cn } from '@/lib/utils';
 import { reorderPathway, setCourseAccess } from '@/lib/actions/courses';
 import type { CourseAccess } from '@/lib/types';
 import type { AdminCourse } from '@/lib/data/courses';
@@ -65,20 +66,16 @@ export function PathwayView({ courses }: { courses: AdminCourse[] }) {
 
   return (
     <div className="flex flex-col gap-4">
-      <p className="text-sm text-text-secondary">
+      <p className="text-sm text-muted-foreground">
         Drag to reorder the apprenticeship pathway. A learner sees a{' '}
-        <span className="font-medium text-text-primary">Restricted</span> course as locked until
-        the course before it in this order is completed.
+        <span className="font-medium text-foreground">Restricted</span> course as locked until the
+        course before it in this order is completed.
       </p>
 
-      <DndContext
-        sensors={sensors}
-        collisionDetection={closestCenter}
-        onDragEnd={handleDragEnd}
-      >
+      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
         <SortableContext items={ordered.map((c) => c.id)} strategy={verticalListSortingStrategy}>
-          <Card className="overflow-hidden p-0">
-            <ul className="divide-y divide-border-subtle">
+          <Card className="overflow-hidden py-0">
+            <ul className="divide-y divide-border">
               {ordered.map((course, index) => (
                 <PathwayRow
                   key={course.id}
@@ -121,30 +118,30 @@ function PathwayRow({
       ref={setNodeRef}
       style={style}
       className={cn(
-        'flex items-center gap-3 bg-bg-card px-4 py-3',
+        'flex items-center gap-3 bg-card px-4 py-3',
         isDragging && 'relative z-10 shadow-md',
       )}
     >
       <button
         type="button"
         aria-label={`Reorder ${course.title}`}
-        className="flex size-7 shrink-0 cursor-grab items-center justify-center rounded-md text-text-muted hover:bg-bg-subtle active:cursor-grabbing"
+        className="flex size-7 shrink-0 cursor-grab items-center justify-center rounded-md text-muted-foreground hover:bg-muted active:cursor-grabbing"
         {...attributes}
         {...listeners}
       >
         <Icon name="grip-vertical" className="size-4" />
       </button>
 
-      <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-brand-tint text-xs font-bold text-brand-primary">
+      <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
         {String(position).padStart(2, '0')}
       </span>
 
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-medium text-text-primary">{course.title}</p>
-        <p className="truncate text-xs text-text-muted">{course.category}</p>
+        <p className="truncate text-sm font-medium text-foreground">{course.title}</p>
+        <p className="truncate text-xs text-muted-foreground">{course.category}</p>
       </div>
 
-      {!course.published && <Badge tone="neutral">Unpublished</Badge>}
+      {!course.published && <Badge variant="outline">Unpublished</Badge>}
 
       <button
         type="button"
@@ -153,8 +150,8 @@ function PathwayRow({
         className={cn(
           'shrink-0 rounded-full border px-2.5 py-0.5 text-xs font-medium transition-colors disabled:opacity-60',
           course.access === 'restricted'
-            ? 'border-status-restricted-border bg-status-restricted-bg text-status-restricted-text'
-            : 'border-border-default bg-bg-subtle text-text-secondary hover:border-brand-primary/40',
+            ? 'border-destructive/30 bg-destructive/10 text-destructive'
+            : 'border-border bg-muted text-muted-foreground hover:border-primary/40',
         )}
       >
         {course.access === 'restricted' ? (

@@ -13,10 +13,10 @@ export default async function AdminAuditPage() {
   return (
     <div className="flex flex-col gap-4">
       <div>
-        <h1 className="text-xl font-semibold text-brand-heading">Audit Log</h1>
-        <p className="mt-1 text-sm text-text-secondary">
-          Who did what, and when — funding document views, evidence/document review decisions,
-          WIOA case status changes, and course-unlock grants. Read access to this table is itself
+        <h1 className="text-xl font-semibold text-foreground">Audit Log</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Who did what, and when — funding document views, evidence/document review decisions, WIOA
+          case status changes, and course-unlock grants. Read access to this table is itself
           restricted to Admin at the database level (docs/build/PHASE_1_DB_ACCESS_DECISION.md).
         </p>
       </div>

@@ -9,8 +9,8 @@ export default async function AdminAccountPage() {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="text-xl font-semibold text-brand-heading">Account Settings</h1>
-        <p className="mt-1 text-sm text-text-secondary">Manage your name, email, and password.</p>
+        <h1 className="text-xl font-semibold text-foreground">Account Settings</h1>
+        <p className="mt-1 text-sm text-muted-foreground">Manage your name, email, and password.</p>
       </div>
 
       <AccountSettingsForm name={name} email={email} />

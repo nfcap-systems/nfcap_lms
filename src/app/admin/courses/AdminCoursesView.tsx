@@ -1,33 +1,117 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import * as React from 'react';
+import { useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import {
-  Badge,
-  Button,
-  Card,
-  CardContent,
-  Drawer,
-  Field,
-  Input,
-  Select,
-  Textarea,
-} from '@/components/ui';
-import { Icon } from '@/components/icons';
-import { cn } from '@/lib/cn';
-import { createCourse, setCoursePublished } from '@/lib/actions/courses';
-import { courseLessonCount, type CourseAccess } from '@/lib/types';
-import type { AdminCourse } from '@/lib/data/courses';
+  type ColumnDef,
+  type PaginationState,
+  type SortingState,
+  useTable,
+} from '@tanstack/react-table';
+import {
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
+  Lock,
+  Plus,
+  Search,
+} from 'lucide-react';
 
-type ViewMode = 'card' | 'table';
+import { setCoursePublished } from '@/lib/actions/courses';
+import { courseLessonCount } from '@/lib/types';
+import type { AdminCourse } from '@/lib/data/courses';
+import { adminTableFeatures, type AdminTableFeatures } from '@/lib/admin-table-features';
+import { Badge } from '@/components/admin-ui/badge';
+import { Button } from '@/components/admin-ui/button';
+import { Input } from '@/components/admin-ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/admin-ui/select';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/admin-ui/table';
+import { NewCourseDialog } from '@/components/admin-shell/quick-create/NewCourseDialog';
+
+const columns: ColumnDef<AdminTableFeatures, AdminCourse>[] = [
+  {
+    accessorKey: 'title',
+    header: 'Course',
+    sortFn: 'alphanumeric',
+    cell: ({ row }) => (
+      <div className="flex items-center gap-2">
+        <div className="min-w-0">
+          <div className="flex items-center gap-1.5">
+            <span className="truncate text-sm font-medium text-foreground">
+              {row.original.title}
+            </span>
+            {row.original.access === 'restricted' && (
+              <Lock className="size-3 shrink-0 text-muted-foreground" />
+            )}
+          </div>
+          <span className="truncate text-xs text-muted-foreground">{row.original.category}</span>
+        </div>
+      </div>
+    ),
+  },
+  {
+    id: 'status',
+    header: 'Status',
+    cell: ({ row }) => (
+      <Badge variant={row.original.published ? 'success' : 'outline'}>
+        {row.original.published ? 'Published' : 'Unpublished'}
+      </Badge>
+    ),
+  },
+  {
+    id: 'sections',
+    header: 'Sections',
+    cell: ({ row }) => (
+      <span className="text-sm text-muted-foreground">{row.original.sections.length}</span>
+    ),
+  },
+  {
+    id: 'lessons',
+    header: 'Lessons',
+    cell: ({ row }) => (
+      <span className="text-sm text-muted-foreground">{courseLessonCount(row.original)}</span>
+    ),
+  },
+];
 
 export function AdminCoursesView({ courses }: { courses: AdminCourse[] }) {
   const router = useRouter();
   const [, startTransition] = useTransition();
-  const [view, setView] = useState<ViewMode>('table');
-  const [addOpen, setAddOpen] = useState(false);
+  const [addOpen, setAddOpen] = React.useState(false);
+  const [search, setSearch] = React.useState('');
+  const [sorting, setSorting] = React.useState<SortingState>([]);
+  const [pagination, setPagination] = React.useState<PaginationState>({
+    pageIndex: 0,
+    pageSize: 10,
+  });
 
-  const sorted = [...courses].sort((a, b) => a.pathwayOrder - b.pathwayOrder);
+  const sorted = React.useMemo(
+    () => [...courses].sort((a, b) => a.pathwayOrder - b.pathwayOrder),
+    [courses],
+  );
+
+  const filtered = React.useMemo(() => {
+    const query = search.trim().toLowerCase();
+    if (!query) return sorted;
+    return sorted.filter(
+      (c) => c.title.toLowerCase().includes(query) || c.category.toLowerCase().includes(query),
+    );
+  }, [sorted, search]);
 
   function togglePublished(course: AdminCourse) {
     startTransition(async () => {
@@ -36,297 +120,170 @@ export function AdminCoursesView({ courses }: { courses: AdminCourse[] }) {
     });
   }
 
+  const table = useTable({
+    features: adminTableFeatures,
+    data: filtered,
+    columns,
+    state: { sorting, pagination },
+    getRowId: (row) => row.id,
+    onSortingChange: setSorting,
+    onPaginationChange: setPagination,
+  });
+
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-xl font-semibold text-brand-heading">Courses</h1>
-          <p className="mt-1 text-sm text-text-secondary">
+          <h1 className="text-xl font-semibold text-foreground">Courses</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
             All courses in the apprenticeship program. Open a course to manage its sections,
             lessons, and knowledge assessment in the Curriculum Builder.
           </p>
         </div>
-
-        <div className="flex items-center gap-2">
-          <div className="flex h-8 items-center gap-0.5 rounded-md border border-border-default p-0.5">
-            <button
-              type="button"
-              onClick={() => setView('table')}
-              aria-label="Table view"
-              aria-pressed={view === 'table'}
-              className={cn(
-                'flex h-full w-7 shrink-0 items-center justify-center rounded-sm transition-colors',
-                view === 'table'
-                  ? 'bg-brand-primary text-on-brand'
-                  : 'text-text-secondary hover:bg-bg-subtle',
-              )}
-            >
-              <Icon name="list" className="size-4" />
-            </button>
-            <button
-              type="button"
-              onClick={() => setView('card')}
-              aria-label="Card view"
-              aria-pressed={view === 'card'}
-              className={cn(
-                'flex h-full w-7 shrink-0 items-center justify-center rounded-sm transition-colors',
-                view === 'card'
-                  ? 'bg-brand-primary text-on-brand'
-                  : 'text-text-secondary hover:bg-bg-subtle',
-              )}
-            >
-              <Icon name="grid" className="size-4" />
-            </button>
-          </div>
-          <Button size="sm" onClick={() => setAddOpen(true)}>
-            <Icon name="plus" className="size-4" />
-            Add Course
-          </Button>
-        </div>
+        <Button onClick={() => setAddOpen(true)}>
+          <Plus className="size-4" />
+          Add course
+        </Button>
       </div>
 
-      {view === 'card' ? (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {sorted.map((course) => (
-            <CourseCard
-              key={course.id}
-              course={course}
-              onOpen={() => router.push(`/admin/courses/${course.id}`)}
-              onTogglePublished={() => togglePublished(course)}
-            />
-          ))}
-        </div>
-      ) : (
-        <CourseTable
-          courses={sorted}
-          onOpen={(id) => router.push(`/admin/courses/${id}`)}
-          onTogglePublished={togglePublished}
+      <div className="relative w-full sm:w-80">
+        <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
+        <Input
+          className="pl-8"
+          placeholder="Search courses..."
+          value={search}
+          onChange={(e) => {
+            setSearch(e.target.value);
+            table.setPageIndex(0);
+          }}
         />
-      )}
+      </div>
 
-      <AddCourseDrawer
-        open={addOpen}
-        onClose={() => setAddOpen(false)}
-        onCreated={(slug) => router.push(`/admin/courses/${slug}`)}
-      />
-    </div>
-  );
-}
-
-function CourseCard({
-  course,
-  onOpen,
-  onTogglePublished,
-}: {
-  course: AdminCourse;
-  onOpen: () => void;
-  onTogglePublished: () => void;
-}) {
-  return (
-    <Card className="flex flex-col">
-      <CardContent className="flex flex-1 flex-col gap-4">
-        <div className="flex flex-wrap items-start justify-between gap-2">
-          <Badge tone="neutral">{course.category}</Badge>
-          <div className="flex items-center gap-1.5">
-            {course.access === 'restricted' && (
-              <Badge tone="restricted">
-                <Icon name="lock" className="size-3" />
-                Restricted
-              </Badge>
+      <div className="overflow-hidden rounded-lg border bg-card">
+        <Table>
+          <TableHeader className="bg-muted/15">
+            {table.getHeaderGroups().map((headerGroup) => (
+              <TableRow key={headerGroup.id}>
+                {headerGroup.headers.map((header) => (
+                  <TableHead key={header.id} className="h-11 p-3 font-medium">
+                    {header.isPlaceholder ? null : <table.FlexRender header={header} />}
+                  </TableHead>
+                ))}
+                <TableHead className="h-11 p-3 font-medium">Actions</TableHead>
+              </TableRow>
+            ))}
+          </TableHeader>
+          <TableBody>
+            {table.getRowModel().rows.length ? (
+              table.getRowModel().rows.map((row) => (
+                <TableRow key={row.id}>
+                  {row.getAllCells().map((cell) => (
+                    <TableCell key={cell.id} className="p-3">
+                      <table.FlexRender cell={cell} />
+                    </TableCell>
+                  ))}
+                  <TableCell className="p-3">
+                    <div className="flex items-center gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => router.push(`/admin/courses/${row.original.id}`)}
+                      >
+                        Edit curriculum
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => togglePublished(row.original)}
+                      >
+                        {row.original.published ? 'Unpublish' : 'Publish'}
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))
+            ) : (
+              <TableRow>
+                <TableCell
+                  colSpan={columns.length + 1}
+                  className="h-24 text-center text-muted-foreground"
+                >
+                  No courses found.
+                </TableCell>
+              </TableRow>
             )}
-            <Badge tone={course.published ? 'success' : 'neutral'}>
-              {course.published ? 'Published' : 'Unpublished'}
-            </Badge>
+          </TableBody>
+        </Table>
+      </div>
+
+      <div className="flex items-center justify-between px-1">
+        <div className="hidden flex-1 text-sm text-muted-foreground lg:flex">
+          {filtered.length} course{filtered.length === 1 ? '' : 's'}
+        </div>
+        <div className="flex w-full items-center gap-6 lg:w-fit">
+          <div className="hidden items-center gap-2 lg:flex">
+            <span className="text-sm font-medium">Rows per page</span>
+            <Select
+              value={`${table.state.pagination.pageSize}`}
+              onValueChange={(value) => table.setPageSize(Number(value))}
+            >
+              <SelectTrigger size="sm" className="w-20">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {[10, 20, 30].map((size) => (
+                  <SelectItem key={size} value={`${size}`}>
+                    {size}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex items-center text-sm font-medium">
+            Page {table.state.pagination.pageIndex + 1} of {Math.max(1, table.getPageCount())}
+          </div>
+          <div className="ml-auto flex items-center gap-2 lg:ml-0">
+            <Button
+              variant="outline"
+              size="icon"
+              className="hidden size-8 lg:flex"
+              onClick={() => table.setPageIndex(0)}
+              disabled={!table.getCanPreviousPage()}
+            >
+              <ChevronsLeft className="size-4" />
+            </Button>
+            <Button
+              variant="outline"
+              size="icon"
+              className="size-8"
+              onClick={() => table.previousPage()}
+              disabled={!table.getCanPreviousPage()}
+            >
+              <ChevronLeft className="size-4" />
+            </Button>
+            <Button
+              variant="outline"
+              size="icon"
+              className="size-8"
+              onClick={() => table.nextPage()}
+              disabled={!table.getCanNextPage()}
+            >
+              <ChevronRight className="size-4" />
+            </Button>
+            <Button
+              variant="outline"
+              size="icon"
+              className="hidden size-8 lg:flex"
+              onClick={() => table.setPageIndex(table.getPageCount() - 1)}
+              disabled={!table.getCanNextPage()}
+            >
+              <ChevronsRight className="size-4" />
+            </Button>
           </div>
         </div>
-
-        <div>
-          <h3 className="text-base font-semibold text-brand-heading">{course.title}</h3>
-          <p className="mt-1 text-sm text-text-secondary">{course.description}</p>
-        </div>
-
-        <div className="mt-auto flex items-center gap-4 text-xs text-text-muted">
-          <span className="inline-flex items-center gap-1">
-            <Icon name="layers" className="size-3.5" />
-            {course.sections.length} sections
-          </span>
-          <span className="inline-flex items-center gap-1">
-            <Icon name="book" className="size-3.5" />
-            {courseLessonCount(course)} lessons
-          </span>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <Button size="sm" className="flex-1" variant="outline" onClick={onOpen}>
-            Edit curriculum
-            <Icon name="arrow-right" className="size-4" />
-          </Button>
-          <Button size="sm" variant="ghost" onClick={onTogglePublished}>
-            {course.published ? 'Unpublish' : 'Publish'}
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
-function CourseTable({
-  courses,
-  onOpen,
-  onTogglePublished,
-}: {
-  courses: AdminCourse[];
-  onOpen: (courseId: string) => void;
-  onTogglePublished: (course: AdminCourse) => void;
-}) {
-  return (
-    <Card className="overflow-hidden">
-      <div className="overflow-x-auto">
-        <table className="w-full min-w-[640px] text-left text-sm">
-          <thead>
-            <tr className="border-b border-border-subtle text-xs font-semibold tracking-wide text-text-muted uppercase">
-              <th className="px-5 py-3 font-semibold">Course</th>
-              <th className="px-5 py-3 font-semibold">Status</th>
-              <th className="px-5 py-3 font-semibold">Sections</th>
-              <th className="px-5 py-3 font-semibold">Lessons</th>
-              <th className="px-5 py-3 font-semibold">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-border-subtle">
-            {courses.map((course) => (
-              <tr key={course.id}>
-                <td className="px-5 py-4">
-                  <p className="font-medium text-text-primary">{course.title}</p>
-                  <p className="text-xs text-text-muted">{course.category}</p>
-                </td>
-                <td className="px-5 py-4">
-                  <Badge tone={course.published ? 'success' : 'neutral'}>
-                    {course.published ? 'Published' : 'Unpublished'}
-                  </Badge>
-                </td>
-                <td className="px-5 py-4 text-text-secondary">{course.sections.length}</td>
-                <td className="px-5 py-4 text-text-secondary">{courseLessonCount(course)}</td>
-                <td className="px-5 py-4">
-                  <div className="flex items-center gap-2">
-                    <Button size="sm" variant="outline" onClick={() => onOpen(course.id)}>
-                      Edit curriculum
-                    </Button>
-                    <Button size="sm" variant="ghost" onClick={() => onTogglePublished(course)}>
-                      {course.published ? 'Unpublish' : 'Publish'}
-                    </Button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
       </div>
-    </Card>
-  );
-}
 
-function AddCourseDrawer({
-  open,
-  onClose,
-  onCreated,
-}: {
-  open: boolean;
-  onClose: () => void;
-  onCreated: (courseSlug: string) => void;
-}) {
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [category, setCategory] = useState('');
-  const [access, setAccess] = useState<CourseAccess>('open');
-  const [submitting, setSubmitting] = useState(false);
-
-  const reset = () => {
-    setTitle('');
-    setDescription('');
-    setCategory('');
-    setAccess('open');
-  };
-
-  const valid =
-    title.trim().length > 0 && description.trim().length > 0 && category.trim().length > 0;
-
-  return (
-    <Drawer
-      open={open}
-      onClose={() => {
-        onClose();
-        reset();
-      }}
-      title="Add Course"
-      description="Appended to the end of the apprenticeship pathway. You'll build its curriculum next."
-      footer={
-        <>
-          <Button variant="ghost" size="sm" onClick={onClose}>
-            Cancel
-          </Button>
-          <Button
-            size="sm"
-            disabled={!valid || submitting}
-            onClick={async () => {
-              setSubmitting(true);
-              const { slug } = await createCourse({
-                title: title.trim(),
-                description: description.trim(),
-                category: category.trim(),
-                access,
-              });
-              setSubmitting(false);
-              onClose();
-              reset();
-              onCreated(slug);
-            }}
-          >
-            Add Course
-          </Button>
-        </>
-      }
-    >
-      <div className="flex flex-col gap-4">
-        <Field label="Course title" htmlFor="course-title">
-          <Input
-            id="course-title"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="e.g. Baseboard & Trim Finishing"
-            autoFocus
-          />
-        </Field>
-        <Field label="Description" htmlFor="course-description">
-          <Textarea
-            id="course-description"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            placeholder="What this course covers..."
-          />
-        </Field>
-        <Field
-          label="Category"
-          htmlFor="course-category"
-          hint="e.g. Foundations, Trade Skills, Career Readiness"
-        >
-          <Input
-            id="course-category"
-            value={category}
-            onChange={(e) => setCategory(e.target.value)}
-            placeholder="e.g. Trade Skills"
-          />
-        </Field>
-        <Field label="Enrollment" htmlFor="course-access">
-          <Select
-            id="course-access"
-            value={access}
-            onChange={(e) => setAccess(e.target.value as CourseAccess)}
-          >
-            <option value="open">Open — learners can self-enroll</option>
-            <option value="restricted">Restricted — assigned by NFCAP</option>
-          </Select>
-        </Field>
-      </div>
-    </Drawer>
+      <NewCourseDialog open={addOpen} onOpenChange={setAddOpen} />
+    </div>
   );
 }

@@ -44,6 +44,7 @@ export const adminNav: NavEntry[] = [
   { label: 'Courses', href: '/admin/courses', icon: 'layers' },
   { label: 'Pathway', href: '/admin/pathway', icon: 'compass' },
   { label: 'Learners', href: '/admin/learners', icon: 'users' },
+  { label: 'Roles', href: '/admin/roles', icon: 'user' },
   // WIOA case operations moved to /coordinator and /partner (docs/build/WIOA_BUILD_WORKFLOW.md
   // Phase 3, retiring the Phase 2 /admin/wioa stopgap) — Admin keeps only the reference-data CRUD
   // that has no other owner (workforce boards/contacts, document requirements).
@@ -87,7 +88,11 @@ export function isNavGroupActive(pathname: string, group: NavGroup): boolean {
   return group.children.some((child) => isNavItemActive(pathname, child.href));
 }
 
-export function getActiveNavLabel(pathname: string, navItems: NavEntry[], fallback: string): string {
+export function getActiveNavLabel(
+  pathname: string,
+  navItems: NavEntry[],
+  fallback: string,
+): string {
   for (const entry of navItems) {
     if (isNavGroup(entry)) {
       const child = [...entry.children]

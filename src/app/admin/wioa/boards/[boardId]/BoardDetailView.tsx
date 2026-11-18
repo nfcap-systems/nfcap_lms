@@ -2,8 +2,8 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Badge, Button, Card, CardContent, Drawer, Field, Input, Select } from '@/components/ui';
-import { Icon } from '@/components/icons';
+import { Plus } from 'lucide-react';
+
 import {
   updateWorkforceBoard,
   setWorkforceBoardActive,
@@ -24,55 +24,57 @@ import type {
   WorkforceContactRecord,
 } from '@/lib/data/wioa-boards';
 import type { ContactType } from '@/generated/prisma/enums';
-
-type Tab = 'board' | 'ajcc' | 'zips' | 'contacts';
+import { Badge } from '@/components/admin-ui/badge';
+import { Button } from '@/components/admin-ui/button';
+import { Card, CardContent } from '@/components/admin-ui/card';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/admin-ui/dialog';
+import { Input } from '@/components/admin-ui/input';
+import { Label } from '@/components/admin-ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/admin-ui/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/admin-ui/tabs';
 
 export function BoardDetailView({ board }: { board: WorkforceBoardDetail }) {
   const router = useRouter();
-  const [tab, setTab] = useState<Tab>('board');
-
-  const tabs: { key: Tab; label: string; count?: number }[] = [
-    { key: 'board', label: 'Board details' },
-    { key: 'ajcc', label: 'AJCC Centers', count: board.ajccCenters.length },
-    { key: 'zips', label: 'ZIP Jurisdictions', count: board.jurisdictions.length },
-    { key: 'contacts', label: 'Contacts', count: board.contacts.length },
-  ];
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex flex-wrap items-center gap-2 border-b border-border-subtle">
-        {tabs.map((t) => (
-          <button
-            key={t.key}
-            type="button"
-            onClick={() => setTab(t.key)}
-            className={`border-b-2 px-3 py-2 text-sm font-medium transition-colors ${
-              tab === t.key
-                ? 'border-brand-primary text-brand-primary'
-                : 'border-transparent text-text-secondary hover:text-text-primary'
-            }`}
-          >
-            {t.label}
-            {t.count !== undefined && <span className="ml-1 text-xs text-text-muted">({t.count})</span>}
-          </button>
-        ))}
-      </div>
+    <Tabs defaultValue="board">
+      <TabsList>
+        <TabsTrigger value="board">Board details</TabsTrigger>
+        <TabsTrigger value="ajcc">AJCC Centers ({board.ajccCenters.length})</TabsTrigger>
+        <TabsTrigger value="zips">ZIP Jurisdictions ({board.jurisdictions.length})</TabsTrigger>
+        <TabsTrigger value="contacts">Contacts ({board.contacts.length})</TabsTrigger>
+      </TabsList>
 
-      {tab === 'board' && <BoardFieldsTab board={board} onSaved={() => router.refresh()} />}
-      {tab === 'ajcc' && <AjccTab board={board} onChanged={() => router.refresh()} />}
-      {tab === 'zips' && <JurisdictionTab board={board} onChanged={() => router.refresh()} />}
-      {tab === 'contacts' && <ContactTab board={board} onChanged={() => router.refresh()} />}
-    </div>
+      <TabsContent value="board" className="pt-4">
+        <BoardFieldsTab board={board} onSaved={() => router.refresh()} />
+      </TabsContent>
+      <TabsContent value="ajcc" className="pt-4">
+        <AjccTab board={board} onChanged={() => router.refresh()} />
+      </TabsContent>
+      <TabsContent value="zips" className="pt-4">
+        <JurisdictionTab board={board} onChanged={() => router.refresh()} />
+      </TabsContent>
+      <TabsContent value="contacts" className="pt-4">
+        <ContactTab board={board} onChanged={() => router.refresh()} />
+      </TabsContent>
+    </Tabs>
   );
 }
 
-function BoardFieldsTab({
-  board,
-  onSaved,
-}: {
-  board: WorkforceBoardDetail;
-  onSaved: () => void;
-}) {
+function BoardFieldsTab({ board, onSaved }: { board: WorkforceBoardDetail; onSaved: () => void }) {
   const [name, setName] = useState(board.name);
   const [county, setCounty] = useState(board.county);
   const [serviceArea, setServiceArea] = useState(board.serviceArea);
@@ -112,65 +114,73 @@ function BoardFieldsTab({
     <Card>
       <CardContent className="flex flex-col gap-4">
         <div className="flex items-center justify-between">
-          <Badge tone={board.active ? 'success' : 'neutral'}>
+          <Badge variant={board.active ? 'success' : 'outline'}>
             {board.active ? 'Active' : 'Inactive'}
           </Badge>
           <Button size="sm" variant="outline" onClick={toggleActive} disabled={saving}>
             {board.active ? 'Deactivate board' : 'Activate board'}
           </Button>
         </div>
-        <Field label="Board name" htmlFor="edit-board-name">
-          <Input id="edit-board-name" value={name} onChange={(e) => setName(e.target.value)} />
-        </Field>
-        <Field label="County" htmlFor="edit-board-county">
-          <Input id="edit-board-county" value={county} onChange={(e) => setCounty(e.target.value)} />
-        </Field>
-        <Field label="Service area" htmlFor="edit-board-service-area">
-          <Input
-            id="edit-board-service-area"
-            value={serviceArea}
-            onChange={(e) => setServiceArea(e.target.value)}
-          />
-        </Field>
-        <Field label="Phone" htmlFor="edit-board-phone">
-          <Input id="edit-board-phone" value={phone} onChange={(e) => setPhone(e.target.value)} />
-        </Field>
-        <Field label="Email" htmlFor="edit-board-email">
-          <Input id="edit-board-email" value={email} onChange={(e) => setEmail(e.target.value)} />
-        </Field>
-        <Field label="Address" htmlFor="edit-board-address">
-          <Input
-            id="edit-board-address"
-            value={address}
-            onChange={(e) => setAddress(e.target.value)}
-          />
-        </Field>
-        <Field label="Website (optional)" htmlFor="edit-board-website">
-          <Input
-            id="edit-board-website"
-            value={website}
-            onChange={(e) => setWebsite(e.target.value)}
-          />
-        </Field>
-        <Field label="Orientation URL (optional)" htmlFor="edit-board-orientation-url">
-          <Input
-            id="edit-board-orientation-url"
-            value={orientationUrl}
-            onChange={(e) => setOrientationUrl(e.target.value)}
-          />
-        </Field>
-        <Field label="Application URL (optional)" htmlFor="edit-board-application-url">
-          <Input
-            id="edit-board-application-url"
-            value={applicationUrl}
-            onChange={(e) => setApplicationUrl(e.target.value)}
-          />
-        </Field>
+        <LabeledInput label="Board name" id="edit-board-name" value={name} onChange={setName} />
+        <LabeledInput label="County" id="edit-board-county" value={county} onChange={setCounty} />
+        <LabeledInput
+          label="Service area"
+          id="edit-board-service-area"
+          value={serviceArea}
+          onChange={setServiceArea}
+        />
+        <LabeledInput label="Phone" id="edit-board-phone" value={phone} onChange={setPhone} />
+        <LabeledInput label="Email" id="edit-board-email" value={email} onChange={setEmail} />
+        <LabeledInput
+          label="Address"
+          id="edit-board-address"
+          value={address}
+          onChange={setAddress}
+        />
+        <LabeledInput
+          label="Website (optional)"
+          id="edit-board-website"
+          value={website}
+          onChange={setWebsite}
+        />
+        <LabeledInput
+          label="Orientation URL (optional)"
+          id="edit-board-orientation-url"
+          value={orientationUrl}
+          onChange={setOrientationUrl}
+        />
+        <LabeledInput
+          label="Application URL (optional)"
+          id="edit-board-application-url"
+          value={applicationUrl}
+          onChange={setApplicationUrl}
+        />
         <Button size="sm" onClick={save} disabled={saving} className="w-fit">
           {saving ? 'Saving…' : 'Save changes'}
         </Button>
       </CardContent>
     </Card>
+  );
+}
+
+function LabeledInput({
+  label,
+  id,
+  value,
+  onChange,
+  type,
+}: {
+  label: string;
+  id: string;
+  value: string | number;
+  onChange: (value: string) => void;
+  type?: string;
+}) {
+  return (
+    <div className="flex flex-col gap-1.5">
+      <Label htmlFor={id}>{label}</Label>
+      <Input id={id} type={type} value={value} onChange={(e) => onChange(e.target.value)} />
+    </div>
   );
 }
 
@@ -182,7 +192,7 @@ function AjccTab({ board, onChanged }: { board: WorkforceBoardDetail; onChanged:
     <div className="flex flex-col gap-3">
       <div className="flex justify-end">
         <Button size="sm" onClick={() => setAddOpen(true)}>
-          <Icon name="plus" className="size-4" />
+          <Plus className="size-4" />
           Add AJCC Center
         </Button>
       </div>
@@ -190,16 +200,16 @@ function AjccTab({ board, onChanged }: { board: WorkforceBoardDetail; onChanged:
       {board.ajccCenters.length === 0 ? (
         <EmptyRow text="No AJCC centers yet." />
       ) : (
-        <Card>
-          <div className="divide-y divide-border-subtle">
+        <Card className="py-0">
+          <div className="divide-y divide-border">
             {board.ajccCenters.map((a) => (
               <div key={a.id} className="flex items-center justify-between gap-4 p-4">
                 <div>
-                  <p className="text-sm font-medium text-text-primary">{a.name}</p>
-                  <p className="text-xs text-text-muted">{a.address}</p>
+                  <p className="text-sm font-medium text-foreground">{a.name}</p>
+                  <p className="text-xs text-muted-foreground">{a.address}</p>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Badge tone={a.active ? 'success' : 'neutral'}>
+                  <Badge variant={a.active ? 'success' : 'outline'}>
                     {a.active ? 'Active' : 'Inactive'}
                   </Badge>
                   <Button size="sm" variant="outline" onClick={() => setEditing(a)}>
@@ -222,14 +232,16 @@ function AjccTab({ board, onChanged }: { board: WorkforceBoardDetail; onChanged:
         </Card>
       )}
 
-      <AjccDrawer
+      <AjccDialog
         key={editing?.id ?? 'new'}
         boardId={board.id}
         open={addOpen || editing !== null}
         existing={editing}
-        onClose={() => {
-          setAddOpen(false);
-          setEditing(null);
+        onOpenChange={(open) => {
+          if (!open) {
+            setAddOpen(false);
+            setEditing(null);
+          }
         }}
         onSaved={onChanged}
       />
@@ -237,17 +249,17 @@ function AjccTab({ board, onChanged }: { board: WorkforceBoardDetail; onChanged:
   );
 }
 
-function AjccDrawer({
+function AjccDialog({
   boardId,
   open,
   existing,
-  onClose,
+  onOpenChange,
   onSaved,
 }: {
   boardId: string;
   open: boolean;
   existing: AjccCenterRecord | null;
-  onClose: () => void;
+  onOpenChange: (open: boolean) => void;
   onSaved: () => void;
 }) {
   const [name, setName] = useState(existing?.name ?? '');
@@ -257,25 +269,36 @@ function AjccDrawer({
   const [intakeInstructions, setIntakeInstructions] = useState(existing?.intakeInstructions ?? '');
   const [submitting, setSubmitting] = useState(false);
 
-  // Re-seed the form fields whenever the drawer opens for a (possibly different) record — this
-  // component is remounted on every open/close via the `key` the parent passes, so a plain
-  // useState initializer is enough (no useEffect needed).
-  if (!open) return null;
-
   const valid = name.trim().length > 0 && address.trim().length > 0 && phone.trim().length > 0;
 
   return (
-    <Drawer
-      open={open}
-      onClose={onClose}
-      title={existing ? 'Edit AJCC Center' : 'Add AJCC Center'}
-      footer={
-        <>
-          <Button variant="ghost" size="sm" onClick={onClose}>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{existing ? 'Edit AJCC center' : 'Add AJCC center'}</DialogTitle>
+        </DialogHeader>
+        <div className="flex max-h-96 flex-col gap-3 overflow-y-auto pr-1">
+          <LabeledInput label="Name" id="ajcc-name" value={name} onChange={setName} />
+          <LabeledInput label="Address" id="ajcc-address" value={address} onChange={setAddress} />
+          <LabeledInput label="Phone" id="ajcc-phone" value={phone} onChange={setPhone} />
+          <LabeledInput
+            label="Website (optional)"
+            id="ajcc-website"
+            value={website}
+            onChange={setWebsite}
+          />
+          <LabeledInput
+            label="Intake instructions (optional)"
+            id="ajcc-intake"
+            value={intakeInstructions}
+            onChange={setIntakeInstructions}
+          />
+        </div>
+        <DialogFooter>
+          <Button variant="ghost" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
           <Button
-            size="sm"
             disabled={!valid || submitting}
             onClick={async () => {
               setSubmitting(true);
@@ -292,37 +315,15 @@ function AjccDrawer({
                 await createAjccCenter(boardId, fields);
               }
               setSubmitting(false);
-              onClose();
+              onOpenChange(false);
               onSaved();
             }}
           >
-            {existing ? 'Save changes' : 'Add Center'}
+            {existing ? 'Save changes' : 'Add center'}
           </Button>
-        </>
-      }
-    >
-      <div className="flex flex-col gap-4">
-        <Field label="Name" htmlFor="ajcc-name">
-          <Input id="ajcc-name" value={name} onChange={(e) => setName(e.target.value)} autoFocus />
-        </Field>
-        <Field label="Address" htmlFor="ajcc-address">
-          <Input id="ajcc-address" value={address} onChange={(e) => setAddress(e.target.value)} />
-        </Field>
-        <Field label="Phone" htmlFor="ajcc-phone">
-          <Input id="ajcc-phone" value={phone} onChange={(e) => setPhone(e.target.value)} />
-        </Field>
-        <Field label="Website (optional)" htmlFor="ajcc-website">
-          <Input id="ajcc-website" value={website} onChange={(e) => setWebsite(e.target.value)} />
-        </Field>
-        <Field label="Intake instructions (optional)" htmlFor="ajcc-intake">
-          <Input
-            id="ajcc-intake"
-            value={intakeInstructions}
-            onChange={(e) => setIntakeInstructions(e.target.value)}
-          />
-        </Field>
-      </div>
-    </Drawer>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -341,7 +342,7 @@ function JurisdictionTab({
     <div className="flex flex-col gap-3">
       <div className="flex justify-end">
         <Button size="sm" onClick={() => setAddOpen(true)}>
-          <Icon name="plus" className="size-4" />
+          <Plus className="size-4" />
           Add ZIP
         </Button>
       </div>
@@ -349,20 +350,20 @@ function JurisdictionTab({
       {board.jurisdictions.length === 0 ? (
         <EmptyRow text="No ZIPs mapped to this board yet." />
       ) : (
-        <Card>
-          <div className="divide-y divide-border-subtle">
+        <Card className="py-0">
+          <div className="divide-y divide-border">
             {board.jurisdictions.map((j) => (
               <div key={j.id} className="flex items-center justify-between gap-4 p-4">
                 <div>
-                  <p className="text-sm font-medium text-text-primary">
+                  <p className="text-sm font-medium text-foreground">
                     {j.zip} — {j.city}
                   </p>
-                  <p className="text-xs text-text-muted">
+                  <p className="text-xs text-muted-foreground">
                     {ajccName(j.ajccCenterId) ?? 'No AJCC assigned'}
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Badge tone={j.active ? 'success' : 'neutral'}>
+                  <Badge variant={j.active ? 'success' : 'outline'}>
                     {j.active ? 'Active' : 'Inactive'}
                   </Badge>
                   <Button size="sm" variant="outline" onClick={() => setEditing(j)}>
@@ -385,15 +386,17 @@ function JurisdictionTab({
         </Card>
       )}
 
-      <JurisdictionDrawer
+      <JurisdictionDialog
         key={editing?.id ?? 'new'}
         boardId={board.id}
         ajccCenters={board.ajccCenters}
         open={addOpen || editing !== null}
         existing={editing}
-        onClose={() => {
-          setAddOpen(false);
-          setEditing(null);
+        onOpenChange={(open) => {
+          if (!open) {
+            setAddOpen(false);
+            setEditing(null);
+          }
         }}
         onSaved={onChanged}
       />
@@ -401,19 +404,19 @@ function JurisdictionTab({
   );
 }
 
-function JurisdictionDrawer({
+function JurisdictionDialog({
   boardId,
   ajccCenters,
   open,
   existing,
-  onClose,
+  onOpenChange,
   onSaved,
 }: {
   boardId: string;
   ajccCenters: AjccCenterRecord[];
   open: boolean;
   existing: WorkforceJurisdictionRecord | null;
-  onClose: () => void;
+  onOpenChange: (open: boolean) => void;
   onSaved: () => void;
 }) {
   const [zip, setZip] = useState(existing?.zip ?? '');
@@ -422,22 +425,43 @@ function JurisdictionDrawer({
   const [ajccCenterId, setAjccCenterId] = useState(existing?.ajccCenterId ?? '');
   const [submitting, setSubmitting] = useState(false);
 
-  if (!open) return null;
-
   const valid = zip.trim().length > 0 && city.trim().length > 0 && county.trim().length > 0;
 
   return (
-    <Drawer
-      open={open}
-      onClose={onClose}
-      title={existing ? 'Edit ZIP Jurisdiction' : 'Add ZIP Jurisdiction'}
-      footer={
-        <>
-          <Button variant="ghost" size="sm" onClick={onClose}>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{existing ? 'Edit ZIP jurisdiction' : 'Add ZIP jurisdiction'}</DialogTitle>
+        </DialogHeader>
+        <div className="flex flex-col gap-3">
+          <LabeledInput label="ZIP code" id="jur-zip" value={zip} onChange={setZip} />
+          <LabeledInput label="City" id="jur-city" value={city} onChange={setCity} />
+          <LabeledInput label="County" id="jur-county" value={county} onChange={setCounty} />
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="jur-ajcc">AJCC Center (optional)</Label>
+            <Select
+              value={ajccCenterId || '__none__'}
+              onValueChange={(v) => setAjccCenterId(v === '__none__' ? '' : v)}
+            >
+              <SelectTrigger id="jur-ajcc" className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__none__">None</SelectItem>
+                {ajccCenters.map((a) => (
+                  <SelectItem key={a.id} value={a.id}>
+                    {a.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="ghost" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
           <Button
-            size="sm"
             disabled={!valid || submitting}
             onClick={async () => {
               setSubmitting(true);
@@ -453,41 +477,15 @@ function JurisdictionDrawer({
                 await createWorkforceJurisdiction(boardId, fields);
               }
               setSubmitting(false);
-              onClose();
+              onOpenChange(false);
               onSaved();
             }}
           >
             {existing ? 'Save changes' : 'Add ZIP'}
           </Button>
-        </>
-      }
-    >
-      <div className="flex flex-col gap-4">
-        <Field label="ZIP code" htmlFor="jur-zip">
-          <Input id="jur-zip" value={zip} onChange={(e) => setZip(e.target.value)} autoFocus />
-        </Field>
-        <Field label="City" htmlFor="jur-city">
-          <Input id="jur-city" value={city} onChange={(e) => setCity(e.target.value)} />
-        </Field>
-        <Field label="County" htmlFor="jur-county">
-          <Input id="jur-county" value={county} onChange={(e) => setCounty(e.target.value)} />
-        </Field>
-        <Field label="AJCC Center (optional)" htmlFor="jur-ajcc">
-          <Select
-            id="jur-ajcc"
-            value={ajccCenterId}
-            onChange={(e) => setAjccCenterId(e.target.value)}
-          >
-            <option value="">None</option>
-            {ajccCenters.map((a) => (
-              <option key={a.id} value={a.id}>
-                {a.name}
-              </option>
-            ))}
-          </Select>
-        </Field>
-      </div>
-    </Drawer>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -502,7 +500,7 @@ function ContactTab({ board, onChanged }: { board: WorkforceBoardDetail; onChang
     <div className="flex flex-col gap-3">
       <div className="flex justify-end">
         <Button size="sm" onClick={() => setAddOpen(true)}>
-          <Icon name="plus" className="size-4" />
+          <Plus className="size-4" />
           Add Contact
         </Button>
       </div>
@@ -510,21 +508,21 @@ function ContactTab({ board, onChanged }: { board: WorkforceBoardDetail; onChang
       {board.contacts.length === 0 ? (
         <EmptyRow text="No contacts yet." />
       ) : (
-        <Card>
-          <div className="divide-y divide-border-subtle">
+        <Card className="py-0">
+          <div className="divide-y divide-border">
             {board.contacts.map((c) => (
               <div key={c.id} className="flex items-center justify-between gap-4 p-4">
                 <div>
-                  <p className="text-sm font-medium text-text-primary">
-                    {c.name} {c.title && <span className="text-text-muted">· {c.title}</span>}
+                  <p className="text-sm font-medium text-foreground">
+                    {c.name} {c.title && <span className="text-muted-foreground">· {c.title}</span>}
                   </p>
-                  <p className="text-xs text-text-muted">
+                  <p className="text-xs text-muted-foreground">
                     {c.email} · {c.phone} · {ajccName(c.ajccCenterId) ?? 'Board-level'}
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Badge tone="info">{c.contactType}</Badge>
-                  <Badge tone={c.active ? 'success' : 'neutral'}>
+                  <Badge variant="outline">{c.contactType}</Badge>
+                  <Badge variant={c.active ? 'success' : 'outline'}>
                     {c.active ? 'Active' : 'Inactive'}
                   </Badge>
                   <Button size="sm" variant="outline" onClick={() => setEditing(c)}>
@@ -547,15 +545,17 @@ function ContactTab({ board, onChanged }: { board: WorkforceBoardDetail; onChang
         </Card>
       )}
 
-      <ContactDrawer
+      <ContactDialog
         key={editing?.id ?? 'new'}
         boardId={board.id}
         ajccCenters={board.ajccCenters}
         open={addOpen || editing !== null}
         existing={editing}
-        onClose={() => {
-          setAddOpen(false);
-          setEditing(null);
+        onOpenChange={(open) => {
+          if (!open) {
+            setAddOpen(false);
+            setEditing(null);
+          }
         }}
         onSaved={onChanged}
       />
@@ -563,19 +563,19 @@ function ContactTab({ board, onChanged }: { board: WorkforceBoardDetail; onChang
   );
 }
 
-function ContactDrawer({
+function ContactDialog({
   boardId,
   ajccCenters,
   open,
   existing,
-  onClose,
+  onOpenChange,
   onSaved,
 }: {
   boardId: string;
   ajccCenters: AjccCenterRecord[];
   open: boolean;
   existing: WorkforceContactRecord | null;
-  onClose: () => void;
+  onOpenChange: (open: boolean) => void;
   onSaved: () => void;
 }) {
   const [name, setName] = useState(existing?.name ?? '');
@@ -587,23 +587,75 @@ function ContactDrawer({
   const [ajccCenterId, setAjccCenterId] = useState(existing?.ajccCenterId ?? '');
   const [submitting, setSubmitting] = useState(false);
 
-  if (!open) return null;
-
   const valid = name.trim().length > 0 && email.trim().length > 0 && phone.trim().length > 0;
 
   return (
-    <Drawer
-      open={open}
-      onClose={onClose}
-      title={existing ? 'Edit Contact' : 'Add Contact'}
-      description="Matching picks the lowest-priority PRIMARY contact first, falling back to SECONDARY then GENERAL."
-      footer={
-        <>
-          <Button variant="ghost" size="sm" onClick={onClose}>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{existing ? 'Edit contact' : 'Add contact'}</DialogTitle>
+          <DialogDescription>
+            Matching picks the lowest-priority PRIMARY contact first, falling back to SECONDARY then
+            GENERAL.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="flex max-h-96 flex-col gap-3 overflow-y-auto pr-1">
+          <LabeledInput label="Name" id="contact-name" value={name} onChange={setName} />
+          <LabeledInput
+            label="Title (optional)"
+            id="contact-title"
+            value={title}
+            onChange={setTitle}
+          />
+          <LabeledInput label="Email" id="contact-email" value={email} onChange={setEmail} />
+          <LabeledInput label="Phone" id="contact-phone" value={phone} onChange={setPhone} />
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="contact-type">Contact type</Label>
+            <Select value={contactType} onValueChange={(v) => setContactType(v as ContactType)}>
+              <SelectTrigger id="contact-type" className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {CONTACT_TYPES.map((t) => (
+                  <SelectItem key={t} value={t}>
+                    {t}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <LabeledInput
+            label="Priority (lower = tried first)"
+            id="contact-priority"
+            type="number"
+            value={priority}
+            onChange={(v) => setPriority(Number(v))}
+          />
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="contact-ajcc">AJCC Center (optional)</Label>
+            <Select
+              value={ajccCenterId || '__none__'}
+              onValueChange={(v) => setAjccCenterId(v === '__none__' ? '' : v)}
+            >
+              <SelectTrigger id="contact-ajcc" className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__none__">Board-level (no specific center)</SelectItem>
+                {ajccCenters.map((a) => (
+                  <SelectItem key={a.id} value={a.id}>
+                    {a.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="ghost" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
           <Button
-            size="sm"
             disabled={!valid || submitting}
             onClick={async () => {
               setSubmitting(true);
@@ -622,72 +674,22 @@ function ContactDrawer({
                 await createWorkforceContact(boardId, fields);
               }
               setSubmitting(false);
-              onClose();
+              onOpenChange(false);
               onSaved();
             }}
           >
-            {existing ? 'Save changes' : 'Add Contact'}
+            {existing ? 'Save changes' : 'Add contact'}
           </Button>
-        </>
-      }
-    >
-      <div className="flex flex-col gap-4">
-        <Field label="Name" htmlFor="contact-name">
-          <Input id="contact-name" value={name} onChange={(e) => setName(e.target.value)} autoFocus />
-        </Field>
-        <Field label="Title (optional)" htmlFor="contact-title">
-          <Input id="contact-title" value={title} onChange={(e) => setTitle(e.target.value)} />
-        </Field>
-        <Field label="Email" htmlFor="contact-email">
-          <Input id="contact-email" value={email} onChange={(e) => setEmail(e.target.value)} />
-        </Field>
-        <Field label="Phone" htmlFor="contact-phone">
-          <Input id="contact-phone" value={phone} onChange={(e) => setPhone(e.target.value)} />
-        </Field>
-        <Field label="Contact type" htmlFor="contact-type">
-          <Select
-            id="contact-type"
-            value={contactType}
-            onChange={(e) => setContactType(e.target.value as ContactType)}
-          >
-            {CONTACT_TYPES.map((t) => (
-              <option key={t} value={t}>
-                {t}
-              </option>
-            ))}
-          </Select>
-        </Field>
-        <Field label="Priority (lower = tried first)" htmlFor="contact-priority">
-          <Input
-            id="contact-priority"
-            type="number"
-            value={priority}
-            onChange={(e) => setPriority(Number(e.target.value))}
-          />
-        </Field>
-        <Field label="AJCC Center (optional)" htmlFor="contact-ajcc">
-          <Select
-            id="contact-ajcc"
-            value={ajccCenterId}
-            onChange={(e) => setAjccCenterId(e.target.value)}
-          >
-            <option value="">Board-level (no specific center)</option>
-            {ajccCenters.map((a) => (
-              <option key={a.id} value={a.id}>
-                {a.name}
-              </option>
-            ))}
-          </Select>
-        </Field>
-      </div>
-    </Drawer>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
 function EmptyRow({ text }: { text: string }) {
   return (
     <Card>
-      <div className="py-8 text-center text-sm text-text-secondary">{text}</div>
+      <div className="py-8 text-center text-sm text-muted-foreground">{text}</div>
     </Card>
   );
 }

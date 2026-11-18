@@ -20,3 +20,12 @@ export const ROLE_HOME: Record<Role, string> = {
 export function isRole(value: unknown): value is Role {
   return typeof value === 'string' && (ALL_ROLES as string[]).includes(value);
 }
+
+/// Human-readable labels for the Role Management screen's role picker and roster
+/// (docs/client/NFCAP_LMS_Feature_Detail_Client.md — "Role Management Screen").
+export const ROLE_DISPLAY_LABEL: Record<Role, string> = {
+  ADMIN: 'Admin',
+  LEARNER: 'Learner',
+  PARTNER_STAFF: 'Partner Staff',
+  WIOA_COORDINATOR: 'WIOA Coordinator',
+};

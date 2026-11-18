@@ -1,5 +1,13 @@
-import { PageLoading } from '@/components/ui';
+import { Skeleton } from '@/components/admin-ui/skeleton';
 
 export default function Loading() {
-  return <PageLoading />;
+  return (
+    <div className="flex flex-col gap-4">
+      <div>
+        <Skeleton className="h-6 w-24" />
+        <Skeleton className="mt-2 h-4 w-80" />
+      </div>
+      <Skeleton className="h-48 w-full" />
+    </div>
+  );
 }
