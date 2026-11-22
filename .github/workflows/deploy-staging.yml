@@ -44,6 +44,11 @@ jobs:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
+          # appleboy/ssh-action defaults command_timeout to 10m. The remote script's own docker
+          # build (npm ci + next build, including its TypeScript check) now regularly runs past
+          # that on its own, before the health-check polling even starts — it isn't hung, just
+          # slower than the default allows as the app has grown. 30m covers that with headroom.
+          command_timeout: 30m
           script: |
             DIR="/home/websites/nfcap_lms"
 
