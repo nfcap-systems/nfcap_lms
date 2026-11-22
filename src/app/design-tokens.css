@@ -1,0 +1,110 @@
+/* NFCAP design-system tokens — ported from the canvas's nfcap.css (gate NFCAP-4, approved
+   2026-11-19; chart tokens added gate 4.5). Source of truth for values:
+   https://claude.ai/artifact/6othp9hKDpwXeLJsWtkt3Y, project/nfcap.css.
+   See docs/design/DESIGN_CANVAS_ROADMAP.md "Settled" and docs/MOCKUP-INDEX.md FND01-Tokens for
+   the decision record. Do not change the accent without a fresh gate-4.2-style approval — it is
+   a one-way door per the roadmap's hard stop rule 3.
+
+   This is Step 1 of docs/plans/phase-3-and-design-migration-kickoff.md's design-system
+   migration: tokens only, ported inert. Nothing in src/ references these custom properties yet
+   (confirmed before adding this file) and no [data-system] attribute is set on any layout yet,
+   so this file has zero visual effect until Steps 2-4 (rebuilt primitives, new patterns, and the
+   retrofit that wires [data-system="learner"|"staff"] onto each role's layout) land. */
+
+:root {
+  /* Ink — shared, every role */
+  --ink: #1f2328;
+  --ink-muted: #6b7280;
+  --ink-faint: #9ca3af;
+  --border: #e5e7eb;
+  --surface: #ffffff;
+  --surface-muted: #f9fafb;
+
+  /* Status triad — shared across every role. Never reused as an accent. */
+  --status-complete: #0f6b30;
+  --status-complete-bg: #dcfce7;
+  --status-complete-border: #bbf7d0;
+  --status-pending: #8a3d08;
+  --status-pending-bg: #fef3c7;
+  --status-pending-border: #fde68a;
+  --status-problem: #b91c1c;
+  --status-problem-bg: #fee2e2;
+  --status-problem-border: #fecaca;
+
+  /* Typography — shared. Geist is already this app's font (src/app/layout.tsx's
+     next/font/google Geist/Geist_Mono), confirmed as the admin template's own real computed
+     font too, so this is the same decision on both sides of the palette split. */
+  --font-display: Geist, 'Geist Fallback', system-ui, sans-serif;
+  --font-body: Geist, 'Geist Fallback', system-ui, sans-serif;
+  --font-mono: 'Geist Mono', 'Geist Mono Fallback', ui-monospace, monospace;
+  --text-body-size: 17px;
+  --text-body-line: 1.6;
+
+  /* Radius — shared */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-full: 9999px;
+
+  /* Elevation — shared. Not a one-way door like the accent — low stakes, easy to revise. */
+  --shadow-sm: 0 1px 2px rgba(15, 23, 32, 0.06);
+  --shadow-md: 0 4px 12px rgba(15, 23, 32, 0.1);
+  --shadow-lg: 0 16px 32px rgba(15, 23, 32, 0.14);
+
+  /* Motion — shared. Short and functional, matches an apprenticeship/compliance tool's
+     register, not a consumer app's. */
+  --motion-fast: 120ms ease-out;
+  --motion-base: 180ms ease;
+  --motion-modal: 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
+
+  /* Focus ring — shared, dual-tone. Visible on light cards and dark bands alike. */
+  --focus-ring-outer: #ffffff;
+  --focus-ring-inner: #1f2328;
+
+  /* Muted chart palette — desaturated status triad, chart bars/legend only */
+  --chart-approved: color-mix(in srgb, var(--status-complete) 22%, var(--ink-muted) 78%);
+  --chart-pending: color-mix(in srgb, var(--status-pending) 22%, var(--ink-muted) 78%);
+  --chart-rejected: color-mix(in srgb, var(--status-problem) 22%, var(--ink-muted) 78%);
+}
+
+/* Learner — Coursera-leaning: white/light background, graphite text, one restrained blue
+   accent, muted status badges. */
+[data-system='learner'] {
+  --accent: #2563eb;
+  --accent-hover: #1d4ed8;
+  --accent-contrast: #ffffff;
+  --space-xs: 8px;
+  --space-sm: 12px;
+  --space-md: 20px;
+  --space-lg: 32px;
+  --space-xl: 48px;
+}
+
+/* Staff — Admin, Coordinator, Partner. studio-admin-leaning: no hue accent,
+   graphite/black carries primary actions, denser spacing. oklch() values are exact, pulled
+   from the cloned reference's own globals.css, not approximated from screenshots. */
+[data-system='staff'] {
+  --accent: oklch(0.205 0 0);
+  --accent-hover: oklch(0.145 0 0);
+  --accent-contrast: oklch(0.985 0 0);
+  --surface: oklch(1 0 0);
+  --surface-muted: oklch(0.97 0 0);
+  --ink: oklch(0.145 0 0);
+  --ink-muted: oklch(0.556 0 0);
+  --ink-faint: oklch(0.708 0 0);
+  --border: oklch(0.922 0 0);
+  --sidebar-bg: oklch(0.985 0 0);
+  --sidebar-fg: oklch(0.145 0 0);
+  --sidebar-accent-bg: oklch(0.97 0 0);
+  --sidebar-border: oklch(0.922 0 0);
+  --sidebar-primary: oklch(0.205 0 0);
+  --sidebar-primary-fg: oklch(0.985 0 0);
+  --radius-sm: 6px;
+  --radius-lg: 10px;
+  --radius-xl: 14px;
+  --space-xs: 6px;
+  --space-sm: 8px;
+  --space-md: 14px;
+  --space-lg: 20px;
+  --space-xl: 32px;
+}
