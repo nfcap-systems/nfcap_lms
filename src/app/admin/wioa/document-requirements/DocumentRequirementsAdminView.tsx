@@ -2,14 +2,36 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Badge, Button, Card, Checkbox, Drawer, Field, Input, Select, Textarea } from '@/components/ui';
-import { Icon } from '@/components/icons';
+import { Plus } from 'lucide-react';
+
 import {
   createWioaDocumentRequirement,
   updateWioaDocumentRequirement,
 } from '@/lib/actions/wioa-document-requirements';
 import type { WioaDocumentRequirementAdminRecord } from '@/lib/data/wioa-document-requirements';
 import type { WorkforceBoardSummary } from '@/lib/data/wioa-boards';
+import { Badge } from '@/components/admin-ui/badge';
+import { Button } from '@/components/admin-ui/button';
+import { Card, CardContent } from '@/components/admin-ui/card';
+import { Checkbox } from '@/components/admin-ui/checkbox';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/admin-ui/dialog';
+import { Input } from '@/components/admin-ui/input';
+import { Label } from '@/components/admin-ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/admin-ui/select';
+import { Textarea } from '@/components/admin-ui/textarea';
 
 function groupByBoard(
   requirements: WioaDocumentRequirementAdminRecord[],
@@ -37,39 +59,37 @@ export function DocumentRequirementsAdminView({
   return (
     <div className="flex flex-col gap-4">
       <div className="flex justify-end">
-        <Button size="sm" onClick={() => setAddOpen(true)} disabled={boards.length === 0}>
-          <Icon name="plus" className="size-4" />
-          Add Requirement
+        <Button onClick={() => setAddOpen(true)} disabled={boards.length === 0}>
+          <Plus className="size-4" />
+          Add requirement
         </Button>
       </div>
 
       {boards.length === 0 ? (
         <Card>
-          <div className="py-10 text-center text-sm text-text-secondary">
+          <CardContent className="py-10 text-center text-sm text-muted-foreground">
             Add a workforce board first — requirements are scoped per board.
-          </div>
+          </CardContent>
         </Card>
       ) : requirements.length === 0 ? (
         <Card>
-          <div className="py-10 text-center text-sm text-text-secondary">
+          <CardContent className="py-10 text-center text-sm text-muted-foreground">
             No document requirements yet.
-          </div>
+          </CardContent>
         </Card>
       ) : (
         groupByBoard(requirements).map(([boardName, rows]) => (
-          <Card key={boardName}>
-            <p className="border-b border-border-subtle px-4 py-3 text-sm font-semibold text-brand-heading">
-              {boardName}
-            </p>
-            <div className="divide-y divide-border-subtle">
+          <Card key={boardName} className="py-0">
+            <p className="border-b px-4 py-3 text-sm font-semibold text-foreground">{boardName}</p>
+            <div className="divide-y divide-border">
               {rows.map((r) => (
                 <div key={r.id} className="flex items-center justify-between gap-4 p-4">
                   <div className="min-w-0">
-                    <p className="text-sm font-medium text-text-primary">{r.name}</p>
-                    <p className="text-xs text-text-muted">{r.description}</p>
+                    <p className="text-sm font-medium text-foreground">{r.name}</p>
+                    <p className="text-xs text-muted-foreground">{r.description}</p>
                   </div>
                   <div className="flex shrink-0 items-center gap-2">
-                    {r.conditional && <Badge tone="pending">Conditional</Badge>}
+                    {r.conditional && <Badge variant="warning">Conditional</Badge>}
                     <Button size="sm" variant="outline" onClick={() => setEditing(r)}>
                       Edit
                     </Button>
@@ -81,14 +101,16 @@ export function DocumentRequirementsAdminView({
         ))
       )}
 
-      <RequirementDrawer
+      <RequirementDialog
         key={editing?.id ?? 'new'}
         boards={boards}
         open={addOpen || editing !== null}
         existing={editing}
-        onClose={() => {
-          setAddOpen(false);
-          setEditing(null);
+        onOpenChange={(open) => {
+          if (!open) {
+            setAddOpen(false);
+            setEditing(null);
+          }
         }}
         onSaved={() => router.refresh()}
       />
@@ -96,17 +118,17 @@ export function DocumentRequirementsAdminView({
   );
 }
 
-function RequirementDrawer({
+function RequirementDialog({
   boards,
   open,
   existing,
-  onClose,
+  onOpenChange,
   onSaved,
 }: {
   boards: WorkforceBoardSummary[];
   open: boolean;
   existing: WioaDocumentRequirementAdminRecord | null;
-  onClose: () => void;
+  onOpenChange: (open: boolean) => void;
   onSaved: () => void;
 }) {
   const [workforceBoardId, setWorkforceBoardId] = useState(
@@ -118,24 +140,74 @@ function RequirementDrawer({
   const [applicableRule, setApplicableRule] = useState(existing?.applicableRule ?? '');
   const [submitting, setSubmitting] = useState(false);
 
-  if (!open) return null;
-
   const valid =
     workforceBoardId.length > 0 && name.trim().length > 0 && description.trim().length > 0;
 
   return (
-    <Drawer
-      open={open}
-      onClose={onClose}
-      title={existing ? 'Edit Document Requirement' : 'Add Document Requirement'}
-      description="A conditional requirement only actually applies at case creation for the one hardcoded rule (EDD Award Letter) — a custom conditional name always generates, same as non-conditional."
-      footer={
-        <>
-          <Button variant="ghost" size="sm" onClick={onClose}>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>
+            {existing ? 'Edit document requirement' : 'Add document requirement'}
+          </DialogTitle>
+          <DialogDescription>
+            A conditional requirement only actually applies at case creation for the one hardcoded
+            rule (EDD Award Letter) — a custom conditional name always generates, same as
+            non-conditional.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="flex max-h-96 flex-col gap-3 overflow-y-auto pr-1">
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="req-board">Workforce board</Label>
+            <Select value={workforceBoardId} onValueChange={setWorkforceBoardId}>
+              <SelectTrigger id="req-board" className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {boards.map((b) => (
+                  <SelectItem key={b.id} value={b.id}>
+                    {b.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="req-name">Name</Label>
+            <Input id="req-name" value={name} onChange={(e) => setName(e.target.value)} autoFocus />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="req-description">Description</Label>
+            <Textarea
+              id="req-description"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+            />
+          </div>
+          <label className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Checkbox
+              checked={conditional}
+              onCheckedChange={(checked) => setConditional(checked === true)}
+            />
+            Conditional — only applies to some learners
+          </label>
+          {conditional && (
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="req-rule">Rule (human-readable, not evaluated)</Label>
+              <Input
+                id="req-rule"
+                value={applicableRule}
+                onChange={(e) => setApplicableRule(e.target.value)}
+                placeholder="e.g. unemploymentInsuranceStatus is not 'Not applicable'"
+              />
+            </div>
+          )}
+        </div>
+        <DialogFooter>
+          <Button variant="ghost" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
           <Button
-            size="sm"
             disabled={!valid || submitting}
             onClick={async () => {
               setSubmitting(true);
@@ -152,54 +224,14 @@ function RequirementDrawer({
                 await createWioaDocumentRequirement(fields);
               }
               setSubmitting(false);
-              onClose();
+              onOpenChange(false);
               onSaved();
             }}
           >
-            {existing ? 'Save changes' : 'Add Requirement'}
+            {existing ? 'Save changes' : 'Add requirement'}
           </Button>
-        </>
-      }
-    >
-      <div className="flex flex-col gap-4">
-        <Field label="Workforce board" htmlFor="req-board">
-          <Select
-            id="req-board"
-            value={workforceBoardId}
-            onChange={(e) => setWorkforceBoardId(e.target.value)}
-          >
-            {boards.map((b) => (
-              <option key={b.id} value={b.id}>
-                {b.name}
-              </option>
-            ))}
-          </Select>
-        </Field>
-        <Field label="Name" htmlFor="req-name">
-          <Input id="req-name" value={name} onChange={(e) => setName(e.target.value)} autoFocus />
-        </Field>
-        <Field label="Description" htmlFor="req-description">
-          <Textarea
-            id="req-description"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-          />
-        </Field>
-        <label className="flex items-center gap-2 text-sm text-text-secondary">
-          <Checkbox checked={conditional} onChange={(e) => setConditional(e.target.checked)} />
-          Conditional — only applies to some learners
-        </label>
-        {conditional && (
-          <Field label="Rule (human-readable, not evaluated)" htmlFor="req-rule">
-            <Input
-              id="req-rule"
-              value={applicableRule}
-              onChange={(e) => setApplicableRule(e.target.value)}
-              placeholder="e.g. unemploymentInsuranceStatus is not 'Not applicable'"
-            />
-          </Field>
-        )}
-      </div>
-    </Drawer>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

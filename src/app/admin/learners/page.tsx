@@ -14,8 +14,8 @@ export default async function AdminLearnersPage() {
   return (
     <div className="flex flex-col gap-4">
       <div>
-        <h1 className="text-xl font-semibold text-brand-heading">Learners</h1>
-        <p className="mt-1 text-sm text-text-secondary">
+        <h1 className="text-xl font-semibold text-foreground">Learners</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
           Roster of all learners with progress visibility across the program.
         </p>
       </div>

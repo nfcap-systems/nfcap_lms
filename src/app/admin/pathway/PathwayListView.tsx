@@ -1,8 +1,10 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { Badge, Card } from '@/components/ui';
-import { Icon } from '@/components/icons';
+import { Lock, Users, Compass } from 'lucide-react';
+
+import { Badge } from '@/components/admin-ui/badge';
+import { Card } from '@/components/admin-ui/card';
 import type { PathwaySummary } from '@/lib/data/pathway';
 
 export function PathwayListView({ summary }: { summary: PathwaySummary }) {
@@ -10,49 +12,47 @@ export function PathwayListView({ summary }: { summary: PathwaySummary }) {
 
   return (
     <Card
-      className="cursor-pointer overflow-hidden transition-colors hover:border-brand-primary/40"
+      className="cursor-pointer overflow-hidden py-0 transition-colors hover:border-primary/40"
       onClick={() => router.push('/admin/pathway/apprenticeship')}
     >
-      <div className="flex h-28 items-center justify-center bg-brand-primary/10 text-brand-primary">
-        <Icon name="compass" className="size-10" />
+      <div className="flex h-28 items-center justify-center bg-primary/10 text-primary">
+        <Compass className="size-10" />
       </div>
       <div className="flex flex-col gap-4 p-5">
         <div className="flex flex-wrap items-center gap-2">
-          <Badge tone="success">Published</Badge>
-          <span className="text-xs text-text-muted">Linear pathway · one track</span>
+          <Badge variant="success">Published</Badge>
+          <span className="text-xs text-muted-foreground">Linear pathway · one track</span>
         </div>
 
         <div>
-          <h3 className="text-base font-semibold text-brand-heading">
-            NFCAP Apprenticeship Pathway
-          </h3>
-          <p className="mt-1 text-sm text-text-secondary">
+          <h3 className="text-base font-semibold text-foreground">NFCAP Apprenticeship Pathway</h3>
+          <p className="mt-1 text-sm text-muted-foreground">
             Safety & Tools → Flooring Fundamentals → Tile Installation → Professionalism.
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-6 border-t border-border-subtle pt-4">
+        <div className="flex flex-wrap items-center gap-6 border-t pt-4">
           <SummaryStat label="Contents">
-            <Badge tone="info">
+            <Badge variant="outline">
               {summary.courseCount} {summary.courseCount === 1 ? 'Course' : 'Courses'}
             </Badge>
             {summary.restrictedCount > 0 && (
-              <Badge tone="restricted">
-                <Icon name="lock" className="size-3" />
+              <Badge variant="outline">
+                <Lock className="size-3" />
                 {summary.restrictedCount} Restricted
               </Badge>
             )}
           </SummaryStat>
 
           <SummaryStat label="Total Learners">
-            <span className="inline-flex items-center gap-1.5 text-sm font-medium text-text-primary">
-              <Icon name="users" className="size-4 text-text-muted" />
+            <span className="inline-flex items-center gap-1.5 text-sm font-medium text-foreground">
+              <Users className="size-4 text-muted-foreground" />
               {summary.totalLearners}
             </span>
           </SummaryStat>
 
           <SummaryStat label="Completion Rate">
-            <span className="text-sm font-medium text-status-success-text">
+            <span className="text-sm font-medium text-foreground">
               {summary.completionRate}% completed this path
             </span>
           </SummaryStat>
@@ -65,7 +65,9 @@ export function PathwayListView({ summary }: { summary: PathwaySummary }) {
 function SummaryStat({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="flex flex-col gap-1.5">
-      <span className="text-xs font-medium tracking-wide text-text-muted uppercase">{label}</span>
+      <span className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+        {label}
+      </span>
       <div className="flex items-center gap-2">{children}</div>
     </div>
   );

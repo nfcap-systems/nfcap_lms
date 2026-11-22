@@ -1,8 +1,33 @@
-# NFCAP LMS — Design System (Locked)
+# NFCAP LMS — Design System (DROPPED)
+
+> **Status as of 2026-11-18: DROPPED, not deleted.** Decided by Manjila in session and amended into
+> `docs/DEV-APPROACH.md` gate NFCAP-4, which previously named this file as the source of design
+> direction. `NFCAP_DESIGN_TOKENS.md` is equally STALE.
+>
+> **The design direction is now created new in the mockup canvas.** Its `FND` section *is* the
+> design direction, and once approved its tokens in `project/nfcap.css` are the source of truth for
+> every board and for the code that follows. No markdown file holds the palette any more.
+>
+> The starting brief is `docs/design/LEARNER_UI_REFERENCES.md` → *Brand status*: graphite ink for
+> structure, one mid-tone accent for action, a reserved status triad (green complete / amber pending
+> / red problem). Plan: `docs/design/DESIGN_CANVAS_ROADMAP.md`.
+>
+> **This file is kept because three things in it are not brand opinions and still apply:**
+> 1. The **WCAG contrast computations** below — the only ones that exist for this codebase. Any new
+>    palette fails in the same two places: locked-state text, and small-bold text on a tint.
+> 2. The **dual-tone focus ring** technique (visible on both light cards and dark bands without
+>    per-surface conditional styling).
+> 3. The **four card states** as a taxonomy: active / available / locked / completed.
+>
+> Geist is also retained, with body text raised to 17px. Everything below about specific navy/red
+> hex values, and the 60/25/10/5 usage ratio, is historical — do not build new work against it.
+
+## Original document follows
 
 Supersedes the color/typography sections of `docs/design/NFCAP_DESIGN_TOKENS.md` (that doc was built from the placeholder live site before the real NFCAP logo was found — see caveat at the bottom of this file). Source of the palette/type-scale below: `nfcap_lms_color_typography_system.md` (provided reference), adjusted for accessibility and mapped onto this codebase's existing token names.
 
-Status: **decided and implemented** — tokens, focus ring, and secondary-button hover live in `src/app/globals.css`; Learner Home (`src/app/learner/HomeView.tsx`, `src/components/learner/PathwayCourseCard.tsx`) and the learner header (`src/components/layout/LearnerHeader.tsx`) rebuilt against the reference mockup (`ChatGPT Image Sep 9, 2026, 04_10_18 PM.png`). No raw hex values remain outside `globals.css`.
+Status: ~~**decided and implemented**~~ — **superseded 2026-11-18, see the banner above.** Historical
+record of what was built: tokens, focus ring, and secondary-button hover live in `src/app/globals.css`; Learner Home (`src/app/learner/HomeView.tsx`, `src/components/learner/PathwayCourseCard.tsx`) and the learner header (`src/components/layout/LearnerHeader.tsx`) rebuilt against the reference mockup (`ChatGPT Image Sep 9, 2026, 04_10_18 PM.png`). No raw hex values remain outside `globals.css`.
 
 ## Scope decisions
 

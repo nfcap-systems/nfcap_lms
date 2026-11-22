@@ -2,21 +2,30 @@
 
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import {
-  Badge,
-  Button,
-  Card,
-  CardContent,
-  Dialog,
-  Drawer,
-  Field,
-  Input,
-  Select,
-  Textarea,
-} from '@/components/ui';
 import { Icon, type IconName } from '@/components/icons';
 import { lessonTypeIcon, lessonTypeLabel } from '@/components/learner/lesson-type';
 import { cn } from '@/lib/cn';
+import { Badge } from '@/components/admin-ui/badge';
+import { Button } from '@/components/admin-ui/button';
+import { Card, CardContent } from '@/components/admin-ui/card';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/admin-ui/dialog';
+import { Input } from '@/components/admin-ui/input';
+import { Label } from '@/components/admin-ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/admin-ui/select';
+import { Textarea } from '@/components/admin-ui/textarea';
 import {
   addContentBlock,
   addLesson,
@@ -32,9 +41,17 @@ import {
   updateQuestion,
   updateSection,
 } from '@/lib/actions/curriculum';
-import type { Course, ContentBlockType, Lesson, LessonType, QuizQuestion, Section } from '@/lib/types';
+import type {
+  Course,
+  ContentBlockType,
+  Lesson,
+  LessonType,
+  QuizQuestion,
+  Section,
+} from '@/lib/types';
 
-type RailSelection = { type: 'general' } | { type: 'section'; sectionId: string } | { type: 'assessment' };
+type RailSelection =
+  { type: 'general' } | { type: 'section'; sectionId: string } | { type: 'assessment' };
 
 type LessonEditorTarget =
   | { mode: 'add'; sectionId: string; sectionTitle: string }
@@ -49,6 +66,26 @@ type ConfirmDeleteState = {
   description: string;
   onConfirm: () => void;
 };
+
+function LabeledField({
+  label,
+  htmlFor,
+  hint,
+  children,
+}: {
+  label: string;
+  htmlFor?: string;
+  hint?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="flex flex-col gap-1.5">
+      <Label htmlFor={htmlFor}>{label}</Label>
+      {children}
+      {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
+    </div>
+  );
+}
 
 export function CurriculumBuilderView({ course }: { course: Course }) {
   const router = useRouter();
@@ -131,7 +168,7 @@ export function CurriculumBuilderView({ course }: { course: Course }) {
               }
             />
           ) : (
-            <p className="text-sm text-text-muted">Section not found.</p>
+            <p className="text-sm text-muted-foreground">Section not found.</p>
           ))}
 
         {railSelection.type === 'assessment' && (
@@ -161,7 +198,9 @@ export function CurriculumBuilderView({ course }: { course: Course }) {
       )}
       {sectionDialog !== null && sectionDialog !== 'add' && (
         <SectionDialog
-          initialTitle={course.sections.find((s) => s.id === sectionDialog.editSectionId)?.title ?? ''}
+          initialTitle={
+            course.sections.find((s) => s.id === sectionDialog.editSectionId)?.title ?? ''
+          }
           onClose={() => setSectionDialog(null)}
           onSubmit={(title) => {
             const { editSectionId } = sectionDialog;
@@ -171,7 +210,7 @@ export function CurriculumBuilderView({ course }: { course: Course }) {
       )}
 
       {lessonEditor?.mode === 'add' && (
-        <LessonEditorDrawer
+        <LessonEditorDialog
           key={`add-${lessonEditor.sectionId}`}
           state={lessonEditor}
           courseSlug={course.id}
@@ -180,7 +219,7 @@ export function CurriculumBuilderView({ course }: { course: Course }) {
         />
       )}
       {lessonEditor?.mode === 'edit' && editingLesson && (
-        <LessonEditorDrawer
+        <LessonEditorDialog
           key={editingLesson.id}
           state={{ mode: 'edit', sectionId: lessonEditor.sectionId, lesson: editingLesson }}
           courseSlug={course.id}
@@ -203,24 +242,25 @@ export function CurriculumBuilderView({ course }: { course: Course }) {
         />
       )}
 
-      {confirmDelete && (
-        <Dialog
-          open
-          onClose={() => setConfirmDelete(null)}
-          title={confirmDelete.title}
-          description={confirmDelete.description}
-          footer={
-            <>
-              <Button variant="ghost" size="sm" onClick={() => setConfirmDelete(null)}>
-                Cancel
-              </Button>
-              <Button variant="danger" size="sm" onClick={confirmDelete.onConfirm}>
-                Delete
-              </Button>
-            </>
-          }
-        />
-      )}
+      <Dialog
+        open={confirmDelete !== null}
+        onOpenChange={(open) => !open && setConfirmDelete(null)}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{confirmDelete?.title}</DialogTitle>
+            <DialogDescription>{confirmDelete?.description}</DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setConfirmDelete(null)}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={() => confirmDelete?.onConfirm()}>
+              Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -242,7 +282,7 @@ function RailButton({
       onClick={onClick}
       className={cn(
         'flex w-full items-center gap-2 rounded-md px-2 py-2 text-left text-sm font-medium',
-        active ? 'bg-brand-tint text-brand-primary' : 'text-text-secondary hover:bg-bg-subtle',
+        active ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-muted',
       )}
     >
       <Icon name={icon} className="size-4" />
@@ -282,20 +322,20 @@ function LeftRail({
       <Card>
         <CardContent className="flex flex-col gap-1">
           <div className="flex items-center justify-between pb-1">
-            <span className="text-xs font-semibold uppercase tracking-wide text-text-muted">
+            <span className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
               Sections
             </span>
             <button
               type="button"
               onClick={onAddSection}
-              className="rounded p-1 text-text-muted hover:bg-bg-subtle hover:text-text-primary"
+              className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
               aria-label="Add section"
             >
               <Icon name="plus" className="size-4" />
             </button>
           </div>
           {course.sections.length === 0 ? (
-            <p className="px-2 py-1 text-xs text-text-muted">No sections yet.</p>
+            <p className="px-2 py-1 text-xs text-muted-foreground">No sections yet.</p>
           ) : (
             course.sections.map((section) => (
               <div
@@ -303,8 +343,8 @@ function LeftRail({
                 className={cn(
                   'group flex items-center gap-1 rounded-md px-2 py-1.5',
                   selection.type === 'section' && selection.sectionId === section.id
-                    ? 'bg-brand-tint text-brand-primary'
-                    : 'text-text-secondary hover:bg-bg-subtle',
+                    ? 'bg-primary/10 text-primary'
+                    : 'text-muted-foreground hover:bg-muted',
                 )}
               >
                 <button
@@ -317,7 +357,7 @@ function LeftRail({
                 <button
                   type="button"
                   onClick={() => onEditSection(section.id)}
-                  className="rounded p-1 opacity-0 hover:bg-bg-card group-hover:opacity-100"
+                  className="rounded p-1 opacity-0 hover:bg-card group-hover:opacity-100"
                   aria-label={`Edit ${section.title}`}
                 >
                   <Icon name="edit" className="size-3.5" />
@@ -325,7 +365,7 @@ function LeftRail({
                 <button
                   type="button"
                   onClick={() => onDeleteSection(section)}
-                  className="rounded p-1 text-status-danger-text opacity-0 hover:bg-bg-card group-hover:opacity-100"
+                  className="rounded p-1 text-destructive opacity-0 hover:bg-card group-hover:opacity-100"
                   aria-label={`Delete ${section.title}`}
                 >
                   <Icon name="trash" className="size-3.5" />
@@ -355,17 +395,17 @@ function GeneralInfoPanel({ course }: { course: Course }) {
     <Card>
       <CardContent className="flex flex-col gap-3">
         <div className="flex flex-wrap items-center gap-2">
-          <Badge tone="neutral">{course.category}</Badge>
+          <Badge variant="outline">{course.category}</Badge>
           {course.access === 'restricted' ? (
-            <Badge tone="restricted">
+            <Badge variant="outline">
               <Icon name="lock" className="size-3" />
               Restricted
             </Badge>
           ) : (
-            <Badge tone="info">Open</Badge>
+            <Badge variant="outline">Open</Badge>
           )}
         </div>
-        <p className="text-sm text-text-secondary">{course.description}</p>
+        <p className="text-sm text-muted-foreground">{course.description}</p>
       </CardContent>
     </Card>
   );
@@ -389,11 +429,11 @@ function SectionDetailPanel({
       <CardContent className="flex flex-col gap-4">
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-2">
-            <h2 className="text-base font-semibold text-brand-heading">{section.title}</h2>
+            <h2 className="text-base font-semibold text-foreground">{section.title}</h2>
             <button
               type="button"
               onClick={onRenameSection}
-              className="rounded p-1 text-text-muted hover:bg-bg-subtle hover:text-text-primary"
+              className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
               aria-label="Rename section"
             >
               <Icon name="edit" className="size-3.5" />
@@ -406,19 +446,24 @@ function SectionDetailPanel({
         </div>
 
         {section.lessons.length === 0 ? (
-          <p className="text-xs text-text-muted">No lessons yet.</p>
+          <p className="text-xs text-muted-foreground">No lessons yet.</p>
         ) : (
-          <ul className="flex flex-col divide-y divide-border-subtle">
+          <ul className="flex flex-col divide-y divide-border">
             {section.lessons.map((lesson) => (
               <li key={lesson.id} className="group flex items-center gap-2.5 py-2 text-sm">
-                <Icon name={lessonTypeIcon[lesson.type]} className="size-4 shrink-0 text-text-muted" />
-                <span className="flex-1 truncate text-text-primary">{lesson.title}</span>
-                <span className="text-xs text-text-muted">{lessonTypeLabel[lesson.type]}</span>
-                <span className="text-xs text-text-muted">{lesson.durationMinutes} min</span>
+                <Icon
+                  name={lessonTypeIcon[lesson.type]}
+                  className="size-4 shrink-0 text-muted-foreground"
+                />
+                <span className="flex-1 truncate text-foreground">{lesson.title}</span>
+                <span className="text-xs text-muted-foreground">
+                  {lessonTypeLabel[lesson.type]}
+                </span>
+                <span className="text-xs text-muted-foreground">{lesson.durationMinutes} min</span>
                 <button
                   type="button"
                   onClick={() => onEditLesson(lesson.id)}
-                  className="rounded p-1 text-text-muted opacity-0 hover:bg-bg-subtle hover:text-text-primary group-hover:opacity-100"
+                  className="rounded p-1 text-muted-foreground opacity-0 hover:bg-muted hover:text-foreground group-hover:opacity-100"
                   aria-label={`Edit ${lesson.title}`}
                 >
                   <Icon name="edit" className="size-3.5" />
@@ -426,7 +471,7 @@ function SectionDetailPanel({
                 <button
                   type="button"
                   onClick={() => onDeleteLesson(lesson)}
-                  className="rounded p-1 text-status-danger-text opacity-0 hover:bg-bg-subtle group-hover:opacity-100"
+                  className="rounded p-1 text-destructive opacity-0 hover:bg-muted group-hover:opacity-100"
                   aria-label={`Delete ${lesson.title}`}
                 >
                   <Icon name="trash" className="size-3.5" />
@@ -455,7 +500,7 @@ function AssessmentPanel({
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-text-primary">Knowledge Assessment</h2>
+        <h2 className="text-sm font-semibold text-foreground">Knowledge Assessment</h2>
         <Button size="sm" variant="outline" onClick={onAddQuestion}>
           <Icon name="clipboard" className="size-4" />
           Add Question
@@ -464,22 +509,22 @@ function AssessmentPanel({
 
       <Card>
         <CardContent className="flex flex-col gap-4">
-          <p className="text-xs text-text-muted">
+          <p className="text-xs text-muted-foreground">
             Pass threshold: {Math.round(course.assessment.passThreshold * 100)}% ·{' '}
             {questions.length} questions
           </p>
           <ul className="flex flex-col gap-3">
             {questions.map((q, i) => (
-              <li key={q.id} className="group rounded-xl border border-border-subtle p-3">
+              <li key={q.id} className="group rounded-xl border p-3">
                 <div className="flex items-start justify-between gap-2">
-                  <p className="text-sm font-medium text-text-primary">
+                  <p className="text-sm font-medium text-foreground">
                     {i + 1}. {q.prompt}
                   </p>
                   <div className="flex shrink-0 items-center gap-1 opacity-0 group-hover:opacity-100">
                     <button
                       type="button"
                       onClick={() => onEditQuestion(q)}
-                      className="rounded p-1 text-text-muted hover:bg-bg-subtle hover:text-text-primary"
+                      className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
                       aria-label="Edit question"
                     >
                       <Icon name="edit" className="size-3.5" />
@@ -487,7 +532,7 @@ function AssessmentPanel({
                     <button
                       type="button"
                       onClick={() => onDeleteQuestion(q)}
-                      className="rounded p-1 text-status-danger-text hover:bg-bg-subtle"
+                      className="rounded p-1 text-destructive hover:bg-muted"
                       aria-label="Delete question"
                     >
                       <Icon name="trash" className="size-3.5" />
@@ -498,10 +543,10 @@ function AssessmentPanel({
                   {q.options.map((option, oi) => (
                     <li
                       key={oi}
-                      className="flex items-center gap-1.5 text-xs text-text-secondary"
+                      className="flex items-center gap-1.5 text-xs text-muted-foreground"
                     >
                       {oi === q.correctIndex && (
-                        <Icon name="check" className="size-3 shrink-0 text-status-success-text" />
+                        <Icon name="check" className="size-3 shrink-0 text-green-600" />
                       )}
                       {option}
                     </li>
@@ -528,38 +573,36 @@ function SectionDialog({
   const isEdit = initialTitle !== undefined;
   const [title, setTitle] = useState(initialTitle ?? '');
   return (
-    <Drawer
-      open
-      onClose={onClose}
-      title={isEdit ? 'Rename Section' : 'Add Section'}
-      footer={
-        <>
-          <Button variant="ghost" size="sm" onClick={onClose}>
+    <Dialog open onOpenChange={(open) => !open && onClose()}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{isEdit ? 'Rename section' : 'Add section'}</DialogTitle>
+        </DialogHeader>
+        <LabeledField label="Section title" htmlFor="section-title">
+          <Input
+            id="section-title"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="e.g. Finishing Techniques"
+            autoFocus
+          />
+        </LabeledField>
+        <DialogFooter>
+          <Button variant="ghost" onClick={onClose}>
             Cancel
           </Button>
           <Button
-            size="sm"
             disabled={!title.trim()}
             onClick={() => {
               onSubmit(title.trim());
               onClose();
             }}
           >
-            {isEdit ? 'Save' : 'Add Section'}
+            {isEdit ? 'Save' : 'Add section'}
           </Button>
-        </>
-      }
-    >
-      <Field label="Section title" htmlFor="section-title">
-        <Input
-          id="section-title"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          placeholder="e.g. Finishing Techniques"
-          autoFocus
-        />
-      </Field>
-    </Drawer>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -599,7 +642,7 @@ type LessonEditorState =
   | { mode: 'add'; sectionId: string; sectionTitle: string }
   | { mode: 'edit'; sectionId: string; lesson: Lesson };
 
-function LessonEditorDrawer({
+function LessonEditorDialog({
   state,
   courseSlug,
   onClose,
@@ -629,7 +672,12 @@ function LessonEditorDrawer({
   function addBlock(blockType: ContentBlockType) {
     if (isEdit) {
       runAndRefresh(
-        addContentBlock(state.lesson.id, { type: blockType, content: '', items: [], url: undefined }),
+        addContentBlock(state.lesson.id, {
+          type: blockType,
+          content: '',
+          items: [],
+          url: undefined,
+        }),
       );
     } else {
       setLocalBlocks((prev) => [
@@ -639,7 +687,10 @@ function LessonEditorDrawer({
     }
   }
 
-  function updateBlock(id: string, patch: Partial<Pick<EditableBlock, 'content' | 'items' | 'url'>>) {
+  function updateBlock(
+    id: string,
+    patch: Partial<Pick<EditableBlock, 'content' | 'items' | 'url'>>,
+  ) {
     if (isEdit) {
       const current = blocks.find((b) => b.id === id);
       if (!current) return;
@@ -695,113 +746,114 @@ function LessonEditorDrawer({
   }
 
   return (
-    <Drawer
-      open
-      onClose={onClose}
-      title={isEdit ? 'Edit Lesson' : 'Add Lesson'}
-      description={isEdit ? undefined : `Adding to "${state.sectionTitle}"`}
-      panelClassName="max-w-2xl"
-      footer={
-        isEdit ? (
-          <>
-            <Button variant="ghost" size="sm" onClick={onClose}>
-              Close
-            </Button>
-            <Button
-              size="sm"
-              disabled={!title.trim()}
-              onClick={() =>
-                runAndRefresh(
-                  updateLesson(courseSlug, state.lesson.id, {
-                    title: title.trim(),
-                    type,
-                    durationMinutes: duration,
-                  }),
-                )
-              }
-            >
-              Save Details
-            </Button>
-          </>
-        ) : (
-          <>
-            <Button variant="ghost" size="sm" onClick={onClose}>
-              Cancel
-            </Button>
-            <Button
-              size="sm"
-              disabled={!title.trim()}
-              onClick={() => {
-                runAndRefresh(submitAddLesson());
-                onClose();
-              }}
-            >
-              Add Lesson
-            </Button>
-          </>
-        )
-      }
-    >
-      <div className="flex flex-col gap-5">
-        <Field label="Lesson title" htmlFor="lesson-title">
-          <Input
-            id="lesson-title"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="e.g. Baseboard Trim Basics"
-            autoFocus={!isEdit}
-          />
-        </Field>
-        <div className="grid grid-cols-2 gap-3">
-          <Field label="Type" htmlFor="lesson-type">
-            <Select
-              id="lesson-type"
-              value={type}
-              onChange={(e) => setType(e.target.value as LessonType)}
-            >
-              {lessonTypes.map((t) => (
-                <option key={t} value={t}>
-                  {lessonTypeLabel[t]}
-                </option>
-              ))}
-            </Select>
-          </Field>
-          <Field label="Duration (min)" htmlFor="lesson-duration">
-            <Input
-              id="lesson-duration"
-              type="number"
-              min={1}
-              value={duration}
-              onChange={(e) => setDuration(Number(e.target.value) || 1)}
-            />
-          </Field>
-        </div>
-
-        <div className="flex flex-col gap-3 border-t border-border-subtle pt-4">
-          <div className="flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-text-primary">Content</h3>
-            <AddContentPicker onPick={addBlock} />
-          </div>
-          {blocks.length === 0 ? (
-            <p className="text-xs text-text-muted">No content blocks yet.</p>
-          ) : (
-            <div className="flex flex-col gap-3">
-              {blocks.map((block, i) => (
-                <BlockRow
-                  key={block.id}
-                  block={block}
-                  onUpdate={(patch) => updateBlock(block.id, patch)}
-                  onDelete={() => deleteBlock(block.id)}
-                  onMove={(direction) => moveBlock(block.id, direction)}
-                  canMoveUp={i > 0}
-                  canMoveDown={i < blocks.length - 1}
-                />
-              ))}
-            </div>
+    <Dialog open onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="sm:max-w-2xl">
+        <DialogHeader>
+          <DialogTitle>{isEdit ? 'Edit lesson' : 'Add lesson'}</DialogTitle>
+          {!isEdit && (
+            <DialogDescription>Adding to &quot;{state.sectionTitle}&quot;</DialogDescription>
           )}
+        </DialogHeader>
+        <div className="flex max-h-[60vh] flex-col gap-5 overflow-y-auto pr-1">
+          <LabeledField label="Lesson title" htmlFor="lesson-title">
+            <Input
+              id="lesson-title"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="e.g. Baseboard Trim Basics"
+              autoFocus={!isEdit}
+            />
+          </LabeledField>
+          <div className="grid grid-cols-2 gap-3">
+            <LabeledField label="Type" htmlFor="lesson-type">
+              <Select value={type} onValueChange={(v) => setType(v as LessonType)}>
+                <SelectTrigger id="lesson-type" className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {lessonTypes.map((t) => (
+                    <SelectItem key={t} value={t}>
+                      {lessonTypeLabel[t]}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </LabeledField>
+            <LabeledField label="Duration (min)" htmlFor="lesson-duration">
+              <Input
+                id="lesson-duration"
+                type="number"
+                min={1}
+                value={duration}
+                onChange={(e) => setDuration(Number(e.target.value) || 1)}
+              />
+            </LabeledField>
+          </div>
+
+          <div className="flex flex-col gap-3 border-t pt-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-semibold text-foreground">Content</h3>
+              <AddContentPicker onPick={addBlock} />
+            </div>
+            {blocks.length === 0 ? (
+              <p className="text-xs text-muted-foreground">No content blocks yet.</p>
+            ) : (
+              <div className="flex flex-col gap-3">
+                {blocks.map((block, i) => (
+                  <BlockRow
+                    key={block.id}
+                    block={block}
+                    onUpdate={(patch) => updateBlock(block.id, patch)}
+                    onDelete={() => deleteBlock(block.id)}
+                    onMove={(direction) => moveBlock(block.id, direction)}
+                    canMoveUp={i > 0}
+                    canMoveDown={i < blocks.length - 1}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
         </div>
-      </div>
-    </Drawer>
+        <DialogFooter>
+          {isEdit ? (
+            <>
+              <Button variant="ghost" onClick={onClose}>
+                Close
+              </Button>
+              <Button
+                disabled={!title.trim()}
+                onClick={() =>
+                  runAndRefresh(
+                    updateLesson(courseSlug, state.lesson.id, {
+                      title: title.trim(),
+                      type,
+                      durationMinutes: duration,
+                    }),
+                  )
+                }
+              >
+                Save details
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button variant="ghost" onClick={onClose}>
+                Cancel
+              </Button>
+              <Button
+                disabled={!title.trim()}
+                onClick={() => {
+                  runAndRefresh(submitAddLesson());
+                  onClose();
+                }}
+              >
+                Add lesson
+              </Button>
+            </>
+          )}
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -816,7 +868,7 @@ function AddContentPicker({ onPick }: { onPick: (type: ContentBlockType) => void
       {open && (
         <>
           <div className="fixed inset-0 z-0" onClick={() => setOpen(false)} />
-          <div className="absolute right-0 z-10 mt-1 w-48 rounded-lg border border-border-subtle bg-bg-card p-1 shadow-elevated">
+          <div className="absolute right-0 z-10 mt-1 w-48 rounded-lg border bg-card p-1 shadow-md">
             {blockTypeOrder.map((t) => {
               const meta = blockTypeMeta[t];
               return (
@@ -827,9 +879,9 @@ function AddContentPicker({ onPick }: { onPick: (type: ContentBlockType) => void
                     onPick(t);
                     setOpen(false);
                   }}
-                  className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm text-text-primary hover:bg-bg-subtle"
+                  className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm text-foreground hover:bg-muted"
                 >
-                  <Icon name={meta.icon} className="size-4 text-text-muted" />
+                  <Icon name={meta.icon} className="size-4 text-muted-foreground" />
                   {meta.label}
                 </button>
               );
@@ -865,9 +917,9 @@ function BlockRow({
   const isMediaType = block.type === 'image' || block.type === 'video';
 
   return (
-    <div className="flex flex-col gap-2 rounded-xl border border-border-subtle p-3">
+    <div className="flex flex-col gap-2 rounded-xl border p-3">
       <div className="flex items-center justify-between gap-2">
-        <span className="inline-flex items-center gap-1.5 text-xs font-medium text-text-muted">
+        <span className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
           <Icon name={meta.icon} className="size-3.5" />
           {meta.label}
         </span>
@@ -876,7 +928,7 @@ function BlockRow({
             type="button"
             onClick={() => onMove('up')}
             disabled={!canMoveUp}
-            className="rounded p-1 text-text-muted hover:bg-bg-subtle disabled:opacity-30"
+            className="rounded p-1 text-muted-foreground hover:bg-muted disabled:opacity-30"
             aria-label="Move block up"
           >
             <Icon name="chevron-up" className="size-4" />
@@ -885,7 +937,7 @@ function BlockRow({
             type="button"
             onClick={() => onMove('down')}
             disabled={!canMoveDown}
-            className="rounded p-1 text-text-muted hover:bg-bg-subtle disabled:opacity-30"
+            className="rounded p-1 text-muted-foreground hover:bg-muted disabled:opacity-30"
             aria-label="Move block down"
           >
             <Icon name="chevron-down" className="size-4" />
@@ -893,7 +945,7 @@ function BlockRow({
           <button
             type="button"
             onClick={onDelete}
-            className="rounded p-1 text-status-danger-text hover:bg-bg-subtle"
+            className="rounded p-1 text-destructive hover:bg-muted"
             aria-label="Delete block"
           >
             <Icon name="trash" className="size-4" />
@@ -924,7 +976,9 @@ function BlockRow({
             <div key={i} className="flex items-center gap-1.5">
               <Input
                 value={item}
-                onChange={(e) => setItems((prev) => prev.map((v, vi) => (vi === i ? e.target.value : v)))}
+                onChange={(e) =>
+                  setItems((prev) => prev.map((v, vi) => (vi === i ? e.target.value : v)))
+                }
                 onBlur={() => onUpdate({ items })}
                 placeholder={`Item ${i + 1}`}
               />
@@ -935,7 +989,7 @@ function BlockRow({
                   setItems(next);
                   onUpdate({ items: next });
                 }}
-                className="rounded p-1.5 text-text-muted hover:bg-bg-subtle"
+                className="rounded p-1.5 text-muted-foreground hover:bg-muted"
                 aria-label="Remove item"
               >
                 <Icon name="x" className="size-3.5" />
@@ -985,17 +1039,53 @@ function QuestionDialog({
   const valid = prompt.trim().length > 0 && options.every((o) => o.trim().length > 0);
 
   return (
-    <Drawer
-      open
-      onClose={onClose}
-      title={initial ? 'Edit Question' : 'Add Question'}
-      footer={
-        <>
-          <Button variant="ghost" size="sm" onClick={onClose}>
+    <Dialog open onOpenChange={(open) => !open && onClose()}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{initial ? 'Edit question' : 'Add question'}</DialogTitle>
+        </DialogHeader>
+        <div className="flex flex-col gap-4">
+          <LabeledField label="Question prompt" htmlFor="question-prompt">
+            <Textarea
+              id="question-prompt"
+              value={prompt}
+              onChange={(e) => setPrompt(e.target.value)}
+              placeholder="e.g. What PPE is required before operating a floor grinder?"
+              autoFocus
+            />
+          </LabeledField>
+          <LabeledField
+            label="Answer options"
+            hint="Select the radio button next to the correct answer."
+          >
+            <div className="flex flex-col gap-2">
+              {options.map((option, i) => (
+                <div key={i} className="flex items-center gap-2">
+                  <input
+                    type="radio"
+                    name="correct-option"
+                    checked={correctIndex === i}
+                    onChange={() => setCorrectIndex(i)}
+                    className="size-4 shrink-0 text-primary focus:ring-2 focus:ring-primary/20"
+                    aria-label={`Option ${i + 1} is correct`}
+                  />
+                  <Input
+                    value={option}
+                    onChange={(e) =>
+                      setOptions((prev) => prev.map((o, oi) => (oi === i ? e.target.value : o)))
+                    }
+                    placeholder={`Option ${i + 1}`}
+                  />
+                </div>
+              ))}
+            </div>
+          </LabeledField>
+        </div>
+        <DialogFooter>
+          <Button variant="ghost" onClick={onClose}>
             Cancel
           </Button>
           <Button
-            size="sm"
             disabled={!valid}
             onClick={() => {
               onSubmit({
@@ -1006,45 +1096,10 @@ function QuestionDialog({
               onClose();
             }}
           >
-            {initial ? 'Save' : 'Add Question'}
+            {initial ? 'Save' : 'Add question'}
           </Button>
-        </>
-      }
-    >
-      <div className="flex flex-col gap-4">
-        <Field label="Question prompt" htmlFor="question-prompt">
-          <Textarea
-            id="question-prompt"
-            value={prompt}
-            onChange={(e) => setPrompt(e.target.value)}
-            placeholder="e.g. What PPE is required before operating a floor grinder?"
-            autoFocus
-          />
-        </Field>
-        <Field label="Answer options" hint="Select the radio button next to the correct answer.">
-          <div className="flex flex-col gap-2">
-            {options.map((option, i) => (
-              <div key={i} className="flex items-center gap-2">
-                <input
-                  type="radio"
-                  name="correct-option"
-                  checked={correctIndex === i}
-                  onChange={() => setCorrectIndex(i)}
-                  className="size-4 shrink-0 text-brand-primary focus:ring-2 focus:ring-brand-primary/20"
-                  aria-label={`Option ${i + 1} is correct`}
-                />
-                <Input
-                  value={option}
-                  onChange={(e) =>
-                    setOptions((prev) => prev.map((o, oi) => (oi === i ? e.target.value : o)))
-                  }
-                  placeholder={`Option ${i + 1}`}
-                />
-              </div>
-            ))}
-          </div>
-        </Field>
-      </div>
-    </Drawer>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

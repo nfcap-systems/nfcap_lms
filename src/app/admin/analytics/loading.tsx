@@ -1,5 +1,5 @@
-import { PageLoading } from '@/components/ui';
+import { Skeleton } from '@/components/admin-ui/skeleton';
 
 export default function Loading() {
-  return <PageLoading />;
+  return <Skeleton className="h-48 w-full" />;
 }

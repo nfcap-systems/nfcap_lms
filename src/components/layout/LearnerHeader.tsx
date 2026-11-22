@@ -48,9 +48,12 @@ export function LearnerHeader({
     closeTimeout.current = setTimeout(() => setAccountOpen(false), 150);
   };
 
-  useEffect(() => () => {
-    if (closeTimeout.current) clearTimeout(closeTimeout.current);
-  }, []);
+  useEffect(
+    () => () => {
+      if (closeTimeout.current) clearTimeout(closeTimeout.current);
+    },
+    [],
+  );
 
   useEffect(() => {
     if (!accountOpen) return;
@@ -160,6 +163,15 @@ export function LearnerHeader({
                     >
                       <Icon name="user" className="h-4.5 w-4.5" />
                       Profile
+                    </Link>
+                    <Link
+                      href="/learner/account"
+                      role="menuitem"
+                      onClick={() => setAccountOpen(false)}
+                      className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm font-medium text-text-secondary transition-colors hover:bg-accent-tint hover:text-accent-tint-text"
+                    >
+                      <Icon name="settings" className="h-4.5 w-4.5" />
+                      Account Settings
                     </Link>
                   </div>
                   <div className="border-t border-border-subtle p-1.5">

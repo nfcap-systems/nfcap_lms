@@ -1,6 +1,7 @@
 'use server';
 
 import { redirect } from 'next/navigation';
+import { headers } from 'next/headers';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { withRlsContext } from '@/lib/db/rls';
@@ -10,8 +11,24 @@ const LOGIN_LIMIT = 10;
 const LOGIN_WINDOW_MS = 15 * 60 * 1000;
 const SIGNUP_LIMIT = 5;
 const SIGNUP_WINDOW_MS = 60 * 60 * 1000;
+const RESET_LIMIT = 5;
+const RESET_WINDOW_MS = 60 * 60 * 1000;
 
 export type AuthFormState = { error?: string };
+
+/** Derives the request's own origin for building absolute auth-email links, instead of a fixed
+ * env var — works unchanged across local dev, staging, and prod without per-environment config.
+ * Trusts `x-forwarded-*` first (set by Traefik in front of the deploy target), falling back to
+ * the raw Host header for local dev where nothing sits in front of Next.js. */
+async function getOrigin(): Promise<string> {
+  const h = await headers();
+  const host = h.get('x-forwarded-host') ?? h.get('host') ?? 'localhost:3000';
+  const forwardedProto = h.get('x-forwarded-proto');
+  const proto =
+    forwardedProto ??
+    (host.startsWith('localhost') || host.startsWith('127.0.0.1') ? 'http' : 'https');
+  return `${proto}://${host}`;
+}
 
 function orNull(value: FormDataEntryValue | null): string | null {
   const str = String(value ?? '').trim();
@@ -119,4 +136,57 @@ export async function logout() {
   const supabase = await createClient();
   await supabase.auth.signOut();
   redirect('/login');
+}
+
+/** Forgot-password request (Phase 2). Supabase's resetPasswordForEmail() intentionally doesn't
+ * reveal whether the email belongs to an account (it "succeeds" either way to avoid leaking
+ * which addresses are registered) — this action preserves that by always redirecting to the
+ * same "check your email" state rather than branching on whether the account exists. */
+export async function requestPasswordReset(
+  _prevState: AuthFormState,
+  formData: FormData,
+): Promise<AuthFormState> {
+  const email = String(formData.get('email') ?? '');
+
+  try {
+    await enforceRateLimit(
+      email.toLowerCase(),
+      'password-reset-request',
+      RESET_LIMIT,
+      RESET_WINDOW_MS,
+    );
+  } catch {
+    return { error: 'Too many requests. Please wait a while and try again.' };
+  }
+
+  const supabase = await createClient();
+  const origin = await getOrigin();
+  // src/app/auth/confirm/route.ts exchanges the email link's token for a real session. The
+  // Supabase "Reset Password" email template must point there with token_hash/type/next — see
+  // docs/build/PHASE_2_PASSWORD_RESET.md for the exact template text this depends on.
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: `${origin}/auth/confirm`,
+  });
+  if (error) return { error: error.message };
+
+  redirect('/forgot-password?sent=1');
+}
+
+/** Sets a new password from the /reset-password form. Only works because
+ * src/app/auth/confirm/route.ts already established a real (recovery-scoped) session from a
+ * valid, unexpired reset link before the user ever saw this form. */
+export async function updatePassword(
+  _prevState: AuthFormState,
+  formData: FormData,
+): Promise<AuthFormState> {
+  const password = String(formData.get('password') ?? '');
+  if (password.length < 8) {
+    return { error: 'Password must be at least 8 characters.' };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase.auth.updateUser({ password });
+  if (error) return { error: error.message };
+
+  redirect('/login?reset=1');
 }

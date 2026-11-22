@@ -10,8 +10,8 @@ export default async function AdminPathwayListPage() {
   return (
     <div className="flex flex-col gap-4">
       <div>
-        <h1 className="text-xl font-semibold text-brand-heading">Pathway</h1>
-        <p className="mt-1 text-sm text-text-secondary">
+        <h1 className="text-xl font-semibold text-foreground">Pathway</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
           The apprenticeship pathway learners progress through. NFCAP runs one pathway for now
           (docs/product/PRODUCT_CONTEXT.md Section 5).
         </p>
