@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import type { ReactNode } from 'react';
 import { usePathname } from 'next/navigation';
 import { Sidebar } from './Sidebar';
@@ -27,13 +27,11 @@ const SIDEBAR_COLLAPSED_KEY = 'nfcap-sidebar-collapsed';
 
 export function AppShell({ role, navItems, userName, userEmail, children }: AppShellProps) {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return window.localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === '1';
+  });
   const pathname = usePathname();
-
-  useEffect(() => {
-    const stored = window.localStorage.getItem(SIDEBAR_COLLAPSED_KEY);
-    if (stored === '1') setSidebarCollapsed(true);
-  }, []);
 
   const toggleSidebarCollapsed = () => {
     setSidebarCollapsed((prev) => {

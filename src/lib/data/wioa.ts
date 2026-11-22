@@ -382,6 +382,22 @@ export type WioaBoardPerformance = {
   approvalRate: number | null;
   avgDaysToEligibility: number | null;
   fundingConversionRate: number | null;
+  /** Sum of FundingAuthorization.approvedAmount for this board's funded cases. Real figure —
+   * there is no "requested amount" anywhere in the schema, so this only ever shows what was
+   * actually approved, never a requested-vs-approved comparison. */
+  totalApprovedAmount: number;
+  fundedCases: number;
+  avgDaysToApproval: number | null;
+};
+
+/** Aggregates WioaBoardPerformance across every board — the overall KPI row for the Funding
+ * Impact report section. Only computed when includeFunding is requested. */
+export type WioaFundingImpact = {
+  totalApprovedAmount: number;
+  fundedCases: number;
+  fundingRequestsSubmitted: number;
+  approvalRate: number | null;
+  avgDaysToApproval: number | null;
 };
 
 export type WioaReportingSummary = {
@@ -392,6 +408,7 @@ export type WioaReportingSummary = {
   /** Only populated when `includeFunding` is requested (Coordinator) — Partner Staff's report
    * never sees board approval/funding numbers, same visibility split as getWioaCaseDetail. */
   boardPerformance: WioaBoardPerformance[] | null;
+  fundingImpact: WioaFundingImpact | null;
 };
 
 /** Reporting/analytics aggregates for the Coordinator and Partner Staff dashboards (spec §16 —
@@ -421,7 +438,13 @@ export async function getWioaReportingSummary(
           select: { status: true, changedAt: true },
           orderBy: { changedAt: 'asc' },
         },
-        fundingRequest: { select: { id: true } },
+        fundingRequest: {
+          select: {
+            id: true,
+            submittedAt: true,
+            authorization: { select: { approvedAmount: true, approvalDate: true } },
+          },
+        },
       },
     }),
   );
@@ -459,6 +482,10 @@ export async function getWioaReportingSummary(
       eligibleCases: number;
       daysToEligible: number[];
       tuitionApprovedCases: number;
+      totalApprovedAmount: number;
+      fundedCases: number;
+      daysToApproval: number[];
+      fundingRequestsSubmitted: number;
     }
   >();
 
@@ -506,10 +533,27 @@ export async function getWioaReportingSummary(
           eligibleCases: 0,
           daysToEligible: [],
           tuitionApprovedCases: 0,
+          totalApprovedAmount: 0,
+          fundedCases: 0,
+          daysToApproval: [],
+          fundingRequestsSubmitted: 0,
         });
       }
       const b = byBoard.get(boardName)!;
       b.totalCases += 1;
+
+      if (c.fundingRequest?.submittedAt) b.fundingRequestsSubmitted += 1;
+
+      const approvedAmount = c.fundingRequest?.authorization?.approvedAmount;
+      if (approvedAmount != null) {
+        b.totalApprovedAmount += approvedAmount;
+        b.fundedCases += 1;
+        const submittedAt = c.fundingRequest?.submittedAt;
+        const approvalDate = c.fundingRequest?.authorization?.approvalDate;
+        if (submittedAt && approvalDate) {
+          b.daysToApproval.push((approvalDate.getTime() - submittedAt.getTime()) / DAY_MS);
+        }
+      }
 
       const reachedEligibleOrLater = WIOA_ELIGIBLE_OR_LATER.includes(c.status);
       if (reachedEligibleOrLater || c.status === 'CLOSED_INELIGIBLE') b.determinedCases += 1;
@@ -539,7 +583,37 @@ export async function getWioaReportingSummary(
             : null,
         fundingConversionRate:
           b.eligibleCases > 0 ? b.tuitionApprovedCases / b.eligibleCases : null,
+        totalApprovedAmount: b.totalApprovedAmount,
+        fundedCases: b.fundedCases,
+        avgDaysToApproval:
+          b.daysToApproval.length > 0
+            ? b.daysToApproval.reduce((a, x) => a + x, 0) / b.daysToApproval.length
+            : null,
       }))
+    : null;
+
+  const fundingImpact: WioaFundingImpact | null = opts?.includeFunding
+    ? (() => {
+        const allDaysToApproval = Array.from(byBoard.values()).flatMap((b) => b.daysToApproval);
+        const fundedCases = Array.from(byBoard.values()).reduce((sum, b) => sum + b.fundedCases, 0);
+        const fundingRequestsSubmitted = Array.from(byBoard.values()).reduce(
+          (sum, b) => sum + b.fundingRequestsSubmitted,
+          0,
+        );
+        return {
+          totalApprovedAmount: Array.from(byBoard.values()).reduce(
+            (sum, b) => sum + b.totalApprovedAmount,
+            0,
+          ),
+          fundedCases,
+          fundingRequestsSubmitted,
+          approvalRate: fundingRequestsSubmitted > 0 ? fundedCases / fundingRequestsSubmitted : null,
+          avgDaysToApproval:
+            allDaysToApproval.length > 0
+              ? allDaysToApproval.reduce((a, x) => a + x, 0) / allDaysToApproval.length
+              : null,
+        };
+      })()
     : null;
 
   return {
@@ -548,5 +622,6 @@ export async function getWioaReportingSummary(
     documentReadiness,
     followUpQueue,
     boardPerformance,
+    fundingImpact,
   };
 }

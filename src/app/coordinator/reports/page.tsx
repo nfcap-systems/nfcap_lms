@@ -9,17 +9,5 @@ export default async function CoordinatorReportsPage() {
     { includeFunding: true },
   );
 
-  return (
-    <div className="flex flex-col gap-4">
-      <div>
-        <h1 className="text-xl font-semibold text-[var(--ink)]">Reports</h1>
-        <p className="mt-1 text-sm text-[var(--ink-muted)]">
-          Pipeline, document readiness, board performance, and follow-up queue across every WIOA
-          case.
-        </p>
-      </div>
-
-      <WioaReportsView summary={summary} basePath="/coordinator" />
-    </div>
-  );
+  return <WioaReportsView summary={summary} basePath="/coordinator" />;
 }
