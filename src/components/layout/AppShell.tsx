@@ -54,7 +54,7 @@ export function AppShell({ role, navItems, userName, userEmail, children }: AppS
     isDashboardRoot && role === 'admin' ? "Here's what happened with your learning system" : undefined;
 
   return (
-    <div className="flex h-screen gap-3 overflow-hidden bg-bg-page p-3">
+    <div className="sshell" data-system="staff">
       <Sidebar
         navItems={navItems}
         role={role}
@@ -64,7 +64,7 @@ export function AppShell({ role, navItems, userName, userEmail, children }: AppS
         onCloseMobile={() => setMobileNavOpen(false)}
         collapsed={sidebarCollapsed}
       />
-      <div className="flex min-h-0 flex-1 flex-col gap-0.5">
+      <div className="sshell-main">
         <Header
           title={title}
           subtitle={subtitle}
@@ -72,9 +72,7 @@ export function AppShell({ role, navItems, userName, userEmail, children }: AppS
           sidebarCollapsed={sidebarCollapsed}
           onToggleSidebarCollapsed={toggleSidebarCollapsed}
         />
-        <main className="flex-1 overflow-y-auto rounded-b-2xl bg-bg-card p-4 shadow-card sm:p-6 lg:p-8">
-          {children}
-        </main>
+        <main className="sshell-content">{children}</main>
       </div>
     </div>
   );
