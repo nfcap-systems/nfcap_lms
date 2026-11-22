@@ -6,7 +6,7 @@ import type { ContentBlock, Lesson } from '@/lib/types';
 export function LessonContent({ lesson }: { lesson: Lesson }) {
   return (
     <div className="flex flex-col gap-5">
-      <div className="flex items-center gap-2 text-xs text-text-muted">
+      <div className="flex items-center gap-2 text-xs text-[var(--ink-muted)]">
         <Badge tone="info">
           <Icon name={lessonTypeIcon[lesson.type]} className="size-3" />
           {lessonTypeLabel[lesson.type]}
@@ -17,10 +17,10 @@ export function LessonContent({ lesson }: { lesson: Lesson }) {
         </span>
       </div>
 
-      <h2 className="text-lg font-semibold text-brand-heading">{lesson.title}</h2>
+      <h2 className="text-lg font-semibold text-[var(--ink)]">{lesson.title}</h2>
 
       {lesson.blocks.length === 0 ? (
-        <p className="text-sm text-text-muted">This lesson has no content yet.</p>
+        <p className="text-sm text-[var(--ink-muted)]">This lesson has no content yet.</p>
       ) : (
         <div className="flex flex-col gap-4">
           {lesson.blocks.map((block) => (
@@ -35,14 +35,14 @@ export function LessonContent({ lesson }: { lesson: Lesson }) {
 function ContentBlockView({ block }: { block: ContentBlock }) {
   switch (block.type) {
     case 'header-1':
-      return <h1 className="text-xl font-semibold text-brand-heading">{block.content}</h1>;
+      return <h1 className="text-xl font-semibold text-[var(--ink)]">{block.content}</h1>;
     case 'header-2':
-      return <h2 className="text-lg font-semibold text-brand-heading">{block.content}</h2>;
+      return <h2 className="text-lg font-semibold text-[var(--ink)]">{block.content}</h2>;
     case 'header-3':
-      return <h3 className="text-base font-semibold text-brand-heading">{block.content}</h3>;
+      return <h3 className="text-base font-semibold text-[var(--ink)]">{block.content}</h3>;
     case 'bullet-list':
       return (
-        <ul className="list-disc space-y-1 pl-5 text-sm leading-relaxed text-text-secondary">
+        <ul className="list-disc space-y-1 pl-5 text-sm leading-relaxed text-[var(--ink-muted)]">
           {block.items.map((item, i) => (
             <li key={i}>{item}</li>
           ))}
@@ -50,7 +50,7 @@ function ContentBlockView({ block }: { block: ContentBlock }) {
       );
     case 'numbered-list':
       return (
-        <ol className="list-decimal space-y-1 pl-5 text-sm leading-relaxed text-text-secondary">
+        <ol className="list-decimal space-y-1 pl-5 text-sm leading-relaxed text-[var(--ink-muted)]">
           {block.items.map((item, i) => (
             <li key={i}>{item}</li>
           ))}
@@ -64,33 +64,33 @@ function ContentBlockView({ block }: { block: ContentBlock }) {
             <img
               src={block.url}
               alt={block.content || 'Lesson image'}
-              className="w-full rounded-xl border border-border-subtle object-cover"
+              className="w-full rounded-xl border border-[var(--border)] object-cover"
             />
           ) : (
-            <div className="flex aspect-video w-full items-center justify-center rounded-xl bg-bg-subtle text-text-muted">
+            <div className="flex aspect-video w-full items-center justify-center rounded-xl bg-[var(--surface-muted)] text-[var(--ink-muted)]">
               <Icon name="image" className="size-10" />
             </div>
           )}
-          {block.content && <figcaption className="text-xs text-text-muted">{block.content}</figcaption>}
+          {block.content && <figcaption className="text-xs text-[var(--ink-muted)]">{block.content}</figcaption>}
         </figure>
       );
     case 'video':
       return (
         <figure className="flex flex-col gap-2">
           {block.url ? (
-            <video controls className="w-full rounded-xl border border-border-subtle" src={block.url} />
+            <video controls className="w-full rounded-xl border border-[var(--border)]" src={block.url} />
           ) : (
-            <div className="flex aspect-video w-full items-center justify-center rounded-xl bg-brand-primary text-on-brand">
+            <div className="flex aspect-video w-full items-center justify-center rounded-xl bg-[var(--accent)] text-[var(--accent-contrast)]">
               <div className="flex size-14 items-center justify-center rounded-full bg-white/15">
                 <Icon name="play" className="size-6" />
               </div>
             </div>
           )}
-          {block.content && <figcaption className="text-xs text-text-muted">{block.content}</figcaption>}
+          {block.content && <figcaption className="text-xs text-[var(--ink-muted)]">{block.content}</figcaption>}
         </figure>
       );
     case 'text':
     default:
-      return <p className="text-sm leading-relaxed text-text-secondary">{block.content}</p>;
+      return <p className="text-sm leading-relaxed text-[var(--ink-muted)]">{block.content}</p>;
   }
 }

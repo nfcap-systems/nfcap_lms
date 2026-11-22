@@ -19,10 +19,10 @@ export default async function CourseLearningPage({
   if (!course) {
     return (
       <div className="flex flex-col items-start gap-3">
-        <p className="text-sm text-text-secondary">Course not found.</p>
+        <p className="text-sm text-[var(--ink-muted)]">Course not found.</p>
         <Link
           href="/learner/explore"
-          className="text-sm font-medium text-brand-primary hover:underline"
+          className="text-sm font-medium text-[var(--accent)] hover:underline"
         >
           Back to Course Catalog
         </Link>
@@ -43,10 +43,10 @@ export default async function CourseLearningPage({
   return (
     <div className="flex flex-col gap-4">
       <div>
-        <p className="text-xs font-medium uppercase tracking-wide text-text-muted">
+        <p className="text-xs font-medium uppercase tracking-wide text-[var(--ink-muted)]">
           {course.category}
         </p>
-        <h1 className="text-xl font-semibold text-brand-heading">{course.title}</h1>
+        <h1 className="text-xl font-semibold text-[var(--ink)]">{course.title}</h1>
       </div>
       <CourseLearningView
         course={course}
