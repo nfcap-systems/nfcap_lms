@@ -136,7 +136,8 @@ CRD02's 3-tab (Overview/Documents/Status history) layout. This predates this ses
 component was built in Phase 0/1 before the PTN boards existed — and the design-system retrofit
 correctly stayed in scope (re-theme the existing shared component) rather than silently building a
 new one. Real fix is a genuine Partner-specific rebuild against `PTN01`/`PTN02`, not a retrofit;
-not started. Needs its own ticket once Plane is connected (Step 3).
+not started. **User decision 2026-11-23: no Plane ticket for this — noted here locally to pick up
+and resolve the next working session**, not deferred to Step 3's backfill.
 
 ## Step 3 — Backfill into Plane, once connected
 
