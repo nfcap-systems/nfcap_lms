@@ -33,7 +33,7 @@ export function LessonSidebar({
     <nav aria-label="Course sections" className="flex flex-col gap-5">
       {course.sections.map((section) => (
         <div key={section.id}>
-          <h3 className="mb-2 px-1 text-xs font-semibold uppercase tracking-wide text-text-muted">
+          <h3 className="mb-2 px-1 text-xs font-semibold uppercase tracking-wide text-[var(--ink-muted)]">
             {section.title}
           </h3>
           <ul className="flex flex-col gap-0.5">
@@ -49,8 +49,8 @@ export function LessonSidebar({
                     className={cn(
                       'flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm transition-colors',
                       active
-                        ? 'bg-brand-primary text-on-brand'
-                        : 'text-text-secondary hover:bg-bg-subtle',
+                        ? 'bg-[var(--accent)] text-[var(--accent-contrast)]'
+                        : 'text-[var(--ink-muted)] hover:bg-[var(--surface-muted)]',
                     )}
                   >
                     {complete ? (
@@ -58,7 +58,7 @@ export function LessonSidebar({
                         name="check"
                         className={cn(
                           'size-4 shrink-0',
-                          active ? 'text-on-brand' : 'text-status-success-text',
+                          active ? 'text-[var(--accent-contrast)]' : 'text-[var(--status-complete)]',
                         )}
                       />
                     ) : (
@@ -66,7 +66,7 @@ export function LessonSidebar({
                         name={lessonTypeIcon[lesson.type]}
                         className={cn(
                           'size-4 shrink-0',
-                          active ? 'text-on-brand' : 'text-text-muted',
+                          active ? 'text-[var(--accent-contrast)]' : 'text-[var(--ink-muted)]',
                         )}
                       />
                     )}
@@ -80,7 +80,7 @@ export function LessonSidebar({
       ))}
 
       <div>
-        <h3 className="mb-2 px-1 text-xs font-semibold uppercase tracking-wide text-text-muted">
+        <h3 className="mb-2 px-1 text-xs font-semibold uppercase tracking-wide text-[var(--ink-muted)]">
           Competency
         </h3>
         <ul className="flex flex-col gap-0.5">
@@ -138,35 +138,35 @@ function StepItem({
         aria-current={active ? 'true' : undefined}
         className={cn(
           'flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm transition-colors',
-          locked && 'cursor-not-allowed text-text-muted opacity-60',
-          !locked && active && 'bg-brand-primary text-on-brand',
-          !locked && !active && 'text-text-secondary hover:bg-bg-subtle',
+          locked && 'cursor-not-allowed text-[var(--ink-muted)] opacity-60',
+          !locked && active && 'bg-[var(--accent)] text-[var(--accent-contrast)]',
+          !locked && !active && 'text-[var(--ink-muted)] hover:bg-[var(--surface-muted)]',
         )}
       >
         {locked ? (
-          <Icon name="lock" className="size-4 shrink-0 text-text-muted" />
+          <Icon name="lock" className="size-4 shrink-0 text-[var(--ink-muted)]" />
         ) : state === 'complete' ? (
           <Icon
             name="check"
-            className={cn('size-4 shrink-0', active ? 'text-on-brand' : 'text-status-success-text')}
+            className={cn('size-4 shrink-0', active ? 'text-[var(--accent-contrast)]' : 'text-[var(--status-complete)]')}
           />
         ) : (
           <Icon
             name={icon}
-            className={cn('size-4 shrink-0', active ? 'text-on-brand' : 'text-text-muted')}
+            className={cn('size-4 shrink-0', active ? 'text-[var(--accent-contrast)]' : 'text-[var(--ink-muted)]')}
           />
         )}
         <span className="flex-1 truncate">{label}</span>
         {!locked && state === 'pending' && (
           <span
-            className="size-1.5 shrink-0 rounded-full bg-status-pending-text"
+            className="size-1.5 shrink-0 rounded-full bg-[var(--status-pending)]"
             aria-hidden="true"
             title="Pending verification"
           />
         )}
         {!locked && state === 'rejected' && (
           <span
-            className="size-1.5 shrink-0 rounded-full bg-status-danger-text"
+            className="size-1.5 shrink-0 rounded-full bg-[var(--status-problem)]"
             aria-hidden="true"
             title="Needs attention"
           />

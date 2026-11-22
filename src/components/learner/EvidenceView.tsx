@@ -37,9 +37,9 @@ export function EvidenceView({
     return (
       <div className="flex flex-col gap-5">
         <Header />
-        <div className="flex flex-col items-start gap-3 rounded-xl border border-border-subtle bg-bg-subtle p-5">
+        <div className="flex flex-col items-start gap-3 rounded-xl border border-[var(--border)] bg-[var(--surface-muted)] p-5">
           <Badge tone={status.tone}>{status.label}</Badge>
-          <p className="text-sm text-text-secondary">
+          <p className="text-sm text-[var(--ink-muted)]">
             Submitted{' '}
             {new Date(evidence.submittedAt).toLocaleDateString(undefined, {
               month: 'short',
@@ -52,10 +52,10 @@ export function EvidenceView({
                 ? '. Your course is complete and your certificate has been issued.'
                 : '. Update your submission below and resubmit for another review.'}
           </p>
-          <p className="text-sm text-text-primary">{evidence.description}</p>
+          <p className="text-sm text-[var(--ink)]">{evidence.description}</p>
           {evidence.fileName && (
-            <div className="flex items-center gap-2 rounded-lg border border-border-subtle bg-bg-card px-3 py-2 text-sm text-text-secondary">
-              <Icon name="paperclip" className="size-4 shrink-0 text-brand-primary" />
+            <div className="flex items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--ink-muted)]">
+              <Icon name="paperclip" className="size-4 shrink-0 text-[var(--accent)]" />
               {evidence.fileName}
             </div>
           )}
@@ -85,7 +85,7 @@ export function EvidenceView({
   return (
     <div className="flex flex-col gap-5">
       <Header />
-      <p className="text-sm text-text-secondary">{course.evidencePrompt}</p>
+      <p className="text-sm text-[var(--ink-muted)]">{course.evidencePrompt}</p>
 
       <Field
         label="Description"
@@ -102,9 +102,9 @@ export function EvidenceView({
 
       <Field label="Attachment (optional)">
         {file ? (
-          <div className="flex items-center justify-between gap-2 rounded-lg border border-border-subtle bg-bg-subtle px-3 py-2 text-sm text-text-secondary">
+          <div className="flex items-center justify-between gap-2 rounded-lg border border-[var(--border)] bg-[var(--surface-muted)] px-3 py-2 text-sm text-[var(--ink-muted)]">
             <span className="flex items-center gap-2 truncate">
-              <Icon name="paperclip" className="size-4 shrink-0 text-brand-primary" />
+              <Icon name="paperclip" className="size-4 shrink-0 text-[var(--accent)]" />
               <span className="truncate">{file.name}</span>
             </span>
             <button
@@ -114,7 +114,7 @@ export function EvidenceView({
                 if (fileInputRef.current) fileInputRef.current.value = '';
               }}
               aria-label="Remove attachment"
-              className="shrink-0 text-text-muted hover:text-text-primary"
+              className="shrink-0 text-[var(--ink-muted)] hover:text-[var(--ink)]"
             >
               <Icon name="x" className="size-4" />
             </button>
@@ -139,7 +139,7 @@ export function EvidenceView({
         />
       </Field>
 
-      <div className="border-t border-border-subtle pt-5">
+      <div className="border-t border-[var(--border)] pt-5">
         <Button
           disabled={description.trim().length === 0}
           onClick={() => {
@@ -161,7 +161,7 @@ export function EvidenceView({
 
 function Header() {
   return (
-    <div className="flex items-center gap-2 text-xs text-text-muted">
+    <div className="flex items-center gap-2 text-xs text-[var(--ink-muted)]">
       <Badge tone="info">
         <Icon name="paperclip" className="size-3" />
         Practical Evidence

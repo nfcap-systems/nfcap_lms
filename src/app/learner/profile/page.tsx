@@ -22,8 +22,8 @@ export default async function LearnerProfilePage() {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="text-xl font-semibold text-brand-heading">Profile</h1>
-        <p className="mt-1 text-sm text-text-secondary">Your account and training summary.</p>
+        <h1 className="text-xl font-semibold text-[var(--ink)]">Profile</h1>
+        <p className="mt-1 text-sm text-[var(--ink-muted)]">Your account and training summary.</p>
       </div>
 
       <ProfileView

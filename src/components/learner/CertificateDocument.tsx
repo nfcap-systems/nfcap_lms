@@ -15,21 +15,53 @@ export function CertificateDocument({
   );
 
   return (
-    <div className="rounded-2xl border-2 border-brand-primary bg-bg-card p-8 text-center">
-      <div className="mx-auto flex size-14 items-center justify-center rounded-full bg-brand-accent text-on-brand">
-        <Icon name="award" className="size-7" />
+    <div
+      style={{
+        borderRadius: 'var(--radius-lg)',
+        border: '2px solid var(--accent)',
+        background: 'var(--surface)',
+        padding: 32,
+        textAlign: 'center',
+      }}
+    >
+      <div
+        style={{
+          margin: '0 auto',
+          width: 56,
+          height: 56,
+          borderRadius: '50%',
+          background: 'var(--accent)',
+          color: 'var(--accent-contrast)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        <Icon name="award" className="h-7 w-7" />
       </div>
-      <p className="mt-4 text-xs font-semibold uppercase tracking-widest text-text-muted">
+      <p style={{ marginTop: 16, fontSize: 12, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--ink-muted)' }}>
         NFCAP · Certificate of Completion
       </p>
-      <h2 className="mt-3 text-2xl font-semibold text-brand-heading">{learnerName}</h2>
-      <p className="mt-2 text-sm text-text-secondary">
+      <h2 style={{ marginTop: 12, fontSize: 24, fontWeight: 600, color: 'var(--ink)' }}>{learnerName}</h2>
+      <p style={{ marginTop: 8, fontSize: 14, color: 'var(--ink-muted)' }}>
         has successfully completed the requirements for
       </p>
-      <p className="mt-1 text-lg font-semibold text-brand-heading">{course.title}</p>
-      <p className="mt-1 text-xs text-text-muted">{course.category}</p>
+      <p style={{ marginTop: 4, fontSize: 18, fontWeight: 600, color: 'var(--ink)' }}>{course.title}</p>
+      <p style={{ marginTop: 4, fontSize: 12, color: 'var(--ink-muted)' }}>{course.category}</p>
 
-      <div className="mx-auto mt-6 flex max-w-xs items-center justify-between border-t border-border-subtle pt-4 text-xs text-text-muted">
+      <div
+        style={{
+          margin: '24px auto 0',
+          maxWidth: 320,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          borderTop: '1px solid var(--border)',
+          paddingTop: 16,
+          fontSize: 12,
+          color: 'var(--ink-muted)',
+        }}
+      >
         <span>Issued {issuedDate}</span>
         <span>{certificateId}</span>
       </div>

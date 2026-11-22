@@ -25,14 +25,14 @@ const initialState: AccountFormState = {};
 function FormMessage({ state }: { state: AccountFormState }) {
   if (state.error) {
     return (
-      <p className="rounded-md bg-status-danger-bg px-3 py-2 text-sm text-status-danger-text">
+      <p className="rounded-md bg-[var(--status-problem-bg)] px-3 py-2 text-sm text-[var(--status-problem)]">
         {state.error}
       </p>
     );
   }
   if (state.success) {
     return (
-      <p className="rounded-md bg-status-success-bg px-3 py-2 text-sm text-status-success-text">
+      <p className="rounded-md bg-[var(--status-complete-bg)] px-3 py-2 text-sm text-[var(--status-complete)]">
         {state.success}
       </p>
     );

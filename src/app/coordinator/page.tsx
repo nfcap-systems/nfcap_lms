@@ -16,12 +16,15 @@ export default async function CoordinatorPage() {
 
   return (
     <div className="flex flex-col gap-4">
-      <div>
-        <h1 className="text-xl font-semibold text-brand-heading">WIOA Cases</h1>
-        <p className="mt-1 text-sm text-text-secondary">
-          Every open and closed WIOA funding case across every workforce board. Assign cases to
-          Partner Staff, review documents, and advance status.
-        </p>
+      <div className="pagehdr">
+        <div>
+          <h1>All Cases</h1>
+          <p>
+            Every WIOA funding case across every workforce board — full case detail and
+            funding-request visibility. Assign cases to Partner Staff, review documents, and
+            advance status.
+          </p>
+        </div>
       </div>
 
       <WioaCaseListView

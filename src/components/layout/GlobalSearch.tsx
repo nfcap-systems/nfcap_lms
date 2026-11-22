@@ -29,16 +29,16 @@ function ResultsList({ results, onSelect }: { results: SearchResult[]; onSelect:
           <Link
             href={result.href}
             onClick={onSelect}
-            className="flex items-center gap-3 rounded-xl px-2.5 py-2 transition-colors hover:bg-accent-tint"
+            className="flex items-center gap-3 rounded-xl px-2.5 py-2 transition-colors hover:bg-[var(--surface-muted)]"
           >
-            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-bg-subtle text-text-secondary">
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--surface-muted)] text-[var(--ink-muted)]">
               <Icon name={TYPE_ICON[result.type]} className="h-4 w-4" />
             </span>
             <span className="min-w-0 flex-1">
-              <span className="block truncate text-sm font-medium text-text-primary">
+              <span className="block truncate text-sm font-medium text-[var(--ink)]">
                 {result.title}
               </span>
-              <span className="block truncate text-xs text-text-muted">
+              <span className="block truncate text-xs text-[var(--ink-muted)]">
                 {TYPE_LABEL[result.type]} · {result.subtitle}
               </span>
             </span>
@@ -50,7 +50,7 @@ function ResultsList({ results, onSelect }: { results: SearchResult[]; onSelect:
 }
 
 function StatusMessage({ children }: { children: string }) {
-  return <p className="px-4 py-6 text-center text-sm text-text-muted">{children}</p>;
+  return <p className="px-4 py-6 text-center text-sm text-[var(--ink-muted)]">{children}</p>;
 }
 
 export function GlobalSearch() {
@@ -131,17 +131,17 @@ export function GlobalSearch() {
         aria-haspopup="dialog"
         aria-expanded={open}
         aria-label="Search"
-        className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-full bg-bg-subtle text-text-secondary shadow-sm transition-colors hover:text-text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
+        className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-full bg-[var(--surface-muted)] text-[var(--ink-muted)] shadow-sm transition-colors hover:text-[var(--ink)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
       >
         <Icon name="search" className="h-4.5 w-4.5" />
       </button>
 
       {open && (
-        <div className="absolute top-full right-0 mt-2 w-[min(22rem,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-border-subtle bg-bg-card shadow-elevated">
-          <div className="relative border-b border-border-subtle p-2">
+        <div className="absolute top-full right-0 mt-2 w-[min(22rem,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface)] shadow-elevated">
+          <div className="relative border-b border-[var(--border)] p-2">
             <Icon
               name="search"
-              className="pointer-events-none absolute top-1/2 left-5 h-4 w-4 -translate-y-1/2 text-text-muted"
+              className="pointer-events-none absolute top-1/2 left-5 h-4 w-4 -translate-y-1/2 text-[var(--ink-muted)]"
             />
             <input
               ref={inputRef}
@@ -150,7 +150,7 @@ export function GlobalSearch() {
               onChange={(event) => setQuery(event.target.value)}
               placeholder="Search courses, lessons, certificates…"
               aria-label="Search NFCAP LMS"
-              className="w-full rounded-xl border-none bg-bg-subtle py-2 pr-3 pl-9 text-sm text-text-primary placeholder:text-text-muted focus:outline-2 focus:outline-offset-2 focus:outline-brand-primary"
+              className="w-full rounded-xl border-none bg-[var(--surface-muted)] py-2 pr-3 pl-9 text-sm text-[var(--ink)] placeholder:text-[var(--ink-muted)] focus:outline-2 focus:outline-offset-2 focus:outline-brand-primary"
             />
           </div>
           {hint ? (

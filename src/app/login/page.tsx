@@ -14,7 +14,7 @@ export default function LoginPage() {
           Don&apos;t have an account?{' '}
           <Link
             href="/signup"
-            className="font-semibold text-brand-accent hover:text-brand-accent-hover"
+            className="font-semibold text-[var(--accent)] hover:text-[var(--accent-hover)]"
           >
             Create one →
           </Link>

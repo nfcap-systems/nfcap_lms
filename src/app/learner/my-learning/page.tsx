@@ -1,25 +1,25 @@
-import { getAllCourses } from '@/lib/data/courses';
-import { getLearnerProgressMap, type CourseProgress } from '@/lib/data/progress';
+import { getAllCourses, getPublishedCourses } from '@/lib/data/courses';
+import { getLearnerProgressMap, getCourseUnlocksForLearner, type CourseProgress } from '@/lib/data/progress';
+import { getCredentialsForLearner } from '@/lib/data/credentials';
 import { getAuthUser } from '@/lib/supabase/server';
 import { MyLearningView } from './MyLearningView';
 
 export default async function MyLearningPage() {
   const user = await getAuthUser();
-  const [courses, progressMap] = await Promise.all([
-    getAllCourses(),
-    user ? getLearnerProgressMap(user.id) : Promise.resolve<Record<string, CourseProgress>>({}),
-  ]);
+  const [allCourses, published] = await Promise.all([getAllCourses(), getPublishedCourses()]);
+  const pathway = [...published].sort((a, b) => a.pathwayOrder - b.pathwayOrder);
+  const progressMap = user
+    ? await getLearnerProgressMap(user.id)
+    : ({} as Record<string, CourseProgress>);
+  const unlockedCourseSlugs = user ? Object.keys(await getCourseUnlocksForLearner(user.id)) : [];
+  const credentials = user ? await getCredentialsForLearner(user.id, allCourses) : [];
 
   return (
-    <div className="flex flex-col gap-6">
-      <div>
-        <h1 className="text-xl font-semibold text-brand-heading">My Learning</h1>
-        <p className="mt-1 text-sm text-text-secondary">
-          Courses you&apos;re currently enrolled in or have been assigned.
-        </p>
-      </div>
-
-      <MyLearningView courses={courses} progressMap={progressMap} />
-    </div>
+    <MyLearningView
+      pathway={pathway}
+      progressMap={progressMap}
+      unlockedCourseSlugs={unlockedCourseSlugs}
+      credentials={credentials}
+    />
   );
 }

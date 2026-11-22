@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import type { ReactNode } from 'react';
 import { usePathname } from 'next/navigation';
 import { Sidebar } from './Sidebar';
@@ -27,13 +27,11 @@ const SIDEBAR_COLLAPSED_KEY = 'nfcap-sidebar-collapsed';
 
 export function AppShell({ role, navItems, userName, userEmail, children }: AppShellProps) {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return window.localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === '1';
+  });
   const pathname = usePathname();
-
-  useEffect(() => {
-    const stored = window.localStorage.getItem(SIDEBAR_COLLAPSED_KEY);
-    if (stored === '1') setSidebarCollapsed(true);
-  }, []);
 
   const toggleSidebarCollapsed = () => {
     setSidebarCollapsed((prev) => {
@@ -54,7 +52,7 @@ export function AppShell({ role, navItems, userName, userEmail, children }: AppS
     isDashboardRoot && role === 'admin' ? "Here's what happened with your learning system" : undefined;
 
   return (
-    <div className="flex h-screen gap-3 overflow-hidden bg-bg-page p-3">
+    <div className="sshell" data-system="staff">
       <Sidebar
         navItems={navItems}
         role={role}
@@ -64,7 +62,7 @@ export function AppShell({ role, navItems, userName, userEmail, children }: AppS
         onCloseMobile={() => setMobileNavOpen(false)}
         collapsed={sidebarCollapsed}
       />
-      <div className="flex min-h-0 flex-1 flex-col gap-0.5">
+      <div className="sshell-main">
         <Header
           title={title}
           subtitle={subtitle}
@@ -72,9 +70,7 @@ export function AppShell({ role, navItems, userName, userEmail, children }: AppS
           sidebarCollapsed={sidebarCollapsed}
           onToggleSidebarCollapsed={toggleSidebarCollapsed}
         />
-        <main className="flex-1 overflow-y-auto rounded-b-2xl bg-bg-card p-4 shadow-card sm:p-6 lg:p-8">
-          {children}
-        </main>
+        <main className="sshell-content">{children}</main>
       </div>
     </div>
   );

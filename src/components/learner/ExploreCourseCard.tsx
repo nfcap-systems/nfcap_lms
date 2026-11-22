@@ -1,20 +1,31 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import { Badge, Button, Card, CardContent, ProgressBar } from '@/components/ui';
 import { Icon } from '@/components/icons';
 import type { CourseProgress } from '@/lib/data/progress';
 import { courseDurationMinutes, courseLessonCount, type Course } from '@/lib/types';
 
+// Only 3 real trade photos exist for this retrofit (pulled from the design canvas); cycle
+// through them rather than inventing per-course imagery.
+const CATALOG_PHOTOS = [
+  '/images/learner/safety-tools.jpg',
+  '/images/learner/flooring-fundamentals.jpg',
+  '/images/learner/tile-installation.jpg',
+];
+
 export function ExploreCourseCard({
   course,
   progress,
   unlocked = false,
+  photoIndex = 0,
 }: {
   course: Course;
   progress?: CourseProgress;
   /** RESTRICTED course with a CourseUnlock for this learner — self-enrollable like an OPEN one. */
   unlocked?: boolean;
+  photoIndex?: number;
 }) {
   const router = useRouter();
   const enrolled = Boolean(progress?.enrolled);
@@ -24,7 +35,14 @@ export function ExploreCourseCard({
   const hours = Math.round((courseDurationMinutes(course) / 60) * 10) / 10;
 
   return (
-    <Card className="flex flex-col">
+    <Card className="flex flex-col overflow-hidden">
+      <Image
+        src={CATALOG_PHOTOS[photoIndex % CATALOG_PHOTOS.length]}
+        alt=""
+        width={400}
+        height={128}
+        style={{ width: '100%', height: 128, objectFit: 'cover', display: 'block' }}
+      />
       <CardContent className="flex flex-1 flex-col gap-4">
         <div className="flex items-start justify-between gap-3">
           <Badge tone="neutral">{course.category}</Badge>
@@ -39,8 +57,8 @@ export function ExploreCourseCard({
         </div>
 
         <div>
-          <h3 className="text-base font-semibold text-brand-heading">{course.title}</h3>
-          <p className="mt-1 text-sm text-text-secondary">{course.description}</p>
+          <h3 className="text-base font-semibold text-[var(--ink)]">{course.title}</h3>
+          <p className="mt-1 text-sm text-[var(--ink-muted)]">{course.description}</p>
         </div>
 
         {enrolled ? (
@@ -51,7 +69,7 @@ export function ExploreCourseCard({
             showPercentage
           />
         ) : (
-          <div className="mt-auto flex items-center gap-4 text-xs text-text-muted">
+          <div className="mt-auto flex items-center gap-4 text-xs text-[var(--ink-muted)]">
             <span className="inline-flex items-center gap-1">
               <Icon name="book" className="size-3.5" />
               {lessonCount} lessons

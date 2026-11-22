@@ -45,31 +45,28 @@ function ProfileMenu({
   return (
     <div ref={containerRef} className="relative">
       {open && (
-        <div
-          role="menu"
-          aria-label="Account"
-          className="absolute bottom-full left-0 mb-2 w-full min-w-[12rem] overflow-hidden rounded-2xl border border-border-subtle bg-bg-card shadow-elevated"
-        >
-          <div className="px-4 py-3.5">
-            <p className="truncate text-sm font-semibold text-text-primary">{displayName}</p>
-            <p className="truncate text-xs text-text-muted">{roleLabel}</p>
+        <div role="menu" aria-label="Account" className="sshell-profile-menu">
+          <div style={{ padding: '14px 16px' }}>
+            <p className="truncate text-sm font-semibold" style={{ color: 'var(--ink)' }}>
+              {displayName}
+            </p>
+            <p className="truncate text-xs" style={{ color: 'var(--ink-muted)' }}>
+              {roleLabel}
+            </p>
           </div>
-          <div className="border-t border-border-subtle p-1.5">
+          <div style={{ borderTop: '1px solid var(--border)', padding: 6 }}>
             <Link
               href={`/${role}/account`}
               role="menuitem"
               onClick={() => setOpen(false)}
-              className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-left text-sm font-medium text-text-secondary transition-colors hover:bg-bg-subtle hover:text-text-primary"
+              className="lhdr-menuitem"
             >
               <Icon name="settings" className="h-4.5 w-4.5" />
               Account Settings
             </Link>
           </div>
-          <div className="border-t border-border-subtle p-1.5">
-            <LogoutButton
-              role="menuitem"
-              className="flex w-full cursor-pointer items-center gap-2.5 rounded-xl px-3 py-2 text-left text-sm font-medium text-text-secondary transition-colors hover:bg-bg-subtle hover:text-text-primary"
-            >
+          <div style={{ borderTop: '1px solid var(--border)', padding: 6 }}>
+            <LogoutButton role="menuitem" className="lhdr-menuitem">
               <Icon name="log-out" className="h-4.5 w-4.5" />
               Sign out
             </LogoutButton>
@@ -82,18 +79,22 @@ function ProfileMenu({
         aria-haspopup="menu"
         aria-expanded={open}
         aria-label="Account menu"
-        className={cn(
-          'flex w-full cursor-pointer items-center gap-3 rounded-xl border border-border-default bg-bg-card px-3 py-2 text-left transition-colors hover:bg-bg-subtle',
-          collapsed && 'justify-center px-2',
-        )}
+        className={cn('sshell-profile-btn', collapsed && 'justify-center px-2')}
       >
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-bg-subtle text-sm font-semibold text-brand-primary">
+        <div
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-semibold"
+          style={{ background: 'var(--surface-muted)', color: 'var(--ink)' }}
+        >
           {initial}
         </div>
         {!collapsed && (
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-medium text-text-primary">{displayName}</p>
-            <p className="truncate text-xs text-text-muted">{roleLabel}</p>
+          <div className="min-w-0 flex-1 text-left">
+            <p className="truncate text-sm font-medium" style={{ color: 'var(--ink)' }}>
+              {displayName}
+            </p>
+            <p className="truncate text-xs" style={{ color: 'var(--ink-muted)' }}>
+              {roleLabel}
+            </p>
           </div>
         )}
       </button>
@@ -111,15 +112,6 @@ export type SidebarProps = {
   collapsed?: boolean;
 };
 
-const linkClasses = (active: boolean, collapsed: boolean) =>
-  cn(
-    'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
-    collapsed && 'justify-center px-2',
-    active
-      ? 'bg-bg-subtle text-brand-primary hover:bg-bg-subtle/60'
-      : 'text-text-secondary hover:bg-bg-subtle/60 hover:text-text-primary',
-  );
-
 export function Sidebar({
   navItems,
   role,
@@ -134,28 +126,21 @@ export function Sidebar({
 
   const renderContent = (isCollapsed: boolean) => (
     <div className="flex h-full flex-col">
-      <div className="flex h-16 shrink-0 items-center px-3">
-        <div
-          className={cn(
-            'flex w-full items-center gap-3 rounded-xl border border-border-default bg-bg-card px-3 py-2',
-            isCollapsed && 'justify-center px-2',
-          )}
-        >
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-danger text-sm font-bold tracking-tight text-white">
-            N
+      <div className="sshell-brand">
+        <div className="sshell-brand-mark">N</div>
+        {!isCollapsed && (
+          <div className="min-w-0">
+            <p className="truncate text-sm font-semibold" style={{ color: 'var(--sidebar-fg)' }}>
+              NFCAP LMS
+            </p>
+            <p className="truncate text-xs" style={{ color: 'var(--ink-muted)' }}>
+              {ROLE_LABEL[role]}
+            </p>
           </div>
-          {!isCollapsed && (
-            <div className="min-w-0">
-              <p className="truncate text-sm font-semibold tracking-[-0.01em] text-brand-heading">
-                NFCAP LMS
-              </p>
-              <p className="truncate text-xs text-text-muted">{ROLE_LABEL[role]}</p>
-            </div>
-          )}
-        </div>
+        )}
       </div>
 
-      <nav className="mt-4 flex-1 space-y-0.5 overflow-y-auto px-3">
+      <nav className="sshell-nav">
         {navItems.map((entry) => {
           if (isNavGroup(entry)) {
             const groupActive = isNavGroupActive(pathname, entry);
@@ -169,7 +154,7 @@ export function Sidebar({
                   onClick={onCloseMobile}
                   title={entry.label}
                   aria-label={entry.label}
-                  className={linkClasses(groupActive, true)}
+                  className={cn('sshell-navlink', groupActive && 'on', 'justify-center')}
                 >
                   <Icon name={entry.icon} className="h-4.5 w-4.5" />
                 </Link>
@@ -182,10 +167,10 @@ export function Sidebar({
                 <button
                   type="button"
                   onClick={() => setOpenGroups((prev) => ({ ...prev, [entry.label]: !expanded }))}
-                  className={cn(linkClasses(false, false), 'w-full justify-between')}
+                  className="sshell-navgroup-btn"
                   aria-expanded={expanded}
                 >
-                  <span className="flex items-center gap-3">
+                  <span className="flex items-center gap-2.5">
                     <Icon name={entry.icon} className="h-4.5 w-4.5" />
                     {entry.label}
                   </span>
@@ -195,7 +180,7 @@ export function Sidebar({
                   />
                 </button>
                 {expanded && (
-                  <div className="mt-0.5 space-y-0.5 pl-4">
+                  <div className="mt-0.5 flex flex-col gap-0.5 pl-4">
                     {entry.children.map((child) => {
                       const active = isNavItemActive(pathname, child.href);
                       return (
@@ -203,7 +188,7 @@ export function Sidebar({
                           key={child.href}
                           href={child.href}
                           onClick={onCloseMobile}
-                          className={linkClasses(active, false)}
+                          className={cn('sshell-navlink', active && 'on')}
                           aria-current={active ? 'page' : undefined}
                         >
                           <Icon name={child.icon} className="h-4.5 w-4.5" />
@@ -225,7 +210,7 @@ export function Sidebar({
               onClick={onCloseMobile}
               title={isCollapsed ? entry.label : undefined}
               aria-current={active ? 'page' : undefined}
-              className={linkClasses(active, isCollapsed)}
+              className={cn('sshell-navlink', active && 'on', isCollapsed && 'justify-center')}
             >
               <Icon name={entry.icon} className="h-4.5 w-4.5" />
               {!isCollapsed && entry.label}
@@ -234,25 +219,15 @@ export function Sidebar({
         })}
       </nav>
 
-      <div className="shrink-0 p-3">
-        <ProfileMenu
-          userName={userName}
-          userEmail={userEmail}
-          role={role}
-          collapsed={isCollapsed}
-        />
+      <div className="sshell-profile-wrap">
+        <ProfileMenu userName={userName} userEmail={userEmail} role={role} collapsed={isCollapsed} />
       </div>
     </div>
   );
 
   return (
     <>
-      <aside
-        className={cn(
-          'hidden h-full shrink-0 transition-[width] duration-200 lg:block',
-          collapsed ? 'w-20' : 'w-52',
-        )}
-      >
+      <aside className={cn('sshell-sidebar hidden lg:block', collapsed ? 'w-20' : 'w-52')}>
         {renderContent(collapsed)}
       </aside>
 
@@ -269,7 +244,7 @@ export function Sidebar({
         />
         <aside
           className={cn(
-            'absolute left-0 top-0 h-full w-52 bg-bg-card shadow-elevated transition-transform',
+            'sshell-sidebar absolute left-0 top-0 h-full w-52 transition-transform',
             mobileOpen ? 'translate-x-0' : '-translate-x-full',
           )}
         >

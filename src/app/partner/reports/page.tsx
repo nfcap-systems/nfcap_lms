@@ -9,16 +9,5 @@ export default async function PartnerReportsPage() {
     { assignedPartnerStaffId: user.id },
   );
 
-  return (
-    <div className="flex flex-col gap-4">
-      <div>
-        <h1 className="text-xl font-semibold text-brand-heading">Reports</h1>
-        <p className="mt-1 text-sm text-text-secondary">
-          Pipeline, document readiness, and follow-up queue across your assigned cases.
-        </p>
-      </div>
-
-      <WioaReportsView summary={summary} basePath="/partner" />
-    </div>
-  );
+  return <WioaReportsView summary={summary} basePath="/partner" />;
 }

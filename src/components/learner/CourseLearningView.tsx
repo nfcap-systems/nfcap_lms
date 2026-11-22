@@ -72,12 +72,12 @@ export function CourseLearningView({
     return (
       <Card>
         <CardContent className="flex flex-col items-start gap-3 py-10">
-          <div className="flex size-10 items-center justify-center rounded-full bg-status-restricted-bg text-status-restricted-text">
+          <div className="flex size-10 items-center justify-center rounded-full bg-[var(--status-problem-bg)] text-[var(--status-problem)]">
             <Icon name="lock" className="size-5" />
           </div>
           <Badge tone="restricted">Restricted</Badge>
-          <h2 className="text-lg font-semibold text-brand-heading">{course.title}</h2>
-          <p className="max-w-md text-sm text-text-secondary">
+          <h2 className="text-lg font-semibold text-[var(--ink)]">{course.title}</h2>
+          <p className="max-w-md text-sm text-[var(--ink-muted)]">
             This course is assigned by NFCAP staff based on your program placement and prior
             progress. It isn&apos;t open for self-enrollment yet.
           </p>
@@ -92,8 +92,8 @@ export function CourseLearningView({
     return (
       <div className="flex flex-col gap-6">
         <div className="flex flex-col items-start gap-4">
-          <p className="max-w-2xl text-sm text-text-secondary">{course.description}</p>
-          <p className="text-xs text-text-muted">
+          <p className="max-w-2xl text-sm text-[var(--ink-muted)]">{course.description}</p>
+          <p className="text-xs text-[var(--ink-muted)]">
             {course.sections.length} sections · {total} lessons · {hours}h
           </p>
           <Button size="lg" onClick={handleEnroll}>
@@ -105,20 +105,20 @@ export function CourseLearningView({
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_320px]">
           <Card>
             <CardContent className="flex flex-col gap-5">
-              <h2 className="text-xs font-semibold tracking-wide text-text-muted uppercase">
+              <h2 className="text-xs font-semibold tracking-wide text-[var(--ink-muted)] uppercase">
                 Curriculum
               </h2>
               {course.sections.map((section) => (
                 <div key={section.id}>
-                  <h3 className="mb-2 text-sm font-semibold text-brand-heading">{section.title}</h3>
-                  <ul className="flex flex-col divide-y divide-border-subtle">
+                  <h3 className="mb-2 text-sm font-semibold text-[var(--ink)]">{section.title}</h3>
+                  <ul className="flex flex-col divide-y divide-[var(--border)]">
                     {section.lessons.map((lesson) => (
                       <li key={lesson.id} className="flex items-center gap-3 py-2.5">
-                        <span className="flex size-5 shrink-0 items-center justify-center rounded-full border border-border-default text-text-muted">
+                        <span className="flex size-5 shrink-0 items-center justify-center rounded-full border border-[var(--border)] text-[var(--ink-muted)]">
                           <Icon name={lessonTypeIcon[lesson.type]} className="size-3" />
                         </span>
-                        <span className="flex-1 text-sm text-text-primary">{lesson.title}</span>
-                        <span className="text-xs text-text-muted">
+                        <span className="flex-1 text-sm text-[var(--ink)]">{lesson.title}</span>
+                        <span className="text-xs text-[var(--ink-muted)]">
                           {lesson.durationMinutes} min
                         </span>
                       </li>
@@ -131,19 +131,19 @@ export function CourseLearningView({
 
           <Card className="h-fit">
             <CardContent className="flex flex-col gap-5">
-              <h2 className="text-xs font-semibold tracking-wide text-text-muted uppercase">
+              <h2 className="text-xs font-semibold tracking-wide text-[var(--ink-muted)] uppercase">
                 Competency
               </h2>
               <div className="flex flex-col gap-1.5">
-                <p className="text-sm font-medium text-text-primary">Knowledge Assessment</p>
-                <p className="text-xs text-text-secondary">
+                <p className="text-sm font-medium text-[var(--ink)]">Knowledge Assessment</p>
+                <p className="text-xs text-[var(--ink-muted)]">
                   {course.assessment.questions.length} questions &middot;{' '}
                   {Math.round(course.assessment.passThreshold * 100)}% to pass
                 </p>
               </div>
-              <div className="flex flex-col gap-1.5 border-t border-border-subtle pt-4">
-                <p className="text-sm font-medium text-text-primary">Practical Evidence</p>
-                <p className="text-xs text-text-secondary">{course.evidencePrompt}</p>
+              <div className="flex flex-col gap-1.5 border-t border-[var(--border)] pt-4">
+                <p className="text-sm font-medium text-[var(--ink)]">Practical Evidence</p>
+                <p className="text-xs text-[var(--ink-muted)]">{course.evidencePrompt}</p>
               </div>
             </CardContent>
           </Card>
@@ -193,7 +193,7 @@ export function CourseLearningView({
               <>
                 <LessonContent lesson={active.lesson} />
 
-                <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border-subtle pt-5">
+                <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[var(--border)] pt-5">
                   <Button
                     variant="outline"
                     size="sm"

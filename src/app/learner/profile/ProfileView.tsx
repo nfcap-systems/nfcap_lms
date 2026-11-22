@@ -46,16 +46,16 @@ export function ProfileView({
     <div className="flex flex-col gap-6">
       <Card>
         <CardContent className="flex flex-col items-start gap-4 sm:flex-row sm:items-center">
-          <div className="flex size-14 shrink-0 items-center justify-center rounded-full bg-brand-primary text-lg font-semibold text-on-brand">
+          <div className="flex size-14 shrink-0 items-center justify-center rounded-full bg-[var(--accent)] text-lg font-semibold text-[var(--accent-contrast)]">
             {initials}
           </div>
           <div className="flex flex-1 flex-col gap-1">
             <div className="flex flex-wrap items-center gap-2">
-              <h2 className="text-lg font-semibold text-brand-heading">{name}</h2>
+              <h2 className="text-lg font-semibold text-[var(--ink)]">{name}</h2>
               <Badge tone="info">Learner</Badge>
             </div>
-            <p className="text-sm text-text-secondary">{email}</p>
-            <p className="text-xs text-text-muted">Apprentice since {memberSince}</p>
+            <p className="text-sm text-[var(--ink-muted)]">{email}</p>
+            <p className="text-xs text-[var(--ink-muted)]">Apprentice since {memberSince}</p>
           </div>
         </CardContent>
       </Card>
@@ -64,12 +64,12 @@ export function ProfileView({
         {stats.map((stat) => (
           <Card key={stat.label}>
             <CardContent className="flex items-center gap-4">
-              <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-brand-primary/10 text-brand-primary">
+              <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-[var(--accent)]/10 text-[var(--accent)]">
                 <Icon name={stat.icon} className="size-5" />
               </div>
               <div>
-                <p className="text-2xl font-semibold text-brand-heading">{stat.value}</p>
-                <p className="text-xs text-text-muted">{stat.label}</p>
+                <p className="text-2xl font-semibold text-[var(--ink)]">{stat.value}</p>
+                <p className="text-xs text-[var(--ink-muted)]">{stat.label}</p>
               </div>
             </CardContent>
           </Card>
@@ -77,18 +77,18 @@ export function ProfileView({
       </div>
 
       <div>
-        <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-text-muted">
+        <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-[var(--ink-muted)]">
           Your Courses
         </h2>
         {enrolledCourses.length === 0 ? (
           <Card>
             <CardContent className="flex flex-col items-start gap-3 py-8">
-              <p className="text-sm text-text-secondary">
+              <p className="text-sm text-[var(--ink-muted)]">
                 You&apos;re not enrolled in any training yet.
               </p>
               <Link
                 href="/learner/explore"
-                className="text-sm font-medium text-brand-primary hover:underline"
+                className="text-sm font-medium text-[var(--accent)] hover:underline"
               >
                 Browse Course Catalog
               </Link>
@@ -96,7 +96,7 @@ export function ProfileView({
           </Card>
         ) : (
           <Card>
-            <div className="divide-y divide-border-subtle">
+            <div className="divide-y divide-[var(--border)]">
               {enrolledCourses.map((course) => {
                 const progress = progressMap[course.id];
                 const status = getCourseStatus(course, progress);
@@ -106,17 +106,17 @@ export function ProfileView({
                   <Link
                     key={course.id}
                     href={`/learner/courses/${course.id}`}
-                    className="flex items-center justify-between gap-4 p-5 transition-colors hover:bg-bg-subtle"
+                    className="flex items-center justify-between gap-4 p-5 transition-colors hover:bg-[var(--surface-muted)]"
                   >
                     <div>
-                      <p className="text-sm font-medium text-text-primary">{course.title}</p>
-                      <p className="text-xs text-text-muted">
+                      <p className="text-sm font-medium text-[var(--ink)]">{course.title}</p>
+                      <p className="text-xs text-[var(--ink-muted)]">
                         {done} of {total} lessons complete
                       </p>
                     </div>
                     <div className="flex items-center gap-3">
                       <Badge tone={courseStatusTone[status]}>{courseStatusLabel[status]}</Badge>
-                      <Icon name="chevron-right" className="size-4 text-text-muted" />
+                      <Icon name="chevron-right" className="size-4 text-[var(--ink-muted)]" />
                     </div>
                   </Link>
                 );
@@ -129,31 +129,31 @@ export function ProfileView({
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <Link
           href="/learner/portfolio"
-          className="flex items-center gap-3 rounded-2xl border border-border-subtle bg-bg-card p-5 shadow-card transition-colors hover:bg-bg-subtle"
+          className="flex items-center gap-3 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-5 shadow-card transition-colors hover:bg-[var(--surface-muted)]"
         >
-          <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-brand-primary/10 text-brand-primary">
+          <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-[var(--accent)]/10 text-[var(--accent)]">
             <Icon name="briefcase" className="size-5" />
           </div>
           <div className="flex-1">
-            <p className="text-sm font-medium text-text-primary">View Portfolio</p>
-            <p className="text-xs text-text-muted">Verified evidence of your demonstrated skills</p>
+            <p className="text-sm font-medium text-[var(--ink)]">View Portfolio</p>
+            <p className="text-xs text-[var(--ink-muted)]">Verified evidence of your demonstrated skills</p>
           </div>
-          <Icon name="chevron-right" className="size-4 shrink-0 text-text-muted" />
+          <Icon name="chevron-right" className="size-4 shrink-0 text-[var(--ink-muted)]" />
         </Link>
         <Link
           href="/learner/certificates"
-          className="flex items-center gap-3 rounded-2xl border border-border-subtle bg-bg-card p-5 shadow-card transition-colors hover:bg-bg-subtle"
+          className="flex items-center gap-3 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-5 shadow-card transition-colors hover:bg-[var(--surface-muted)]"
         >
-          <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-brand-primary/10 text-brand-primary">
+          <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-[var(--accent)]/10 text-[var(--accent)]">
             <Icon name="award" className="size-5" />
           </div>
           <div className="flex-1">
-            <p className="text-sm font-medium text-text-primary">View Certificates</p>
-            <p className="text-xs text-text-muted">
+            <p className="text-sm font-medium text-[var(--ink)]">View Certificates</p>
+            <p className="text-xs text-[var(--ink-muted)]">
               Credentials earned in the apprenticeship program
             </p>
           </div>
-          <Icon name="chevron-right" className="size-4 shrink-0 text-text-muted" />
+          <Icon name="chevron-right" className="size-4 shrink-0 text-[var(--ink-muted)]" />
         </Link>
       </div>
     </div>
