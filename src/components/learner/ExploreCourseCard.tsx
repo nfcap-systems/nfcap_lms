@@ -57,8 +57,8 @@ export function ExploreCourseCard({
         </div>
 
         <div>
-          <h3 className="text-base font-semibold text-brand-heading">{course.title}</h3>
-          <p className="mt-1 text-sm text-text-secondary">{course.description}</p>
+          <h3 className="text-base font-semibold text-[var(--ink)]">{course.title}</h3>
+          <p className="mt-1 text-sm text-[var(--ink-muted)]">{course.description}</p>
         </div>
 
         {enrolled ? (
@@ -69,7 +69,7 @@ export function ExploreCourseCard({
             showPercentage
           />
         ) : (
-          <div className="mt-auto flex items-center gap-4 text-xs text-text-muted">
+          <div className="mt-auto flex items-center gap-4 text-xs text-[var(--ink-muted)]">
             <span className="inline-flex items-center gap-1">
               <Icon name="book" className="size-3.5" />
               {lessonCount} lessons

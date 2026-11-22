@@ -303,7 +303,7 @@ export function WioaCaseDetailView({
         <Card>
           <CardContent className="flex flex-col gap-3">
             {wioaCase.documents.length === 0 ? (
-              <p className="text-sm text-text-secondary">No documents required for this case.</p>
+              <p className="text-sm text-[var(--ink-muted)]">No documents required for this case.</p>
             ) : (
               wioaCase.documents.map((doc) => (
                 <DocumentReviewRow key={doc.id} doc={doc} startTransition={startTransition} />
@@ -317,12 +317,12 @@ export function WioaCaseDetailView({
         <Card>
           <CardContent className="flex flex-col gap-4">
             <div>
-              <p className="mb-2 text-sm font-medium text-text-primary">Status changes</p>
+              <p className="mb-2 text-sm font-medium text-[var(--ink)]">Status changes</p>
               <div className="flex flex-col gap-2">
                 {wioaCase.statusHistory.map((h) => (
                   <div key={h.id} className="flex items-center justify-between text-sm">
-                    <span className="text-text-primary">{WIOA_STATUS_LABEL[h.status]}</span>
-                    <span className="text-xs text-text-muted">
+                    <span className="text-[var(--ink)]">{WIOA_STATUS_LABEL[h.status]}</span>
+                    <span className="text-xs text-[var(--ink-muted)]">
                       {new Date(h.changedAt).toLocaleString(undefined, {
                         month: 'short',
                         day: 'numeric',
@@ -336,11 +336,11 @@ export function WioaCaseDetailView({
               </div>
             </div>
             {wioaCase.communications.length > 0 && (
-              <div className="border-t border-border-subtle pt-4">
-                <p className="mb-2 text-sm font-medium text-text-primary">Outreach log</p>
+              <div className="border-t border-[var(--border)] pt-4">
+                <p className="mb-2 text-sm font-medium text-[var(--ink)]">Outreach log</p>
                 <div className="flex flex-col gap-2">
                   {wioaCase.communications.map((c) => (
-                    <div key={c.id} className="text-sm text-text-secondary">
+                    <div key={c.id} className="text-sm text-[var(--ink-muted)]">
                       {c.channel === 'EMAIL' ? 'Email' : 'Call'} to {c.recipient} — {formatDate(c.sentAt)}
                     </div>
                   ))}
@@ -400,15 +400,15 @@ function DocumentReviewRow({
   }
 
   return (
-    <div className="flex flex-col gap-2 rounded-lg border border-border-subtle p-3">
+    <div className="flex flex-col gap-2 rounded-lg border border-[var(--border)] p-3">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
-          <p className="text-sm font-medium text-text-primary">{doc.requirementName}</p>
+          <p className="text-sm font-medium text-[var(--ink)]">{doc.requirementName}</p>
           {doc.fileName && (
             <button
               type="button"
               onClick={viewFile}
-              className="mt-1 flex items-center gap-1.5 text-xs text-brand-primary hover:underline"
+              className="mt-1 flex items-center gap-1.5 text-xs text-[var(--accent)] hover:underline"
             >
               <Icon name="paperclip" className="size-3.5" />
               {doc.fileName}
@@ -456,32 +456,32 @@ function DocumentReviewRow({
 
       {doc.status !== 'MISSING' && doc.status !== 'NOT_APPLICABLE' && (
         <div>
-          <button type="button" onClick={toggleHistory} className="text-xs text-text-secondary hover:underline">
+          <button type="button" onClick={toggleHistory} className="text-xs text-[var(--ink-muted)] hover:underline">
             {loadingHistory ? 'Loading history…' : history === null ? 'View past versions' : 'Hide past versions'}
           </button>
           {history !== null && (
             <ul className="mt-2 flex flex-col gap-1.5">
-              {history.length === 0 && <li className="text-xs text-text-muted">No earlier versions.</li>}
+              {history.length === 0 && <li className="text-xs text-[var(--ink-muted)]">No earlier versions.</li>}
               {history.map((v) => (
                 <li
                   key={v.id}
-                  className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-border-subtle bg-surface-subtle p-2"
+                  className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-[var(--border)] bg-[var(--surface-muted)] p-2"
                 >
                   <div className="flex flex-col gap-0.5">
                     <button
                       type="button"
                       onClick={() => viewVersion(v.id)}
-                      className="flex items-center gap-1.5 text-xs text-brand-primary hover:underline"
+                      className="flex items-center gap-1.5 text-xs text-[var(--accent)] hover:underline"
                     >
                       <Icon name="paperclip" className="size-3.5" />
                       {v.fileName}
                     </button>
-                    <span className="text-[11px] text-text-muted">
+                    <span className="text-[11px] text-[var(--ink-muted)]">
                       Uploaded{' '}
                       {v.uploadedAt.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                     </span>
                     {v.status === 'REJECTED' && v.rejectionReason && (
-                      <span className="text-[11px] text-danger">{v.rejectionReason}</span>
+                      <span className="text-[11px] text-[var(--status-problem)]">{v.rejectionReason}</span>
                     )}
                   </div>
                   <Badge tone={docStatusTone[v.status]}>{v.status.replace('_', ' ')}</Badge>
@@ -601,7 +601,7 @@ function FundingCard({ wioaCase }: { wioaCase: WioaCaseDetail }) {
           <Input id="trainingProgram" value={trainingProgram} onChange={(e) => setTrainingProgram(e.target.value)} />
         </Field>
 
-        <label className="flex items-center gap-2 text-sm text-text-primary">
+        <label className="flex items-center gap-2 text-sm text-[var(--ink)]">
           <input
             type="checkbox"
             checked={etplProviderConfirmed}
@@ -638,8 +638,8 @@ function FundingCard({ wioaCase }: { wioaCase: WioaCaseDetail }) {
           <Input id="requestStatus" value={requestStatus} onChange={(e) => setRequestStatus(e.target.value)} />
         </Field>
 
-        <div className="border-t border-border-subtle pt-4">
-          <p className="mb-3 text-sm font-medium text-text-primary">Authorization</p>
+        <div className="border-t border-[var(--border)] pt-4">
+          <p className="mb-3 text-sm font-medium text-[var(--ink)]">Authorization</p>
           <div className="flex flex-col gap-4">
             <Field label="ITA issued at" htmlFor="itaIssuedAt">
               <Input

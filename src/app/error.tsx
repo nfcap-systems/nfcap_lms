@@ -16,11 +16,11 @@ export default function Error({
   }, [error]);
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-bg-subtle p-6">
+    <div className="flex min-h-screen items-center justify-center bg-[var(--surface-muted)] p-6">
       <Card className="max-w-md">
         <CardContent className="flex flex-col items-start gap-4 py-10">
-          <h1 className="text-lg font-semibold text-brand-heading">Something went wrong</h1>
-          <p className="text-sm text-text-secondary">
+          <h1 className="text-lg font-semibold text-[var(--ink)]">Something went wrong</h1>
+          <p className="text-sm text-[var(--ink-muted)]">
             We hit an unexpected error. Our team has been notified — try again, or come back in a
             moment.
           </p>

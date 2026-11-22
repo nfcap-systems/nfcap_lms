@@ -23,7 +23,7 @@ export function WioaReportsView({
   if (totalCases === 0) {
     return (
       <Card>
-        <div className="py-10 text-center text-sm text-text-secondary">
+        <div className="py-10 text-center text-sm text-[var(--ink-muted)]">
           No WIOA cases yet — reports will populate once cases open.
         </div>
       </Card>
@@ -33,13 +33,13 @@ export function WioaReportsView({
   return (
     <div className="flex flex-col gap-6">
       <section>
-        <h2 className="mb-3 text-sm font-semibold text-text-primary">Cohort Pipeline</h2>
+        <h2 className="mb-3 text-sm font-semibold text-[var(--ink)]">Cohort Pipeline</h2>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-7">
           {Object.entries(phaseCounts).map(([phase, count]) => (
             <Card key={phase}>
               <CardContent className="text-center">
-                <p className="text-2xl font-semibold text-brand-heading">{count}</p>
-                <p className="text-xs text-text-muted">{phase}</p>
+                <p className="text-2xl font-semibold text-[var(--ink)]">{count}</p>
+                <p className="text-xs text-[var(--ink-muted)]">{phase}</p>
               </CardContent>
             </Card>
           ))}
@@ -47,7 +47,7 @@ export function WioaReportsView({
       </section>
 
       <section>
-        <h2 className="mb-3 text-sm font-semibold text-text-primary">Document Readiness</h2>
+        <h2 className="mb-3 text-sm font-semibold text-[var(--ink)]">Document Readiness</h2>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           <Stat label="Accepted" value={documentReadiness.accepted} icon="check" />
           <Stat label="Under Review" value={documentReadiness.underReview} icon="clock" />
@@ -58,14 +58,14 @@ export function WioaReportsView({
 
       {boardPerformance && (
         <section>
-          <h2 className="mb-3 text-sm font-semibold text-text-primary">Board Performance</h2>
+          <h2 className="mb-3 text-sm font-semibold text-[var(--ink)]">Board Performance</h2>
           <Card>
-            <div className="divide-y divide-border-subtle">
+            <div className="divide-y divide-[var(--border)]">
               {boardPerformance.map((b) => (
                 <div key={b.boardName} className="grid grid-cols-2 gap-3 p-5 sm:grid-cols-4">
                   <div>
-                    <p className="text-sm font-medium text-text-primary">{b.boardName}</p>
-                    <p className="text-xs text-text-muted">{b.totalCases} cases</p>
+                    <p className="text-sm font-medium text-[var(--ink)]">{b.boardName}</p>
+                    <p className="text-xs text-[var(--ink-muted)]">{b.totalCases} cases</p>
                   </div>
                   <Metric
                     label="Approval Rate"
@@ -93,30 +93,30 @@ export function WioaReportsView({
       )}
 
       <section>
-        <h2 className="mb-3 text-sm font-semibold text-text-primary">
+        <h2 className="mb-3 text-sm font-semibold text-[var(--ink)]">
           Follow-Up Queue ({followUpQueue.length})
         </h2>
         {followUpQueue.length === 0 ? (
           <Card>
-            <CardContent className="py-8 text-center text-sm text-text-secondary">
+            <CardContent className="py-8 text-center text-sm text-[var(--ink-muted)]">
               No cases need follow-up right now.
             </CardContent>
           </Card>
         ) : (
           <Card>
-            <div className="divide-y divide-border-subtle">
+            <div className="divide-y divide-[var(--border)]">
               {followUpQueue.map((item) => {
                 const content = (
                   <>
                     <div className="min-w-0">
-                      <p className="text-sm font-medium text-text-primary">{item.learnerName}</p>
-                      <p className="text-xs text-text-muted">
+                      <p className="text-sm font-medium text-[var(--ink)]">{item.learnerName}</p>
+                      <p className="text-xs text-[var(--ink-muted)]">
                         {item.courseTitle} · {item.reason}
                       </p>
                     </div>
                     <div className="flex items-center gap-3">
                       <Badge tone="pending">{WIOA_STATUS_LABEL[item.status]}</Badge>
-                      {basePath && <Icon name="chevron-right" className="size-4 text-text-muted" />}
+                      {basePath && <Icon name="chevron-right" className="size-4 text-[var(--ink-muted)]" />}
                     </div>
                   </>
                 );
@@ -124,7 +124,7 @@ export function WioaReportsView({
                   <Link
                     key={item.caseId}
                     href={`${basePath}/${item.caseId}`}
-                    className="flex items-center justify-between gap-4 p-5 transition-colors hover:bg-bg-subtle"
+                    className="flex items-center justify-between gap-4 p-5 transition-colors hover:bg-[var(--surface-muted)]"
                   >
                     {content}
                   </Link>
@@ -154,12 +154,12 @@ function Stat({
   return (
     <Card>
       <CardContent className="flex items-center gap-4">
-        <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-brand-primary/10 text-brand-primary">
+        <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-[var(--accent)]/10 text-[var(--accent)]">
           <Icon name={icon} className="size-5" />
         </div>
         <div>
-          <p className="text-2xl font-semibold text-brand-heading">{value}</p>
-          <p className="text-xs text-text-muted">{label}</p>
+          <p className="text-2xl font-semibold text-[var(--ink)]">{value}</p>
+          <p className="text-xs text-[var(--ink-muted)]">{label}</p>
         </div>
       </CardContent>
     </Card>
@@ -169,8 +169,8 @@ function Stat({
 function Metric({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <p className="text-sm font-medium text-text-primary">{value}</p>
-      <p className="text-xs text-text-muted">{label}</p>
+      <p className="text-sm font-medium text-[var(--ink)]">{value}</p>
+      <p className="text-xs text-[var(--ink-muted)]">{label}</p>
     </div>
   );
 }

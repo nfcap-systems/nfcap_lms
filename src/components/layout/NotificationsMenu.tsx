@@ -39,7 +39,7 @@ export function NotificationsMenu() {
         aria-haspopup="dialog"
         aria-expanded={open}
         aria-label="Notifications"
-        className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-full bg-bg-subtle text-text-secondary shadow-sm transition-colors hover:text-text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
+        className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-full bg-[var(--surface-muted)] text-[var(--ink-muted)] shadow-sm transition-colors hover:text-[var(--ink)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
       >
         <Icon name="bell" className="h-4.5 w-4.5" />
       </button>
@@ -48,12 +48,12 @@ export function NotificationsMenu() {
         <div
           role="dialog"
           aria-label="Notifications"
-          className="absolute top-full right-0 mt-2 w-[min(20rem,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-border-subtle bg-bg-card shadow-elevated"
+          className="absolute top-full right-0 mt-2 w-[min(20rem,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface)] shadow-elevated"
         >
-          <p className="border-b border-border-subtle px-4 py-3 text-sm font-semibold text-text-primary">
+          <p className="border-b border-[var(--border)] px-4 py-3 text-sm font-semibold text-[var(--ink)]">
             Notifications
           </p>
-          <p className="px-4 py-6 text-center text-sm text-text-muted">
+          <p className="px-4 py-6 text-center text-sm text-[var(--ink-muted)]">
             You&apos;re all caught up — nothing new yet.
           </p>
         </div>

@@ -13,8 +13,8 @@ export default async function LearnerAccountPage() {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="text-xl font-semibold text-brand-heading">Account Settings</h1>
-        <p className="mt-1 text-sm text-text-secondary">
+        <h1 className="text-xl font-semibold text-[var(--ink)]">Account Settings</h1>
+        <p className="mt-1 text-sm text-[var(--ink-muted)]">
           Manage your name, email, password, and contact info.
         </p>
       </div>

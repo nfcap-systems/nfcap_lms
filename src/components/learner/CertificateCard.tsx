@@ -32,8 +32,8 @@ export function CertificateCard({
             </Badge>
           </div>
           <div>
-            <h3 className="text-base font-semibold text-brand-heading">{course.title}</h3>
-            <p className="mt-1 text-xs text-text-muted">Issued {issuedDate}</p>
+            <h3 className="text-base font-semibold text-[var(--ink)]">{course.title}</h3>
+            <p className="mt-1 text-xs text-[var(--ink-muted)]">Issued {issuedDate}</p>
           </div>
           <Button
             size="sm"
