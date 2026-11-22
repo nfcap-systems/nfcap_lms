@@ -1,7 +1,8 @@
 import { getAllCourses, getPublishedCourses } from '@/lib/data/courses';
 import { getLearnerProgressMap, getCourseUnlocksForLearner } from '@/lib/data/progress';
 import { getCredentialsForLearner } from '@/lib/data/credentials';
-import { getAuthUser } from '@/lib/supabase/server';
+import { getWioaCasesForLearner } from '@/lib/data/wioa';
+import { getAuthUser, getRole } from '@/lib/supabase/server';
 import { HomeView } from './HomeView';
 
 export default async function LearnerHomePage() {
@@ -18,6 +19,9 @@ export default async function LearnerHomePage() {
     ? Object.keys(await getCourseUnlocksForLearner(user.id))
     : [];
   const credentials = user ? await getCredentialsForLearner(user.id, allCourses) : [];
+  const wioaCases = user
+    ? await getWioaCasesForLearner({ userId: user.id, role: getRole(user) ?? 'LEARNER' }, user.id)
+    : [];
 
   return (
     <HomeView
@@ -26,6 +30,7 @@ export default async function LearnerHomePage() {
       progressMap={progressMap}
       unlockedCourseSlugs={unlockedCourseSlugs}
       credentials={credentials}
+      wioaCases={wioaCases}
       firstName={firstName}
     />
   );
