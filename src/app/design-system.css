@@ -880,6 +880,75 @@
   color: var(--status-problem);
 }
 
+/* Breadcrumb + profile-overview grid — ADM04/CRD02 detail-page pattern */
+.crumbrow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  color: var(--ink-muted);
+}
+.crumbrow .sep {
+  color: var(--ink-faint);
+}
+.crumbrow .cur {
+  color: var(--ink);
+  font-weight: 600;
+}
+.ov-grid {
+  display: grid;
+  grid-template-columns: 1fr 1px 260px;
+  gap: 28px;
+}
+.ov-sep {
+  background: var(--border);
+}
+.ov-h {
+  font-size: 14.5px;
+  font-weight: 600;
+  margin: 0 0 8px;
+  font-family: var(--font-display);
+  color: var(--ink);
+}
+.ov-sub {
+  font-size: 12px;
+  color: var(--ink-muted);
+  margin: 0 0 2px;
+  display: block;
+}
+.ov-val {
+  font-size: 13.5px;
+  color: var(--ink);
+  display: block;
+}
+.ov-field {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.ov-detgrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+}
+.ov-detcol {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.side-row {
+  display: flex;
+  gap: 10px;
+  padding: 9px 0;
+}
+.side-ic {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  color: var(--ink-muted);
+  margin-top: 1px;
+}
+
 /* ============================================================================
    Step 1.4 — Learner shell retrofit (FND13-Shells). Top header over centered
    content, matching LearnerHeader.tsx/LearnerShell.tsx structure 1:1 — only
