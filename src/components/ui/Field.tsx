@@ -10,18 +10,14 @@ export type FieldProps = HTMLAttributes<HTMLDivElement> & {
 
 export function Field({ label, hint, error, htmlFor, className, children, ...props }: FieldProps) {
   return (
-    <div className={cn('flex flex-col gap-1.5', className)} {...props}>
+    <div className={cn('flex flex-col', className)} {...props}>
       {label && (
-        <label htmlFor={htmlFor} className="text-sm font-medium text-text-primary">
+        <label htmlFor={htmlFor} className="field-label">
           {label}
         </label>
       )}
       {children}
-      {error ? (
-        <p className="text-xs text-status-danger-text">{error}</p>
-      ) : hint ? (
-        <p className="text-xs text-text-muted">{hint}</p>
-      ) : null}
+      {error ? <p className="field-error">{error}</p> : hint ? <p className="field-hint">{hint}</p> : null}
     </div>
   );
 }
