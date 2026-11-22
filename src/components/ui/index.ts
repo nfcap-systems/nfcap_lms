@@ -7,3 +7,7 @@ export * from './Field';
 export * from './Input';
 export * from './Dialog';
 export * from './Drawer';
+export * from './StateCard';
+export * from './SegmentedToggle';
+export * from './DataTableCard';
+export * from './ProfileHeader';
