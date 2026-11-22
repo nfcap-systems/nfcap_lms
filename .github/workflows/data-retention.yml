@@ -1,11 +1,11 @@
 name: Data Retention Sweep
 
 on:
-  schedule:
-    # Daily at 09:00 UTC. The sweep itself is a no-op on any day with nothing past the retention
-    # window (docs/build/PHASE_1_DATA_RETENTION.md) — daily just keeps the lag small once
-    # something does become eligible.
-    - cron: '0 9 * * *'
+  # Schedule disabled 2026-11-22: no production environment/secrets (APP_URL, CRON_SECRET) exist
+  # yet, so this ran daily against nothing and failed every time since 2026-11-17. Re-enable the
+  # schedule block below once production exists and those secrets are set.
+  # schedule:
+  #   - cron: '0 9 * * *'
   workflow_dispatch: {}
 
 jobs:
