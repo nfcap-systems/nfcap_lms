@@ -30,8 +30,8 @@ export default async function FundingPage() {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="text-xl font-semibold text-brand-heading">WIOA Funding</h1>
-        <p className="mt-1 text-sm text-text-secondary">
+        <h1 className="text-xl font-semibold text-[var(--ink)]">WIOA Funding</h1>
+        <p className="mt-1 text-sm text-[var(--ink-muted)]">
           Match to your local workforce board and start the WIOA eligibility process for
           apprenticeship tuition funding.
         </p>

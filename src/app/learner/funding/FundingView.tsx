@@ -51,7 +51,7 @@ export function FundingView({
       <Card>
         <CardContent className="flex flex-col items-start gap-3 py-8">
           <Badge tone="info">No office matched yet</Badge>
-          <p className="text-sm text-text-secondary">
+          <p className="text-sm text-[var(--ink-muted)]">
             We couldn&apos;t automatically match ZIP code <strong>{profile.zip}</strong> to a
             workforce board. NFCAP staff will review your address and assign your office by hand —
             check back here soon, or reach out to NFCAP directly.
@@ -87,7 +87,7 @@ function AddressCapture({ profile }: { profile: LearnerProfile | null }) {
         <CardTitle>Start the WIOA process</CardTitle>
       </CardHeader>
       <CardContent>
-        <p className="mb-4 text-sm text-text-secondary">
+        <p className="mb-4 text-sm text-[var(--ink-muted)]">
           Enter your address so we can match you to your local workforce board. These details are
           only used for WIOA routing.
         </p>
@@ -265,19 +265,19 @@ function MatchedOfficeView({
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
           <div>
-            <p className="text-sm font-medium text-text-primary">{match.board.name}</p>
-            <p className="text-xs text-text-muted">{match.board.address}</p>
+            <p className="text-sm font-medium text-[var(--ink)]">{match.board.name}</p>
+            <p className="text-xs text-[var(--ink-muted)]">{match.board.address}</p>
             {match.ajcc && (
-              <p className="mt-1 text-xs text-text-muted">
+              <p className="mt-1 text-xs text-[var(--ink-muted)]">
                 Career center: {match.ajcc.name} — {match.ajcc.address}
               </p>
             )}
           </div>
           {match.contact && (
-            <div className="rounded-lg border border-border-subtle bg-bg-subtle p-3">
-              <p className="text-sm font-medium text-text-primary">{match.contact.name}</p>
+            <div className="rounded-lg border border-[var(--border)] bg-[var(--surface-muted)] p-3">
+              <p className="text-sm font-medium text-[var(--ink)]">{match.contact.name}</p>
               {match.contact.title && (
-                <p className="text-xs text-text-muted">{match.contact.title}</p>
+                <p className="text-xs text-[var(--ink-muted)]">{match.contact.title}</p>
               )}
             </div>
           )}
@@ -301,7 +301,7 @@ function MatchedOfficeView({
             </Button>
             <a
               href={`tel:${match.contact?.phone ?? match.board.phone}`}
-              className="inline-flex h-10 items-center justify-center gap-1.5 rounded-md border border-border-default bg-transparent px-4 text-sm font-medium text-text-primary transition-colors hover:bg-bg-subtle"
+              className="inline-flex h-10 items-center justify-center gap-1.5 rounded-md border border-[var(--border)] bg-transparent px-4 text-sm font-medium text-[var(--ink)] transition-colors hover:bg-[var(--surface-muted)]"
             >
               <Icon name="phone" className="size-4" />
               Call
@@ -323,14 +323,14 @@ function MatchedOfficeView({
           </CardHeader>
           <CardContent className="flex flex-col gap-3">
             {communications.map((c) => (
-              <div key={c.id} className="rounded-lg border border-border-subtle p-3">
+              <div key={c.id} className="rounded-lg border border-[var(--border)] p-3">
                 <div className="flex items-center justify-between gap-3">
-                  <p className="text-sm font-medium text-text-primary">
+                  <p className="text-sm font-medium text-[var(--ink)]">
                     {c.channel === 'EMAIL' ? 'Email sent' : 'Call logged'} to {c.recipient}
                   </p>
                   <Badge tone="success">Sent</Badge>
                 </div>
-                <p className="mt-1 text-xs text-text-muted">
+                <p className="mt-1 text-xs text-[var(--ink-muted)]">
                   {new Date(c.sentAt).toLocaleString(undefined, {
                     month: 'short',
                     day: 'numeric',
@@ -386,13 +386,13 @@ function MatchedOfficeView({
           <ul className="flex flex-col gap-3">
             {activeCase.documents.map((doc) => (
               <li key={doc.id}>
-                <p className="text-sm font-medium text-text-primary">{doc.requirementName}</p>
-                <p className="text-sm text-text-secondary">{doc.requirementDescription}</p>
+                <p className="text-sm font-medium text-[var(--ink)]">{doc.requirementName}</p>
+                <p className="text-sm text-[var(--ink-muted)]">{doc.requirementDescription}</p>
               </li>
             ))}
           </ul>
         ) : (
-          <p className="text-sm text-text-secondary">
+          <p className="text-sm text-[var(--ink-muted)]">
             Your full document checklist becomes available once your WIOA case opens after outreach
             is sent — including any documents specific to {match.board.name}.
           </p>

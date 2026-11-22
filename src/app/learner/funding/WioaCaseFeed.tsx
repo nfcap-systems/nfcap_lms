@@ -66,10 +66,10 @@ export function WioaCaseFeed({ wioaCase }: { wioaCase: WioaCaseRecord }) {
             {wioaCase.status === 'CLOSED_INELIGIBLE' && <Badge tone="danger">Closed</Badge>}
           </div>
           <div>
-            <p className="text-sm font-medium text-text-primary">
+            <p className="text-sm font-medium text-[var(--ink)]">
               {WIOA_STATUS_LABEL[wioaCase.status]}
             </p>
-            <p className="mt-1 text-sm text-text-secondary">
+            <p className="mt-1 text-sm text-[var(--ink-muted)]">
               {WIOA_STATUS_NEXT_STEP[wioaCase.status]}
             </p>
           </div>
@@ -106,15 +106,15 @@ export function WioaCaseFeed({ wioaCase }: { wioaCase: WioaCaseRecord }) {
           </CardHeader>
           <CardContent className="flex flex-col gap-3">
             {wioaCase.appointments.map((a) => (
-              <div key={a.id} className="rounded-lg border border-border-subtle p-3">
-                <p className="text-sm font-medium text-text-primary">
+              <div key={a.id} className="rounded-lg border border-[var(--border)] p-3">
+                <p className="text-sm font-medium text-[var(--ink)]">
                   {a.type === 'ORIENTATION'
                     ? 'Orientation'
                     : a.type === 'INTAKE'
                       ? 'Intake appointment'
                       : 'Follow-up'}
                 </p>
-                <p className="text-xs text-text-muted">
+                <p className="text-xs text-[var(--ink-muted)]">
                   {new Date(a.scheduledAt).toLocaleString(undefined, {
                     month: 'short',
                     day: 'numeric',
@@ -123,7 +123,7 @@ export function WioaCaseFeed({ wioaCase }: { wioaCase: WioaCaseRecord }) {
                     minute: '2-digit',
                   })}
                 </p>
-                {a.notes && <p className="mt-1 text-sm text-text-secondary">{a.notes}</p>}
+                {a.notes && <p className="mt-1 text-sm text-[var(--ink-muted)]">{a.notes}</p>}
               </div>
             ))}
           </CardContent>
@@ -157,24 +157,24 @@ function DocumentCard({ doc }: { doc: WioaDocumentRecord }) {
   const canUpload = doc.status === 'MISSING' || doc.status === 'REJECTED';
 
   return (
-    <div className="flex flex-col gap-2 rounded-lg border border-border-subtle p-3">
+    <div className="flex flex-col gap-2 rounded-lg border border-[var(--border)] p-3">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
-          <p className="text-sm font-medium text-text-primary">{doc.requirementName}</p>
-          <p className="text-xs text-text-secondary">{doc.requirementDescription}</p>
+          <p className="text-sm font-medium text-[var(--ink)]">{doc.requirementName}</p>
+          <p className="text-xs text-[var(--ink-muted)]">{doc.requirementDescription}</p>
         </div>
         <Badge tone={docStatusTone[doc.status]}>{docStatusLabel[doc.status]}</Badge>
       </div>
       {doc.fileName && (
-        <div className="flex items-center gap-2 text-xs text-text-muted">
-          <Icon name="paperclip" className="size-3.5 text-brand-primary" />
+        <div className="flex items-center gap-2 text-xs text-[var(--ink-muted)]">
+          <Icon name="paperclip" className="size-3.5 text-[var(--accent)]" />
           {doc.fileName}
         </div>
       )}
       {doc.status === 'REJECTED' && doc.rejectionReason && (
-        <p className="text-xs text-danger">{doc.rejectionReason}</p>
+        <p className="text-xs text-[var(--status-problem)]">{doc.rejectionReason}</p>
       )}
-      {error && <p className="text-xs text-danger">{error}</p>}
+      {error && <p className="text-xs text-[var(--status-problem)]">{error}</p>}
       {canUpload && (
         <div>
           <Button
