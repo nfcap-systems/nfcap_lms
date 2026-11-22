@@ -705,6 +705,182 @@
 }
 
 /* ============================================================================
+   Staff page header + KPI tiles + data-table row patterns — ADM02/CRD01.
+   ============================================================================ */
+.pagehdr {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+}
+.pagehdr h1 {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 700;
+  font-family: var(--font-display);
+  line-height: 1.2;
+  color: var(--ink);
+}
+.pagehdr p {
+  margin: 4px 0 0;
+  font-size: 13.5px;
+  color: var(--ink-muted);
+  max-width: 640px;
+}
+.mcard {
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.mcard .ic {
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-md);
+  background: var(--surface-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ink-muted);
+  margin-bottom: 2px;
+}
+.mcard .l {
+  font-size: 13px;
+  color: var(--ink-muted);
+}
+.mcard .n {
+  font-size: 26px;
+  line-height: 1;
+  font-weight: 600;
+  font-family: var(--font-display);
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.dtbtn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--ink);
+  white-space: nowrap;
+  cursor: pointer;
+}
+.dtbtn:hover {
+  background: var(--surface-muted);
+}
+.dtsearch {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  height: 32px;
+  padding: 0 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  width: 220px;
+  color: var(--ink);
+  font-size: 13px;
+  background: var(--surface);
+}
+.dtsearch input {
+  border: none;
+  outline: none;
+  background: transparent;
+  width: 100%;
+  font-size: 13px;
+  color: var(--ink);
+  font-family: var(--font-body);
+}
+.dt-filter {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  font-size: 12.5px;
+  background: var(--surface);
+  color: var(--ink);
+}
+.dt-filter select {
+  border: none;
+  background: transparent;
+  font-size: 12.5px;
+  color: var(--ink);
+  font-family: var(--font-body);
+}
+.dt-filter .lbl {
+  color: var(--ink-muted);
+}
+.dt-filter.toggle-on {
+  background: var(--status-problem-bg);
+  border-color: var(--status-problem-border);
+  color: var(--status-problem);
+  cursor: pointer;
+}
+.dt-filter-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.rowname {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.av-wrap {
+  position: relative;
+  flex: none;
+}
+.av {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--surface-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--ink-muted);
+}
+.rowname .meta {
+  font-size: 12px;
+  color: var(--ink-muted);
+}
+.rowboard {
+  font-size: 13px;
+  color: var(--ink);
+}
+.rowboard .sub {
+  font-size: 12px;
+  color: var(--ink-muted);
+}
+.rowstatus .sub {
+  font-size: 12px;
+  color: var(--ink-muted);
+  margin-top: 2px;
+}
+.stalled-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--status-problem);
+}
+
+/* ============================================================================
    Step 1.4 — Learner shell retrofit (FND13-Shells). Top header over centered
    content, matching LearnerHeader.tsx/LearnerShell.tsx structure 1:1 — only
    the classes, not the markup shape, changed from the old @theme palette.

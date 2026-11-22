@@ -151,6 +151,7 @@ export type WioaCaseSummary = {
   pendingDocumentCount: number;
   assignedPartnerStaffId: string | null;
   assignedPartnerStaffName: string | null;
+  nextAppointment: { type: string; scheduledAt: Date } | null;
 };
 
 /** Staff case list — every case by default (Coordinator), or filtered to one Partner Staff
@@ -177,6 +178,11 @@ export async function getWioaCases(
         course: { select: { title: true } },
         workforceBoard: { select: { name: true } },
         documents: { select: { status: true } },
+        appointments: {
+          where: { scheduledAt: { gte: new Date() } },
+          orderBy: { scheduledAt: 'asc' },
+          take: 1,
+        },
       },
     }),
   );
@@ -208,6 +214,9 @@ export async function getWioaCases(
       ).length,
       assignedPartnerStaffId: c.assignedPartnerStaffId,
       assignedPartnerStaffName: partnerStaff?.name ?? null,
+      nextAppointment: c.appointments[0]
+        ? { type: c.appointments[0].type, scheduledAt: c.appointments[0].scheduledAt }
+        : null,
     });
   }
   return result;

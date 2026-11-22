@@ -11,11 +11,11 @@ export default async function PartnerPage() {
 
   return (
     <div className="flex flex-col gap-4">
-      <div>
-        <h1 className="text-xl font-semibold text-brand-heading">My Cases</h1>
-        <p className="mt-1 text-sm text-text-secondary">
-          WIOA cases assigned to you. Review documents, record follow-up, and advance status.
-        </p>
+      <div className="pagehdr">
+        <div>
+          <h1>My Cases</h1>
+          <p>WIOA cases assigned to you. Review documents, record follow-up, and advance status.</p>
+        </div>
       </div>
 
       <WioaCaseListView cases={cases} basePath="/partner" />
