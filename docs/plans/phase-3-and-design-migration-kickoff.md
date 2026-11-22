@@ -125,6 +125,19 @@ retrofit at all (already matches natively via shadcn). Remaining optional work, 
 literal pixel-match pass on Reports (`RPT01`/`RPT02`) and the course player — lower priority since
 both are already visually consistent, just not pixel-identical to their boards.
 
+**Known gap, flagged 2026-11-23, deliberately left open:** Partner Staff's case list and case
+detail (`/partner`, `/partner/[caseId]`) render `WioaCaseListView.tsx`/`WioaCaseDetailView.tsx` —
+the exact same shared components used by Coordinator, matched only against `CRD01-CaseList`/
+`CRD02-CaseDetail`. Per `docs/MOCKUP-INDEX.md`, Partner has its own, deliberately different boards
+— `PTN01-Roster` and `PTN02-LearnerDetail` — that the real app has never been built against:
+`PTN01-Roster`'s columns deliberately avoid *any* WIOA phase/status jargon (a trainee-progress
+roster, not a funding-case view), and `PTN02-LearnerDetail` is a single page with no tabs, unlike
+CRD02's 3-tab (Overview/Documents/Status history) layout. This predates this session — the shared
+component was built in Phase 0/1 before the PTN boards existed — and the design-system retrofit
+correctly stayed in scope (re-theme the existing shared component) rather than silently building a
+new one. Real fix is a genuine Partner-specific rebuild against `PTN01`/`PTN02`, not a retrofit;
+not started. Needs its own ticket once Plane is connected (Step 3).
+
 ## Step 3 — Backfill into Plane, once connected
 
 1. Create tickets for the design-system migration steps and all 12 Phase 3 features, from this
