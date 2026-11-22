@@ -124,23 +124,33 @@ jobs:
 
       - name: Verify Health
         run: |
-          HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "https://${{ vars.STAGING_DOMAIN }}")
-          case "$HTTP_CODE" in
-            200)
-              echo "Staging health check passed (HTTP $HTTP_CODE)"
-              ;;
-            307|308)
-              LOCATION=$(curl -sI "https://${{ vars.STAGING_DOMAIN }}" | grep -i '^location:' | tr -d '\r')
-              echo "Redirect: $LOCATION"
-              if echo "$LOCATION" | grep -qi '/login'; then
-                echo "Staging health check passed (HTTP $HTTP_CODE, redirects to login as expected)"
-              else
-                echo "Staging health check failed (HTTP $HTTP_CODE, unexpected redirect target)"
-                exit 1
-              fi
-              ;;
-            *)
-              echo "Staging health check failed (HTTP $HTTP_CODE)"
-              exit 1
-              ;;
-          esac
+          # The container itself is already confirmed healthy (docker's own health check, above)
+          # before this runs — a 504 here is Traefik's backend pool taking a moment to pick up
+          # the new color right after cutover, not a real outage. Retry a few times before
+          # failing (seen in practice: run 45008026969, 504 immediately after cutover, 307 to
+          # /login seconds later with no further changes).
+          for i in $(seq 1 6); do
+            HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "https://${{ vars.STAGING_DOMAIN }}")
+            case "$HTTP_CODE" in
+              200)
+                echo "Staging health check passed (HTTP $HTTP_CODE)"
+                exit 0
+                ;;
+              307|308)
+                LOCATION=$(curl -sI "https://${{ vars.STAGING_DOMAIN }}" | grep -i '^location:' | tr -d '\r')
+                echo "Redirect: $LOCATION"
+                if echo "$LOCATION" | grep -qi '/login'; then
+                  echo "Staging health check passed (HTTP $HTTP_CODE, redirects to login as expected)"
+                  exit 0
+                else
+                  echo "Attempt $i/6: HTTP $HTTP_CODE, unexpected redirect target, retrying..."
+                fi
+                ;;
+              *)
+                echo "Attempt $i/6: HTTP $HTTP_CODE, retrying..."
+                ;;
+            esac
+            sleep 5
+          done
+          echo "Staging health check failed after 6 attempts (last HTTP $HTTP_CODE)"
+          exit 1
