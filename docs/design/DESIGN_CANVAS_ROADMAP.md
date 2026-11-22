@@ -1,143 +1,194 @@
 # Design Canvas — Roadmap
 
-Plan for building one **Design (canvas) artifact** holding the whole NFCAP LMS picture: the
-references we studied, the foundations, every screen for all four roles, and the journeys that
-connect them.
+How we build the NFCAP mockup canvas: the references we studied, the foundations, every screen for
+all four roles, and the journeys that connect them.
 
-Written to be handed to whoever executes it. Nothing here is built yet — **no canvas exists**.
+**This file is the method. `docs/DEV-APPROACH.md` is the process and it outranks this file.**
+Conformed to it on 2026-11-18. Where they still disagree, DEV-APPROACH wins and this file is
+corrected.
+
+Nothing is built yet — **no canvas exists**.
 
 ## Read these first
 
 | File | Why |
 | --- | --- |
-| `docs/client/NFCAP_LMS_Production_Scope_Summary_Client.md` | **The build plan.** 65 features, 9 phases, the 10 journey steps, the 13 modules. Scope authority. |
+| `docs/DEV-APPROACH.md` | **How we work.** Roles, the four gates, canvas ownership, naming, approval, Plane. Outranks this file. |
+| `docs/client/NFCAP_LMS_Production_Scope_Summary_Client.md` | **The build plan.** 65 features, 9 phases, the 10-step journey, 13 modules. What we build. |
 | `docs/client/NFCAP_LMS_Feature_Detail_Client.md` | Per-feature detail behind that plan. |
-| `docs/design/LEARNER_UI_REFERENCES.md` | Which product each screen is modelled on, the brand direction, the capture tooling decision, what was rejected and why. |
+| `docs/design/LEARNER_UI_REFERENCES.md` | What each screen is modelled on, the brand direction, the capture tooling decision, what was rejected. |
+| `docs/SITEMAP.md` | Authoritative map: route → screen → board → ticket → phase → roles. Gate NFCAP-3. |
+| `docs/MOCKUP-INDEX.md` | Every board with phase, status and approval. Canvas URL and owner at the top. |
 | `docs/build/ADMIN_UI_REVAMP_BACKLOG.md` | Admin punch list, 8 open items, 2 of them real rendering bugs. |
-| `docs/build/UI_REVAMP_SESSION_LOG.md` | Running state log. **Partly stale** — see Housekeeping below. |
-| `docs/design/NFCAP_DESIGN_SYSTEM.md` | **Superseded for colour and type.** Keep for its WCAG contrast computations only. |
-| `docs/wioa/WIOA_INTEGRATION_PLAN.md` | Funding module shape, for the `staff` and funding boards. |
+| `docs/design/NFCAP_DESIGN_SYSTEM.md` | **Dropped.** Kept only for its WCAG contrast computations, the focus-ring technique and the four card states. Not a source for colour, type or spacing. |
+| `docs/wioa/WIOA_INTEGRATION_PLAN.md` | Funding module shape, for the CRD / WIOA / PTN boards. |
 
-**Authority split:** the **canvas owns visual truth** (what a screen looks like); the **build plan
-owns scope and behaviour truth** (what exists, in which phase, how it behaves). On disagreement the
-build plan wins and the board is corrected. This rule exists because the reference canvas already
-drifted — four of its boards are titled "old draft, superseded by `docs/…`" because nobody set it.
+**Authority order (from DEV-APPROACH):**
+`ticket acceptance criteria > board > SITEMAP > build plan`.
+
+A board therefore outranks the build plan at QC time, which is why **every board must be checked
+against the build plan before it is approved, not after**. A board that promises something the plan
+does not scope is a Plane ticket for Manjila, not a silent addition.
+
+## Brand: settled 2026-11-18
+
+**`docs/design/NFCAP_DESIGN_SYSTEM.md` is dropped**, along with `NFCAP_DESIGN_TOKENS.md`. Both are
+STALE. Decided by Manjila in session on 2026-11-18 and amended into `docs/DEV-APPROACH.md` gate
+NFCAP-4, which previously named the design system as the source.
+
+**The design direction is created new, in the canvas.** The `FND` section *is* the design direction;
+once approved, its tokens in `project/nfcap.css` are the source of truth for every board and for the
+code that follows. No markdown file holds the palette any more.
+
+The starting brief for `FND` is `LEARNER_UI_REFERENCES.md` → *Brand status*: graphite ink for
+structure, one mid-tone accent for action at ~5%, a reserved status triad (green complete / amber
+pending / red problem), Geist kept, body at 17px, dark mode out. The accent cannot be red, green or
+amber because status owns those.
+
+Three things are carried over from the dropped design system, because they are not brand opinions —
+they go into `FND01-Tokens`, `FND12-Accessibility` and `FND06-CourseCards` respectively:
+
+1. Its **WCAG contrast computations** — the only ones that exist for this codebase. Any new palette
+   fails in the same two places: locked-state text, and small-bold text on a tint.
+2. The **dual-tone focus ring** technique — visible on both light cards and dark bands without
+   per-surface conditional styling.
+3. The **four course-card states** as a taxonomy: active, available, locked, completed.
+
+`NFCAP_DESIGN_SYSTEM.md` stays on disk as the record of those three things and nothing else. It is
+not a source for colour, type or spacing.
+
+## The gates (DEV-APPROACH order)
+
+Each is approved before the next starts; approvals recorded on the Plane gate ticket.
+
+| Gate | Ticket | Deliverable |
+| --- | --- | --- |
+| 1 | NFCAP-3 | **Sitemap** — `docs/SITEMAP.md` + boards `SITE01`–`SITE05` |
+| 2 | NFCAP-4 | **Design direction** — `project/nfcap.css` + the `FND` boards |
+| 3 | NFCAP-5 | **User journeys** — one per role plus the WIOA flow (`JRN` boards) |
+| 4 | NFCAP-6 | **All mockups** — one board per screen, including phone, empty, error and permission states |
+| 5 | per ticket | **Build**, in plan-phase order. Builder builds; lead checks against the board. |
+
+Phases 0 and 1 are already built, so their boards are marked `exists` or `extend` and **not redrawn
+from scratch**.
 
 ## The structural reference
 
 `claude.ai/artifact/MXPrcJmXhUkaahtZSwmXbk` ("ZONE Dining Benchmark") — a Design canvas of 127
 artboards across 162 files: one `project/canvas.json` index plus one self-contained `.dc.html` per
-artboard.
+artboard. Six things it does that we copy:
 
-Six things it does that we copy:
-
-1. **Benchmark pages first, own design last.** Its pages run competitor A (8 boards) → competitor B
-   (10) → own-product decisions (4) → the design itself (105).
-2. **Numbered bands as section titles** — `title1` notes at `x: 0` with increasing `y`: `0 · Map`,
-   `1 · Foundations and components`, … `10 · User journeys, screen to screen`.
-3. **Strict naming** — `ZD-<AREA><nn><variant>-<Name>.dc.html`, e.g. `ZD-D01b-DiscoverScrolled`.
-4. **One shared stylesheet** — `project/zone-app.css` (43KB) linked relatively from every artboard.
-   This is what makes 105 boards read as one product. It cannot be retrofitted.
-5. **Real screenshots embedded as uploaded assets** — benchmark boards are grids of
-   `<img src="/_blob/<id>">` with id + title + one-line note per capture, not recreations.
+1. **Benchmark boards first, own design after.** Its pages run competitor A → competitor B → own
+   decisions → the design itself.
+2. **Numbered sections** as `title1` notes at `x: 0` with increasing `y`.
+3. **Strict naming**, area prefix first.
+4. **One shared stylesheet** linked from every artboard. This is what makes 100+ boards read as one
+   product, and it cannot be retrofitted.
+5. **Real screenshots embedded as uploaded assets** — grids of `<img src="/_blob/<id>">` with id +
+   title + one-line note per capture, not recreations.
 6. **Observation boards that say they are observations** — its tokens board states on the board:
    "Colours are pixel samples from the screenshots, so close but not exact."
 
 Four things we change:
 
-- **Web app, not phone.** Its screens are fixed 430×1120. Ours are PAGEs: `expand: "fill"`, fluid,
-  1440, with phone-width variants only where it matters (evidence capture, player).
-- **Four roles**, not one: Trainee, Admin, WIOA Coordinator, Partner Staff.
+- **Web app, not phone.** Its screens are fixed 430×1120. Ours are PAGEs: `expand: "fill"`, fluid at
+  1440, with phone variants where DEV-APPROACH requires them (every screen needs a phone state).
+- **Four roles**, not one.
 - **States carry the product.** Gating (OPEN / RESTRICTED), per-criterion Met / Not Met, and the
   funding milestone chain get their own boards.
 - **Landscape captures tile differently.** Portrait phone shots sit six across a 1700px board; a
   readable 1440×900 capture is ~460×290, so three across.
 
-## Canvas structure
+## Canvas
 
-**Title:** `NFCAP LMS Design` · **Board prefix:** `NF-` · **Pages (tabs):** six.
+**Title: `NFCAP Mockups`.** **Owner: Manjila, in her own claude.ai account**, shared with Sadin with
+**edit** rights. The canvas URL and its owner go at the top of `docs/MOCKUP-INDEX.md` on day one.
+The client sees work on a **screen share**, never a shared link.
 
-| Page id | Name | Boards | Content |
-| --- | --- | --: | --- |
-| `refs` | References | 9 | What we captured from each reference, plus observations and takeaways |
-| `fnd` | Foundations | 14 | The design system as drawn: colour, type, components, every state |
-| `trainee` | Trainee | 24 | The trainee-facing app |
-| `admin` | Admin | 16 | The admin app |
-| `staff` | Funding staff | 12 | WIOA Coordinator and Partner Staff |
-| `journeys` | Journeys | 12 | The build plan's 10 steps plus the two review loops |
+Created with `action: "quickstart", intent: "design"` to find the Design type, then **one** publish
+with `type_url`, `title: "NFCAP Mockups"`, `auto_open: "after_first_write"` and nothing else. Every
+later call uses the returned `url`; `type_url` is never sent again. Where the type's own instructions
+differ from this file, **the type wins**. Starting files: `project/canvas.json` and
+`project/Main.dc.html`, then one board per file, written and sent **one at a time**.
 
-87 boards. The reference has 127, so the same order of magnitude.
+**Tokens:** one shared `project/nfcap.css`, linked from every board with
+`<link rel="stylesheet" href="nfcap.css">`.
 
-`launch`: `{"view": "canvas", "page": "fnd"}` until the `trainee` page exists, then `trainee`.
+**Shared parts** (app shell, trainee header, admin sidebar) are separate `.dc.html` files pulled in
+with `<dc-import>`, and each also renders as its own board.
 
-### `refs` — References
+**Board names:** `<AREA><NN>-<PascalName>.dc.html`.
+**Board titles end `Phase n · status`**, where status is `exists`, `extend` or `new`, compared
+against the code on `stage`.
 
-| Board | Content |
-| --- | --- |
-| `NF-R01-Coursera-Screens` | The 8 Coursera captures (My Learning, course home, player, player at phone width, quiz pre-attempt, quiz question, graded result, Accomplishments) |
-| `NF-R02-Coursera-Observed` | What we take, what we drop, sampled colour/type observations |
-| `NF-R03-Udemy-Sidebar` | The 5 Udemy sidebar captures, annotated |
-| `NF-R04-Codecademy-Gating` | Locked / current / completed steps; what a locked step says when clicked |
-| `NF-R05-GOVUK-Patterns` | One-thing-per-page, task list, check-your-answers, error summary |
-| `NF-R06-OneFile-EvidenceModel` | Upload → map to competency → submit → assessor review; mapped vs. storage-only |
-| `NF-R07-Moodle-Gating` | Restrict access + activity completion; the student-side locked state |
-| `NF-R08-StudioAdmin-Template` | `studio-admin.arhamkhnz.com`: shell, sidebar, and the `/dashboard/default` structure |
-| `NF-R09-Takeaways` | What each reference contributed; what was rejected and why |
+### Areas and board list — 92 boards
 
-### `fnd` — Foundations
+DEV-APPROACH's areas are SITE, FND, LRN, ADM, CRD, PTN, WIOA, RPT, SET. Two are added here as the
+lead's prerogative and recorded in `MOCKUP-INDEX.md`: **REF** (reference captures — not product
+screens) and **JRN** (screen-to-screen journey strips, distinct from the `SITE02` journey map).
 
-Where the new palette is actually settled, against the captures. 1440 wide.
+**Section 0 · Maps — SITE, 5**
+`SITE01-Sitemap` · `SITE02-Journeys` · `SITE03-RoleAccess` · `SITE04-SurfaceMap` ·
+`SITE05-NavPerRole`
 
-`F01-Colour` (ink, accent, status triad — print the contrast ratios on the board) ·
-`F02-Type` (Geist scale, 17px body) · `F03-SpaceShapeMotion` · `F04-Buttons` ·
-`F05-Inputs` (including GOV.UK-style error summary and inline errors) ·
-`F06-CardsCourse` (**the four states**: active, available, locked, completed) ·
-`F07-StatusBadges` (**evidence states** In review / Met / Not Met / Needs changes, and the funding
-milestones) · `F08-Tables` · `F09-DialogsDrawers` · `F10-EmptyErrorLoading` · `F11-Icons` ·
-`F12-Accessibility` (focus ring, keyboard order, contrast proof) ·
-`F13-Shells` (trainee header vs. admin sidebar) ·
-`F14-Density` (staff dense, trainee airy — one token set, two densities; **depends on open
+**Section 1 · Foundations — FND, 14.** *This section is the design direction (gate NFCAP-4).*
+`FND01-Tokens` (ink, accent, status triad, contrast ratios printed on the board) ·
+`FND02-Typography` (Geist scale, 17px body) · `FND03-SpaceShapeMotion` · `FND04-Buttons` ·
+`FND05-FormControls` (GOV.UK-style error summary and inline errors) ·
+`FND06-CourseCards` (**the four states**: active, available, locked, completed) ·
+`FND07-StatusBadges` (**evidence states** In review / Met / Not Met / Needs changes, plus funding
+milestones) · `FND08-Tables` · `FND09-DialogsDrawers` · `FND10-EmptyErrorLoading` · `FND11-Icons` ·
+`FND12-Accessibility` (focus ring, keyboard order, contrast proof) ·
+`FND13-Shells` (trainee header vs. admin sidebar — the `<dc-import>` sources) ·
+`FND14-Density` (staff dense, trainee airy — one token set, two densities; **blocked on open
 question 3**)
 
-### `trainee` — Trainee
+**Section 2 · References — REF, 9.** Captures, not design. Exempt from the variants gate.
+`REF01-CourseraScreens` · `REF02-CourseraObserved` · `REF03-UdemySidebar` ·
+`REF04-CodecademyGating` · `REF05-GovukPatterns` · `REF06-OneFileEvidenceModel` ·
+`REF07-MoodleGating` · `REF08-StudioAdminTemplate` · `REF09-Takeaways`
 
-Bands: `0 · Map` · `1 · Home and pathway` · `2 · Player and quiz` · `3 · Evidence` ·
-`4 · Certificates` · `5 · Funding` · `6 · Account and sign-up`.
+**Section 3 · Trainee — LRN, 24**
+`LRN01-Home` · `LRN02-Pathway` · `LRN02b-PathwayLocked` · `LRN03-CourseOverview` ·
+`LRN04-Player` · `LRN04b-PlayerPhone` · `LRN05-QuizPre` · `LRN05b-QuizQuestion` ·
+`LRN05c-QuizResult` · `LRN06-EvidenceCriteria` · `LRN06b-EvidenceCapture` ·
+`LRN06c-EvidenceCapturePhone` · `LRN06d-EvidenceNotMet` · `LRN06e-EvidenceResubmit` ·
+`LRN06f-AttemptHistory` · `LRN07-Portfolio` · `LRN08-Certificates` · `LRN09-PublicVerify` ·
+`LRN10-FundingStatus` · `LRN10b-EligibilitySelfCheck` · `LRN10c-DocumentChecklist` ·
+`LRN11-Account` · `LRN12-SignUp` · `LRN13-OpenCourseEnrol` (**blocked on open question 1**)
 
-`T00-SiteMap` · `T01-Home` · `T02-Pathway` · `T02b-PathwayLocked` · `T03-CourseOverview` ·
-`T04-Player` · `T04b-PlayerPhone` · `T05-QuizPre` · `T05b-QuizQuestion` · `T05c-QuizResult` ·
-`T06-EvidenceCriteriaList` · `T06b-EvidenceCapture` · `T06c-EvidenceCapturePhone` ·
-`T06d-EvidenceNotMet` · `T06e-EvidenceResubmit` · `T06f-AttemptHistory` · `T07-Portfolio` ·
-`T08-Certificates` · `T09-PublicVerify` · `T10-FundingStatus` · `T10b-EligibilitySelfCheck` ·
-`T10c-DocumentChecklist` · `T11-Account` · `T12-SignUp`
+**Section 4 · Admin — ADM, 14**
+`ADM01-Shell` (sidebar section grouping, Quick Create as a real CTA pill, template-style header icon
+buttons — backlog items 1–4) · `ADM02-Dashboard` · `ADM03-Learners` · `ADM04-LearnerDetail` ·
+`ADM05-Courses` · `ADM06-CurriculumBuilder` · `ADM07-CriteriaAuthoring` · `ADM08-ReviewQueue` ·
+`ADM09-PerCriterionReview` · `ADM10-PhotoAnnotation` · `ADM11-Pathway` · `ADM12-Cohorts` ·
+`ADM13-Audit` · `ADM14-Roles`
 
-### `admin` — Admin
+**`ADM02-Dashboard` draws the decided `/dashboard/default` structure** — `MetricCards`,
+`PerformanceOverview`, `SubscriberOverview` — **not** the dashboard currently in the codebase. The
+academy-shaped `DashboardView.tsx` is being replaced entirely, which deletes backlog items 6 and 7
+(the blocky Evidence Status chart, the broken avatar stack) rather than fixing them.
+`PerformanceOverview` needs new date-bucketed aggregation; nothing in `src/lib/data/progress.ts`
+buckets activity by date.
 
-Drawn from the template plus the backlog items. **`A01-Dashboard` draws the decided
-`/dashboard/default` structure — `MetricCards`, `PerformanceOverview`, `SubscriberOverview` — not
-the dashboard currently in the codebase.** The current academy-shaped `DashboardView.tsx` is being
-replaced entirely, which also deletes backlog items 6 and 7 (the blocky Evidence Status chart and
-the broken avatar stack) rather than fixing them.
+**Section 5 · Coordinator — CRD, 5**
+`CRD01-CaseList` · `CRD02-CaseDetail` · `CRD03-DocumentReview` · `CRD04-StatusRecording` ·
+`CRD05-StalledCases`
 
-`A00-Shell` (sidebar with section grouping, Quick Create as a real CTA pill, template-style header
-icon buttons — backlog items 1–4) · `A01-Dashboard` · `A02-Learners` · `A03-LearnerDetail` ·
-`A04-Courses` · `A05-CurriculumBuilder` · `A06-CriteriaAuthoring` · `A07-ReviewQueue` ·
-`A08-PerCriterionReview` · `A09-PhotoAnnotation` · `A10-Pathway` · `A11-Cohorts` ·
-`A12-Reporting` · `A13-Audit` · `A14-Roles` · `A15-Settings`
+**Section 6 · WIOA configuration — WIOA, 4**
+`WIOA01-Boards` · `WIOA02-BoardDetail` · `WIOA03-DocumentRequirements` · `WIOA04-EmailTemplate`
 
-### `staff` — Funding staff
+**Section 7 · Partner staff — PTN, 2**
+`PTN01-Roster` (restricted — no funding amounts) · `PTN02-LearnerDetail`
 
-`W01-CaseList` · `W02-CaseDetail` · `W03-DocumentReview` · `W04-StatusRecording` ·
-`W05-StalledCases` · `W06-ImpactReporting` · `W07-Boards` · `W08-BoardDetail` ·
-`W09-DocumentRequirements` · `W10-EmailTemplate` ·
-`W11-PartnerRoster` (restricted — no funding amounts) · `W12-PartnerLearnerDetail`
+**Section 8 · Reports and settings — RPT 2, SET 1**
+`RPT01-AdminReporting` · `RPT02-FundingImpact` · `SET01-AdminSettings`
 
-### `journeys` — Journeys
-
-Wide strips, screen to screen. `J01`–`J10` map **exactly** onto the build plan's ten steps (sign up
-→ match board → outreach and documents → eligibility review → funding approved → enrolled → lessons
-and quiz → practical evidence → admin review → certificate), plus `J11-EvidenceLoop` (capture →
-review → re-shoot only the failures) and `J12-ReviewLoop` (the reviewer's side).
+**Section 9 · Journeys — JRN, 12.** Gate NFCAP-5.
+`JRN01`–`JRN10` map **exactly** onto the build plan's ten steps (sign up → match board → outreach
+and documents → eligibility review → funding approved → enrolled → lessons and quiz → practical
+evidence → admin review → certificate), plus `JRN11-EvidenceLoop` (capture → review → re-shoot only
+the failures) and `JRN12-ReviewLoop` (the reviewer's side).
 
 ## Frame sizes and layout
 
@@ -149,33 +200,30 @@ review → re-shoot only the failures) and `J12-ReviewLoop` (the reviewer's side
 | Reference captures | `1700 × ~1650` | |
 | Journey strip | `~1324 × 700` | `is_interactive: true` |
 
-80px between frames in a row, 120px between rows. Band titles are `title1` notes at `x: 0`, at
-least 223px above their row, `maxW` set to the row width. No frame may overlap another on the same
-page.
+80px between frames in a row, 120px between rows. Section titles are `title1` notes at `x: 0`, at
+least 223px above their row, `maxW` set to the row width. No frame may overlap another on its page.
 
-## Build order
+## Approval, per board
 
-1. **`project/nfcap-app.css`** — the shared stylesheet. Not a board, but first: everything inherits
-   from it and it cannot be retrofitted across 87 boards.
-2. **`refs`** — gated on the capture run. Do it early; the palette decision in step 3 should be made
-   with the captures on screen.
-3. **`fnd`** — the palette and component states get settled here, visibly, on boards.
-4. **`trainee`** — the current revamp scope.
-5. **`journeys` J06–J10** — validate the trainee screens against the build plan's own steps. Gaps
-   found here are cheap; gaps found in code are not.
-6. **`admin`**, then **`staff`**, then **`journeys` J01–J05**.
+1. A canvas comment **"Approved"** from Manjila, or from Sadin where he reviews.
+2. Copied into the **Approved** column of `docs/MOCKUP-INDEX.md` with who and when.
+3. Changing an approved board needs a **fresh** approval, recorded the same way.
 
-Multiple sessions: foundations ≈ one, trainee two to three, admin two. Artboards are written and
-published **one at a time** — the artifact type forbids two writes in a row.
+Before approval, each board is checked against the build plan (authority order above) and against
+the **100%-match rule**: layout, copy and states are binding; **mock data is not**. Compare real
+screenshots with boards, never an agent's description of a board.
+
+Every screen board must include its **phone, empty, error and permission** states — drawn up front,
+not added later. This is where Zone POS lost the most rework.
 
 ## Pipeline: screenshots into the canvas
 
-Two halves joined by a file path on disk. Either half can be swapped for manual work; a screenshot
-taken by hand enters at step 2 and the result is identical.
+Two halves joined by a file path on disk. A screenshot taken by hand enters at step 2; the result is
+identical.
 
 1. **Capture** — gstack `browse`: `$B screenshot <path>`, or `$B responsive <prefix>` for
-   375 / 768 / 1440 in one command. Output lands in `.gstack/browse-reports/<stamp>/screenshots/`.
-   JPEG quality 60. Tooling decision, Claude-in-Chrome fallback trigger and the ToS note are in
+   375 / 768 / 1440 in one command. Write to the session scratchpad, not the repo. JPEG quality 60.
+   Tooling decision, the Claude-in-Chrome fallback trigger and the ToS note are in
    `LEARNER_UI_REFERENCES.md` → *Capture tooling*.
 2. **Upload** — one Artifact publish per batch, `asset: true` with `file_paths`, **max 25 files per
    call**; each returns a `/_blob/<id>`.
@@ -183,56 +231,17 @@ taken by hand enters at step 2 and the result is identical.
    with id + title + one-line note per capture. Never a `data:` URI, never a local filename.
 4. **Publish** the board; send the index only when the layout changes.
 
-Limits: 25 assets per call, 15MB per binary file, 16MB per call, 512 files and 256MB per canvas. At
-JPEG q60 none of these bite.
+Limits: 25 assets per call, 15MB per binary file, 16MB per call, 512 files and 256MB per canvas.
 
-## Open questions
+## Syncing boards back into the repo
 
-### Blocks work now — answer these three first
-
-| # | Question | Blocks | Who |
-| --: | --- | --- | --- |
-| 1 | **How are open courses discovered?** The build plan's step 6 has a non-WIOA path ("signs up and enrols directly"), so some course-listing surface may be needed. Do **not** delete `src/app/learner/explore/` until this is answered. | `T01`, `T02`, `T12` | NFCAP / product |
-| 2 | **Do Home and My Learning stay separate screens?** For a single assigned pathway, Home risks being a thin wrapper over the pathway list. | `T01`, `T02` | Us |
-| 3 | **Does the new palette propagate into admin?** Admin is on a corporate shadcn template; trainee is getting ink + one accent. One foundations page or two. **Recommendation: propagate** — one token set, two densities. | `fnd` page shape, all `A*` and `W*` | Us |
-
-### Blocks specific boards, due with its phase
-
-| # | Question | Blocks | Who |
-| --: | --- | --- | --- |
-| 4 | **Pathway count** — more than one training pathway? Build plan decision, needed before Phase 1; gates the Multi-Pathway add-on. | `T02`, `A10` | NFCAP |
-| 5 | **Photo or video evidence?** Build plan puts the media-delivery decision inside Phase 3 (Cloudflare Stream vs. Mux, adaptive HLS either way). Video changes capture and review. | `T06*`, `A08`, `A09` | NFCAP + us |
-| 6 | **Credential expiry and portfolio sharing** — Phase 4. Expiry adds renewal states; sharing adds a public surface. | `T07`, `T08`, `T09` | NFCAP |
-| 7 | **Cohort intake model** — Phase 6. | `A11` | NFCAP |
-| 8 | **Social Security proof** — the board checklist requires proof of an SSN while the No-SSN rule forbids storing one; three options are in the build plan. Whatever is chosen shows on the checklist board. | `T10c`, `W03`, `W09` | NFCAP, before Phase 1 |
-| 9 | **Is Portfolio grouped by course or by date?** Depends on the reviewer-queue shape, so it can wait until `A07` is drawn. | `T07` | Us, after `A07` |
-| 10 | **Logo colours** — dropping the client's logo palette from their own product is their call. | `fnd` | NFCAP |
-
-### Settled — do not reopen
-
-- **Authority:** build plan for scope and behaviour, canvas for visual.
-- **Brand:** navy/red dropped; ink + one accent + reserved status triad; Geist kept; dark mode out.
-- **Capture tooling:** gstack `browse`, Claude-in-Chrome as the named fallback. REA rejected
-  (reverse-engineering tool; conflicts with the no-copying rule).
-- **Admin reference:** `studio-admin.arhamkhnz.com`, already built against.
-- **Admin dashboard:** full swap to the template's `/dashboard/default` structure. The current
-  academy-shaped dashboard is not being kept.
-- **References:** 4 visual + 6 structural, listed in `LEARNER_UI_REFERENCES.md`, with 11 rejected
-  candidates recorded there with reasons.
-
-### Housekeeping — these files now contradict the above
-
-*Both resolved 2026-11-18 (commit `d496b8e`):*
-
-- `docs/design/NFCAP_DESIGN_SYSTEM.md` now carries a superseded banner naming what survives (the
-  WCAG contrast computations, the dual-tone focus ring, the four card states) and what is
-  historical.
-- `docs/build/UI_REVAMP_SESSION_LOG.md`'s learner section is banner-ed as superseded, pointing at
-  this file and `LEARNER_UI_REFERENCES.md`, and its next-session list is rewritten.
+Only once a QC harness exists (its own ticket): Artifact `read` on the canvas `url` with `paths` =
+`canvas.json`, `nfcap.css`, the shared imports and the boards, `out_dir: qc/boards`; write the canvas
+version to `qc/boards/VERSION`; keep `qc/boards/` git-ignored.
 
 ## Execution checklist
 
-Run top to bottom. **After every task**, report in this format, then continue — never batch several
+Run top to bottom. **After every task** report in this format, then continue — never batch several
 tasks into one report:
 
 ```
@@ -244,125 +253,140 @@ BLOCKED — <nothing, or the exact question needed>
 
 ### Hard stop rules
 
-1. **⚑ STOP before creating the canvas artifact (task 2.1).** Say that the artifact is about to be
-   created, with its intended title, and wait for an explicit go. It is the one irreversible,
-   outward-facing step in this plan.
-2. **⚑ STOP before any browser action that writes to a real account** — starting a quiz, marking a
-   lesson complete, submitting a form. Screenshots are read-only; those are not. Name the exact
-   action and wait.
-3. **⚑ STOP before locking the palette (task 4.1).** The accent is a one-way door for every board
-   after it. Show the candidate against the captures and wait for a yes.
-4. **Never two file writes in a row** when building artboards — write one, publish it, then the
-   next. The artifact type forbids batching.
-5. **Never verify unless asked** — do not read boards back, re-render, screenshot the canvas or open
-   it to check. If verification seems needed, ask first.
-6. **One page at a time.** Do not start a later page because an earlier one is blocked. Report the
+1. **⚑ NOTHING IS DRAWN INTO THE CANVAS UNTIL THE DESIGN IS APPROVED.** For every page, first
+   produce **2–3 mockup variants as throwaway previews**, show them, wait. Only the chosen variant
+   becomes a board. Variants live outside the canvas — local HTML in the scratchpad or a gstack
+   comparison board — never as extra artboards. The REF section is exempt: captures, not design.
+2. **⚑ STOP before creating or first writing to the canvas.** It is Manjila's artifact in her
+   account; this session does not create it unprompted.
+3. **⚑ STOP before locking the palette.** The accent is a one-way door for every board after it.
+4. **⚑ STOP before any browser action that writes to a real account** — starting a quiz, marking a
+   lesson complete, submitting a form. Screenshots are read-only; those are not.
+5. **Never two file writes in a row** when building artboards — write one, publish it, then the next.
+6. **Never verify unless asked** — do not read boards back, re-render or screenshot the canvas.
+7. **One gate at a time.** Do not start a later gate because an earlier one is blocked. Report the
    block.
-7. **Do not commit or push** unless asked.
-8. **⚑ NOTHING IS DRAWN INTO THE CANVAS UNTIL THE DESIGN IS APPROVED.** The canvas holds *final*
-   design only. For every screen or page, first produce **2–3 mockup variants as throwaway
-   previews**, show them, and wait. Only the chosen variant becomes a board. Variants live outside
-   the canvas — local HTML files in the scratchpad or a gstack comparison board — never as extra
-   artboards. This applies to the `fnd`, `trainee`, `admin`, `staff` and `journeys` pages. The
-   `refs` page is exempt: it holds captured screenshots, not design.
+8. **Write every approved plan to `docs/plans/` or the ticket the moment it is approved.** Chat is
+   not storage — Zone POS lost two approved plans to cleared context.
+9. **Do not commit or push** unless asked. Do not hand-edit `tasks/TRACKER.md`. The repo is public
+   today: do not commit the tracker until Sadin confirms it is private.
 
-### Stage 0 — Setup
+### Gate NFCAP-3 — Sitemap
 
 | Task | Do | Needs user |
 | --- | --- | --- |
-| 0.1 | Decide the capture directory. **Use the session scratchpad, not the repo** — the files are disposable once uploaded and nothing binary belongs near git. If the repo is used anyway, add `.gstack/` to `.gitignore` first. | no |
-| 0.2 | Build gstack's browser: `cd ~/.claude/skills/gstack/browse && ./setup`, then confirm `READY: <path>`. `bun` and `node` are already installed. | no |
+| 3.1 | Enumerate every route under `src/app/` and cross-reference the build plan's 65 features. Produce `docs/SITEMAP.md`: route → screen → board → ticket → phase → roles, plus numbered journeys (J1…) and rules (R1…). | no |
+| 3.2 | Audit each screen against the code on `stage`: mark `exists`, `extend` or `new`. Scaffold `docs/MOCKUP-INDEX.md` with the board list, phase and status; Approved column empty. | no |
+| 3.3 | Report the board count. If it is materially above 92, say so — it bears on the end-of-December timeline flagged in DEV-APPROACH. | no |
+| 3.4 | Boards `SITE01`–`SITE05`, once the canvas exists (rule 2). | **yes** |
 
-### Stage 1 — Captures that need no login
-
-`$B responsive <prefix>` wherever mobile/tablet/desktop matters; JPEG quality 60.
+### Capture run — feeds gate NFCAP-4, runs any time
 
 | Task | Target | Shots |
 | --- | --- | --: |
-| 1.1 | **Codecademy** — career-path syllabus with completed + current + locked steps in one frame; what a locked step says when clicked | 3 |
-| 1.2 | **Moodle** `demo.moodle.net` — set an access restriction as teacher, then capture the **student-side** locked state; plus activity-completion settings | 4 |
-| 1.3 | **OneFile** — public provider guides (Lincoln resources hub, NHS NSHCS): the trainee upload/mapping flow **and** the assessor review flow | 6 |
-| 1.4 | **GOV.UK Design System** — one-thing-per-page, task list, check-your-answers, error summary | 4 |
-| 1.5 | **Credly** — a public badge verification page, as an anonymous visitor | 2 |
-| 1.6 | **Canvas** — rubric, submission and quiz-settings documentation | 3 |
-| 1.7 | **`studio-admin.arhamkhnz.com`** — sidebar/shell, `/dashboard/default` (all three components), one data-table page. Responsive. | 6 |
+| C.0 | Build gstack's browser: `cd ~/.claude/skills/gstack/browse && ./setup` → `READY: <path>`. `bun` and `node` are installed. | — |
+| C.1 | **Codecademy** — career-path syllabus with completed + current + locked steps in one frame; what a locked step says when clicked | 3 |
+| C.2 | **Moodle** `demo.moodle.net` — set an access restriction as teacher, capture the **student-side** locked state; plus activity-completion settings | 4 |
+| C.3 | **OneFile** — public provider guides (Lincoln, NHS NSHCS): the trainee upload/mapping flow **and** the assessor review flow | 6 |
+| C.4 | **GOV.UK Design System** — one-thing-per-page, task list, check-your-answers, error summary | 4 |
+| C.5 | **Credly** — a public badge verification page, as an anonymous visitor | 2 |
+| C.6 | **Canvas** — rubric, submission and quiz-settings documentation | 3 |
+| C.7 | **`studio-admin.arhamkhnz.com`** — sidebar/shell, `/dashboard/default` (all three components), one data-table page. Responsive. | 6 |
+| C.8 | **Coursera and Udemy**, 13 shots — needs a signed-in session: `$B connect`, then the user signs in (`$B handoff` → sign in → `$B resume`). **⚑ Stop before any quiz attempt.** If the sites block the automated Chromium, stop and switch to the Claude-in-Chrome fallback or manual capture; do not retry repeatedly. | 13 |
 
-Report the file list with each image shown inline, so the user sees what was captured before
-anything is uploaded.
+Report the file list with each image shown inline before anything is uploaded. Then upload and build
+the REF boards (pipeline above).
 
-### Stage 2 — Create the canvas and build `refs`
-
-| Task | Do | Needs user |
-| --- | --- | --- |
-| 2.1 | **⚑ STOP.** Announce: about to create a Design canvas titled **`NFCAP LMS Design`**. Wait for go. | **yes** |
-| 2.2 | Create it from the Design artifact type with that title. Record the URL. | no |
-| 2.3 | Upload the Stage 1 captures as assets, batches of ≤25. Record each `/_blob/<id>` against its shot. | no |
-| 2.4 | Write `project/canvas.json` (six pages, band notes) then `NF-R01` … `NF-R09`, **one board per publish**. `R01`–`R03` stay placeholders until Stage 5. | no |
-| 2.5 | Report the canvas URL and board count. | no |
-
-### Stage 3 — Decision gate (blocking)
+### Gate NFCAP-4 — Design direction
 
 | Task | Do | Needs user |
 | --- | --- | --- |
-| 3.1 | Ask open questions **1, 2 and 3** (open-course discovery; Home vs My Learning; palette propagation into admin). Do not proceed on assumptions. | **yes** |
+| 4.1 | Run **`/design-consultation`** against *Brand status* in `LEARNER_UI_REFERENCES.md` and the REF boards. The old design system is dropped — do not read tokens from it (see **Brand: settled** above). | no |
+| 4.2 | **⚑ STOP.** Show **2–3 palette/type variants** as previews, not boards. Wait for the pick. | **yes** |
+| 4.3 | Write `project/nfcap.css` from the approved variant. | no |
+| 4.4 | **⚑ STOP.** Draw 2–3 variants of **one** representative sheet (`FND06-CourseCards`, the four states). It sets the house style for the other 13. | **yes** |
+| 4.5 | `FND01` … `FND14`, one board per publish. Two token sets (Learner/Coursera-leaning, Admin+Coordinator+Partner/studio-admin-leaning), one shared status triad — see "Settled," palette does not propagate. | no |
+| 4.6 | Run **`/design-review`** over the finished section and fix what it finds. Record approvals in MOCKUP-INDEX. | no |
 
-### Stage 4 — Foundations
-
-| Task | Do | Needs user |
-| --- | --- | --- |
-| 4.1 | Run **`/design-consultation`** (gstack) against `LEARNER_UI_REFERENCES.md`'s brand direction and the `refs` boards. It proposes a complete system and generates font + colour previews. | no |
-| 4.2 | **⚑ STOP.** Show **2–3 palette/type variants** as previews — not boards. Wait for the pick. The accent is a one-way door for every board after it. | **yes** |
-| 4.3 | Write `project/nfcap-app.css` from the approved variant. Everything inherits from it. | no |
-| 4.4 | **⚑ STOP.** Draw 2–3 variants of **one** representative component sheet (`F06-CardsCourse`, the four states) as previews. Wait for the pick — it sets the house style for the other 13. | **yes** |
-| 4.5 | `F01` … `F14`, one board per publish, in the approved style. `F14-Density` depends on question 3. | no |
-| 4.6 | Run **`/design-review`** (gstack) over the finished page and fix what it finds. | no |
-
-### Stage 5 — Captures that need a login
+### Gate NFCAP-5 — Journeys
 
 | Task | Do | Needs user |
 | --- | --- | --- |
-| 5.1 | `$B connect` for the headed window; the user signs into Coursera and Udemy (`$B handoff` → sign in → `$B resume`). Never type their credentials. | **yes** |
-| 5.2 | Capture the 13 shots listed in `LEARNER_UI_REFERENCES.md`. **⚑ STOP before any quiz attempt** (rule 2). | partly |
-| 5.3 | Upload, then fill in boards `R01`–`R03`. | no |
-| 5.4 | If the sites block the automated Chromium: stop, report it, switch to the Claude-in-Chrome fallback or manual capture. Do not retry repeatedly. | **yes** |
+| 5.1 | `JRN01`–`JRN12`, one board per publish, from the build plan's ten steps plus the two loops. One journey per role is the DEV-APPROACH requirement; the ten steps satisfy the trainee and funding paths. | no |
+| 5.2 | Reconcile against `SITE02-Journeys` and `docs/SITEMAP.md`'s numbered journeys. Any screen a journey needs that the sitemap lacks is a gap — raise it, don't invent it. | no |
 
-### Stages 6–10 — Screens
+### Gate NFCAP-6 — All mockups
 
-| Stage | Page | Boards | Depends on |
-| --- | --- | --: | --- |
-| 6 | `trainee` | 24 | Questions 1 and 2; Stage 4 |
-| 7 | `journeys` `J06`–`J10` | 5 | Stage 6 — validates it against the build plan's own steps |
-| 8 | `admin` | 16 | Stage 4. **`A01-Dashboard` draws the decided `/dashboard/default` structure, not the dashboard in the codebase** |
-| 9 | `staff` | 12 | Stage 8 |
-| 10 | `journeys` `J01`–`J05` | 5 | Stage 9 |
-
-Before starting any of these stages, write a short per-board brief — two or three lines each: what
-the screen shows, which reference it draws on, which states appear. The board names above are a
-list, not a spec; 24 trainee boards drawn from names alone will drift.
-
-### The design loop, per page
-
-Every screen page runs this loop. **Nothing enters the canvas before step 4.**
+Per section, in this order: **LRN → ADM → CRD + WIOA + PTN → RPT + SET**. Each section runs the
+design loop below. Boards marked `exists` or `extend` are not redrawn from scratch.
 
 | Step | Do | Tool | Needs user |
 | --: | --- | --- | --- |
-| 1 | Write the per-board briefs for the page. | — | no |
-| 2 | Pick the 2–3 **anchor screens** for the page (for `trainee`: `T01-Home`, `T04-Player`, `T06b-EvidenceCapture`) and produce **2–3 variants of each** as throwaway previews. | **`/design-shotgun`** — generates variants, opens a comparison board, collects structured feedback | no |
-| 3 | **⚑ STOP.** Show the variants. Wait for the pick, including any "variant 2's header with variant 1's card" style mixing. | — | **yes** |
-| 4 | Draw the page's boards in the approved style, one board per publish. Derivative screens follow the anchors without their own variant round. | **`/design-html`** for production-quality markup | no |
-| 5 | Review the finished page and fix what it finds. | **`/design-review`** | no |
+| 1 | Write the per-board briefs for the section — two or three lines each: what the screen shows, which reference it draws on, which states appear. The board names above are a list, not a spec. | — | no |
+| 2 | Pick the 2–3 **anchor screens** (for LRN: `LRN01-Home`, `LRN04-Player`, `LRN06b-EvidenceCapture`) and produce **2–3 variants of each** as throwaway previews. | **`/design-shotgun`** | no |
+| 3 | **⚑ STOP.** Show the variants. Wait for the pick, including mixing ("variant 2's header with variant 1's card"). | — | **yes** |
+| 4 | Draw the section's boards in the approved style, one board per publish, each with its phone, empty, error and permission states. | **`/design-html`** | no |
+| 5 | Review, fix, then record each approval in `MOCKUP-INDEX.md`. | **`/design-review`** | partly |
 
-Available gstack design skills, and what each is for here: **`/design-consultation`** (propose a
-system, font and colour previews — Stage 4) · **`/design-shotgun`** (2–3 variants, comparison board,
-structured feedback — step 2 above) · **`/design-html`** (production-quality HTML/CSS — step 4) ·
+gstack design skills and what each is for: **`/design-consultation`** (propose a system, font and
+colour previews — gate NFCAP-4) · **`/design-shotgun`** (variants, comparison board, structured
+feedback — step 2) · **`/design-html`** (production-quality HTML/CSS — step 4) ·
 **`/design-review`** (visual QA: spacing, hierarchy, inconsistency, AI-slop patterns — step 5) ·
-**`/ui-ux-pro-max`** and **`/impeccable`** (pattern and palette reference when a specific question
-comes up).
+**`/ui-ux-pro-max`** and **`/impeccable`** (pattern and palette reference for a specific question).
 
-Variants are **not** artboards. They live as local HTML in the scratchpad or on a gstack comparison
-board, and they are thrown away once the pick is made. The canvas gets the winner only.
+## Open questions
 
-### Effort
+### Blocks work now
 
-Roughly eight to nine sessions end to end. The canvas exists and is useful after Stage 2 — the
-`refs` page is what the Stage 4 palette decision gets made against.
+| # | Question | Blocks | Who |
+| --: | --- | --- | --- |
+| 1 | **How are open courses discovered?** The build plan's step 6 has a non-WIOA path ("signs up and enrols directly"), so a course-listing surface may be needed. Do **not** delete `src/app/learner/explore/` until answered. | `LRN01`, `LRN02`, `LRN13` | NFCAP |
+| 2 | **Do Home and My Learning stay separate screens?** For a single assigned pathway, Home risks being a thin wrapper over the pathway list. | `LRN01`, `LRN02` | Us |
+
+### Blocks specific boards, due with its phase
+
+| # | Question | Blocks | Who |
+| --: | --- | --- | --- |
+| 4 | **Pathway count** — more than one training pathway? Needed before Phase 1; gates the Multi-Pathway add-on. | `LRN02`, `ADM11` | NFCAP |
+| 5 | **Photo or video evidence?** Phase 3 media decision (Cloudflare Stream vs. Mux, adaptive HLS either way). Video changes capture and review. | `LRN06*`, `ADM09`, `ADM10` | NFCAP |
+| 6 | **Credential expiry and portfolio sharing** — Phase 4. | `LRN07`, `LRN08`, `LRN09` | NFCAP |
+| 7 | **Cohort intake model** — Phase 6. | `ADM12` | NFCAP |
+| 8 | **Social Security proof** — the checklist requires proof of an SSN while the No-SSN rule forbids storing one. | `LRN10c`, `CRD03`, `WIOA03` | NFCAP, before Phase 1 |
+| 9 | **Portfolio grouped by course or by date?** Depends on the reviewer-queue shape. | `LRN07` | Us, after `ADM08` |
+| 10 | **Logo colours** — dropping the client's logo palette from their own product is their call. | `FND01` | NFCAP |
+
+### Settled — do not reopen
+
+- **Process:** DEV-APPROACH v1.0 (OPS-177). Two sessions, four gates, Manjila owns the canvas.
+- **Authority:** ticket AC > board > SITEMAP > build plan.
+- **Capture tooling:** gstack `browse`, Claude-in-Chrome as the named fallback. REA rejected
+  (reverse-engineering tool; conflicts with the no-copying rule).
+- **Admin reference:** `studio-admin.arhamkhnz.com`, already built against.
+- **Admin dashboard:** full swap to the template's `/dashboard/default` structure.
+- **References:** 4 visual + 6 structural + the admin template, in `LEARNER_UI_REFERENCES.md`, with
+  11 rejected candidates recorded there with reasons.
+- **Palette does NOT propagate to admin (decided 2026-11-19, user, in session — reverses the
+  provisional "propagate" recommendation that stood here before):** two visual identities, not one
+  shared palette with just two densities. Learner matches Coursera — white/light background, one
+  hue accent, locked 2026-11-19 (user), gate 4.2: `#2563EB` ("Institutional Blue"), matching
+  Coursera's own confirmed accent. Admin, Coordinator and Partner match
+  `studio-admin.arhamkhnz.com`'s own identity, confirmed near-monochrome in its real captures
+  (`REF08-StudioAdminTemplate`) — graphite/black carries the "action" weight there, no hue accent.
+  **The status triad (green/amber/red) stays shared across every role** — a "Problem" flag must
+  mean the same thing everywhere. Density (`FND14-Density`) now follows naturally from each
+  system's own reference (Coursera airier, the admin template denser) rather than being a separate
+  open question — `FND14-Density` is no longer blocked.
+- **State frames (decided 2026-11-18, user, in session):** one board per screen, with its desktop,
+  phone, empty, error and permission states as **frames on that same board** — not separate
+  artboards. A separate phone board is kept only where the phone layout is a genuinely different
+  design (`LRN04b`, `LRN06c`, and `LRN06b` if it proves so). This keeps the board count at 92–109,
+  not ~150. Boards map 1:1 to `docs/SITEMAP.md` rows.
+
+## Effort and timeline
+
+Roughly eight to nine sessions for 92 boards. DEV-APPROACH's schedule: week of 18 Nov sitemap then
+design direction; week of 23 Nov journeys and first mockups.
+
+⚠️ DEV-APPROACH already flags that the build plan's ~1,431 hours (~18 weeks, two engineers) does not
+fit the end-of-December delivery date, and that Manjila and Sadin must confirm what actually ships.
+Task 3.3's board count is the first hard number that bears on it.

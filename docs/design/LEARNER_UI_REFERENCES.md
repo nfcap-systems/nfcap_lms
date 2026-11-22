@@ -12,7 +12,14 @@ reference, which was already chosen and built against — see *Admin and staff r
 Admin punch-list items stay in `docs/build/ADMIN_UI_REVAMP_BACKLOG.md`; this doc only records what
 admin is modelled on.
 
-The canvas that renders all of this is planned in `docs/design/DESIGN_CANVAS_ROADMAP.md`.
+The canvas that renders all of this is planned in `docs/design/DESIGN_CANVAS_ROADMAP.md`, and the
+process both sit inside — roles, the four gates, canvas ownership, approval — is
+`docs/DEV-APPROACH.md`, which **outranks both**.
+
+**Brand, settled 2026-11-18:** `NFCAP_DESIGN_SYSTEM.md` and `NFCAP_DESIGN_TOKENS.md` are **dropped**
+(amended into DEV-APPROACH gate NFCAP-4). The design direction is created new in the canvas — its
+`FND` section is the direction, and `project/nfcap.css` becomes the source of truth once approved.
+*Brand status* below is the **starting brief** for that work, not a finished palette.
 
 ## Authority
 

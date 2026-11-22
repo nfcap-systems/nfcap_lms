@@ -1,10 +1,16 @@
-# NFCAP LMS — Design System (SUPERSEDED for colour and type)
+# NFCAP LMS — Design System (DROPPED)
 
-> **Status as of 2026-11-18: superseded, not deleted.** The navy/red brand direction and the type
-> scale below were **dropped** for the UI revamp. The replacement direction — graphite ink for
-> structure, one mid-tone accent for action, and a reserved status triad (green complete / amber
-> pending / red problem) — is in `docs/design/LEARNER_UI_REFERENCES.md` → *Brand status*, and is not
-> locked until the reference screenshots are collected (`docs/design/DESIGN_CANVAS_ROADMAP.md`).
+> **Status as of 2026-11-18: DROPPED, not deleted.** Decided by Manjila in session and amended into
+> `docs/DEV-APPROACH.md` gate NFCAP-4, which previously named this file as the source of design
+> direction. `NFCAP_DESIGN_TOKENS.md` is equally STALE.
+>
+> **The design direction is now created new in the mockup canvas.** Its `FND` section *is* the
+> design direction, and once approved its tokens in `project/nfcap.css` are the source of truth for
+> every board and for the code that follows. No markdown file holds the palette any more.
+>
+> The starting brief is `docs/design/LEARNER_UI_REFERENCES.md` → *Brand status*: graphite ink for
+> structure, one mid-tone accent for action, a reserved status triad (green complete / amber pending
+> / red problem). Plan: `docs/design/DESIGN_CANVAS_ROADMAP.md`.
 >
 > **This file is kept because three things in it are not brand opinions and still apply:**
 > 1. The **WCAG contrast computations** below — the only ones that exist for this codebase. Any new

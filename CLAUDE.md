@@ -19,6 +19,7 @@ Read `docs/HANDOFF.md` first — it is the onboarding entry point. Then, by ques
 | Phase 1 execution status — what's done, what's open, why | `docs/build/PHASE_1_PROGRESS.md` |
 | Phase 2 execution status — what's done, what's open, why | `docs/build/PHASE_2_PROGRESS.md` |
 | Phase 3 execution status — what's done, what's open, why | `docs/build/PHASE_3_PROGRESS.md` |
+| **Active:** Phase 3 build + the design-system migration it depends on, started without Plane connected — branch/PR naming, progress log, deliberate deviations from `DEV-APPROACH.md`, and the exact backfill-into-Plane steps | `docs/plans/phase-3-and-design-migration-kickoff.md` |
 | WIOA module shape and closed decisions | `docs/wioa/WIOA_INTEGRATION_PLAN.md`, `docs/build/WIOA_BUILD_WORKFLOW.md` |
 | Design system / tokens | `docs/design/NFCAP_DESIGN_SYSTEM.md` |
 

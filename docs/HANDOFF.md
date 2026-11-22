@@ -8,6 +8,32 @@ notes; this doc is about what the project *is* and *where it stands*.
 
 ---
 
+## 0. Start here (added 2026-11-18)
+
+**How we work** is `docs/DEV-APPROACH.md` — read it straight after this file. It outranks any chat
+message: two Claude sessions (lead/QC and builder), four approval gates, Plane for tickets.
+
+**The current piece of work is the mockup canvas.** Design direction is no longer in a markdown
+file — it is created new in the canvas. In order:
+
+| Read | For |
+| --- | --- |
+| `docs/design/DESIGN_CANVAS_ROADMAP.md` | The execution plan: 92 named boards, the four gates, hard stop rules, the screenshot pipeline, open questions. **Start at gate NFCAP-3, task 3.1.** |
+| `docs/design/LEARNER_UI_REFERENCES.md` | What each screen is modelled on (10 references + the admin template), the brand brief, capture tooling, what was rejected and why |
+| `docs/SITEMAP.md` | Authoritative route → screen → board → ticket → phase → roles map. **Scaffold — filling it is task 3.1.** |
+| `docs/MOCKUP-INDEX.md` | Every board with phase, status, approval. **Scaffold — task 3.2.** Canvas URL goes at the top once it exists. |
+
+**Dropped, do not use as sources:** `docs/design/NFCAP_DESIGN_SYSTEM.md` and
+`docs/design/NFCAP_DESIGN_TOKENS.md`. The first is kept only for its WCAG contrast computations, the
+dual-tone focus-ring technique and the four course-card states.
+
+**Not started:** no canvas exists yet (it belongs in Manjila's claude.ai account, titled
+"NFCAP Mockups"), no screenshots captured, nothing drawn.
+
+**Three open questions** are listed in the roadmap and block specific boards, not the next tasks.
+
+---
+
 ## 1. What is this project?
 
 NFCAP is a real-world organization that trains apprentices for careers in flooring (think:

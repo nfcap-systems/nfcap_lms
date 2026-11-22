@@ -36,8 +36,15 @@ _what we build_. If it conflicts with a chat message, this file wins until someo
 Each step is approved before the next starts. Approvals are recorded on the Plane gate ticket.
 
 1. **Sitemap** (NFCAP-3). Every route, which screen it shows, which role sees it, which plan phase builds it.
-2. **Design direction** (NFCAP-4). Tokens, type, colour, components and states. Source:
-   `docs/design/NFCAP_DESIGN_SYSTEM.md`. `NFCAP_DESIGN_TOKENS.md` is marked STALE: don't use it.
+2. **Design direction** (NFCAP-4). Tokens, type, colour, components and states. ⚠️ **Amended
+   2026-11-18 (Manjila, in session):** `docs/design/NFCAP_DESIGN_SYSTEM.md` is **dropped** along with
+   `NFCAP_DESIGN_TOKENS.md` — both are STALE, don't use them. The design direction is **created new
+   in the canvas**: the `FND` section is the design direction, and once approved its tokens in
+   `project/nfcap.css` are the source of truth. The starting brief for it is
+   `docs/design/LEARNER_UI_REFERENCES.md` → *Brand status* (graphite ink for structure, one mid-tone
+   accent for action, a reserved status triad). Three things survive from the dropped design system
+   and are carried into `FND`: its WCAG contrast computations, the dual-tone focus ring technique,
+   and the four course-card states.
 3. **User journeys** (NFCAP-5). One per role, end to end: learner, admin, coordinator, partner staff, plus
    the WIOA funding flow. Section 2 of the build plan (the 10-step trainee journey) is the starting point.
 4. **All mockups** (NFCAP-6). One board per screen, including phone, empty, error and permission states.
@@ -51,6 +58,13 @@ for screens that already exist are marked `exists` or `extend`, not redrawn from
 **Owner:** Manjila, in her own claude.ai account. She shares it with Sadin with **edit** rights (M: with a
 view-only share, Sadin can't fix a board himself). Put the canvas URL and its owner at the top of
 `docs/MOCKUP-INDEX.md` on day one (M: shared artifacts may not show in someone else's list).
+
+⚠️ **Amended 2026-11-18 (user, in session):** in practice the canvas was created under the Claude
+Code session's own logged-in account, not Manjila's personal claude.ai account — the Artifact tool
+publishes to whatever account the session is authenticated as, and this session has no way to log
+into or target Manjila's account directly. Kept there rather than recreated, since that's the only
+account this tooling can reach. Manjila and Sadin still need **edit** access added from the page's
+Share menu by whoever controls that account — see `docs/MOCKUP-INDEX.md` for the link and status.
 
 **Create it (V):**
 
@@ -71,7 +85,8 @@ view-only share, Sadin can't fix a board himself). Put the canvas URL and its ow
   `SITE05-NavPerRole`.
 - **Section 1, Foundations:** `FND01-Tokens`, `FND02-Buttons`, `FND03-FormControls` and so on. This
   section _is_ the design direction.
-- **Tokens:** one shared `project/nfcap.css` built from `NFCAP_DESIGN_SYSTEM.md`. Every board links it
+- **Tokens:** one shared `project/nfcap.css`, built new in gate NFCAP-4 (see the amendment above;
+  **not** from `NFCAP_DESIGN_SYSTEM.md`, which is dropped). Every board links it
   with `<link rel="stylesheet" href="nfcap.css">`.
 - **Shared parts:** things like the app shell and sidebar are separate `.dc.html` files pulled in with
   `<dc-import>`, and each one also renders as its own board.
