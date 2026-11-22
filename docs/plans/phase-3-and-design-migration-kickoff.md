@@ -97,7 +97,7 @@ state is unverified, say so in the row (e.g., "merge status unverified") rather 
 | Step 1.2 — rebuild `src/components/ui` primitives (Button, Badge, Card, Dialog, Drawer, Field, Input, ProgressBar, Spinner) | `feature/design-system-migration-primitives` | PR #9, merge commit `c5077af` | Merged to `stage` | 2026-11-22 |
 | Step 1.3 — new shared patterns (StateCard/Skeleton, SegmentedToggle, DataTableCard family, ProfileHeader/CompletionRing/ProfileTabs) | `feature/design-system-migration-patterns` | PR #10, merged | Merged to `stage` | 2026-11-22 |
 | Step 1.4 — retrofit Learner shell (`LearnerShell.tsx`, `LearnerHeader.tsx`) to FND13-Shells | `feature/design-system-migration-retrofit-learner` | not yet opened — user paused stage merges 2026-11-22, accumulating on this branch | Committed, pushed, **not merged** | 2026-11-22 |
-| Step 1.4 — retrofit Staff shells (`AppShell`/`Sidebar`/`Header` for Coordinator/Partner, `AppSidebar` for Admin) | — | — | Not started | — |
+| Step 1.4 — retrofit Staff shells (`AppShell`/`Sidebar`/`Header` for Coordinator/Partner) | `feature/design-system-migration-retrofit-learner` | not yet opened — stage merges paused | Committed, pushed, **not merged**. Admin's `AppSidebar` (shadcn) needed no retrofit — already matches via globals.css's own sidebar/primary oklch theme block, the exact source the new tokens' staff oklch values were copied from. | 2026-11-22 |
 
 ## Step 3 — Backfill into Plane, once connected
 
