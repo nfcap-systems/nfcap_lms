@@ -41,28 +41,20 @@ export function Dialog({
       onClick={(event) => {
         if (event.target === ref.current) onClose();
       }}
-      className={cn(
-        'w-full max-w-md rounded-2xl border border-border-subtle bg-bg-card p-0 shadow-elevated backdrop:bg-slate-900/40',
-        className,
-      )}
+      className={cn('modal w-full max-w-md p-0', className)}
     >
-      <div className="flex items-start justify-between gap-4 p-5 pb-0">
+      <div className="flex items-start justify-between gap-4 p-7 pb-0">
         <div>
-          {title && <h2 className="text-base font-semibold text-brand-heading">{title}</h2>}
-          {description && <p className="mt-1 text-sm text-text-secondary">{description}</p>}
+          {title && <h2>{title}</h2>}
+          {description && <p>{description}</p>}
         </div>
-        <button
-          type="button"
-          onClick={onClose}
-          aria-label="Close dialog"
-          className="rounded-md p-1 text-text-muted hover:bg-bg-subtle hover:text-text-primary"
-        >
+        <button type="button" onClick={onClose} aria-label="Close dialog" className="btn-icon">
           <Icon name="x" className="h-4 w-4" />
         </button>
       </div>
-      {children && <div className="p-5">{children}</div>}
+      {children && <div className="p-7 pt-0">{children}</div>}
       {footer && (
-        <div className="flex items-center justify-end gap-3 border-t border-border-subtle p-5">
+        <div className="flex items-center justify-end gap-3 border-t p-7" style={{ borderColor: 'var(--border)' }}>
           {footer}
         </div>
       )}

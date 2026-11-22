@@ -77,7 +77,7 @@ test.describe('WIOA funding status changes', () => {
       // Don't assert the exact server error text — Next.js may redact a thrown Server Action
       // error's message in a production build, so the UI text isn't a reliable signal here. The
       // invariant that actually matters is the DB write being blocked.
-      await expect(page.locator('p.text-status-danger-text')).toBeVisible();
+      await expect(page.locator('p.field-error')).toBeVisible();
 
       await expect
         .poll(

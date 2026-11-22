@@ -35,14 +35,11 @@ export function Drawer({
     >
       <div
         onClick={onClose}
-        className={cn(
-          'absolute inset-0 bg-slate-900/40 transition-opacity',
-          open ? 'opacity-100' : 'opacity-0',
-        )}
+        className={cn('modal-scrim absolute inset-0 transition-opacity', open ? 'opacity-100' : 'opacity-0')}
       />
       <div
         className={cn(
-          'absolute top-0 flex h-full w-full max-w-md flex-col bg-bg-card shadow-elevated transition-transform',
+          'drawer absolute top-0 h-full w-full max-w-md transition-transform',
           side === 'right' ? 'right-0' : 'left-0',
           open ? 'translate-x-0' : side === 'right' ? 'translate-x-full' : '-translate-x-full',
           panelClassName,
@@ -50,26 +47,17 @@ export function Drawer({
         role="dialog"
         aria-modal="true"
       >
-        <div className="flex items-start justify-between gap-4 border-b border-border-subtle p-5">
+        <div className="drawer-header">
           <div>
-            {title && <h2 className="text-base font-semibold text-brand-heading">{title}</h2>}
-            {description && <p className="mt-1 text-sm text-text-secondary">{description}</p>}
+            {title && <h2>{title}</h2>}
+            {description && <p style={{ margin: '4px 0 0', fontSize: 13, color: 'var(--ink-muted)' }}>{description}</p>}
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Close panel"
-            className="rounded-md p-1 text-text-muted hover:bg-bg-subtle hover:text-text-primary"
-          >
+          <button type="button" onClick={onClose} aria-label="Close panel" className="btn-icon">
             <Icon name="x" className="h-4 w-4" />
           </button>
         </div>
-        <div className="flex-1 overflow-y-auto p-5">{children}</div>
-        {footer && (
-          <div className="flex items-center justify-end gap-3 border-t border-border-subtle p-5">
-            {footer}
-          </div>
-        )}
+        <div className="drawer-body">{children}</div>
+        {footer && <div className="drawer-footer">{footer}</div>}
       </div>
     </div>
   );

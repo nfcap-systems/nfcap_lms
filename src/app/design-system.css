@@ -1,0 +1,367 @@
+/* NFCAP design-system component classes — Step 1.2 of
+   docs/plans/phase-3-and-design-migration-kickoff.md's design-system migration: rebuilding
+   src/components/ui/'s primitives to match the canvas's FND01-14 boards.
+   Source of truth: https://claude.ai/artifact/6othp9hKDpwXeLJsWtkt3Y, project/nfcap.css —
+   copied close to verbatim from its component-class section (not the FND-board-only demo
+   layout classes). New shared patterns (data-table, tabs/ring, segmented toggle, icon set,
+   empty/error/loading states) are Step 1.3, not here.
+
+   Depends on design-tokens.css's custom properties, which only resolve to the Learner/Staff
+   values once something sets [data-system="learner"|"staff"] — that wiring is Step 1.4
+   (retrofit), so a component using these classes renders with light-mode fallback values
+   (set below) until a parent sets the attribute. */
+
+:focus-visible {
+  outline: 3px solid var(--focus-ring-outer, #ffffff);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 5px var(--focus-ring-inner, #1f2328);
+}
+
+/* Buttons — FND04 */
+.btn-primary,
+.btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-radius: var(--radius-md);
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 15px;
+  padding: 10px 18px;
+  cursor: pointer;
+  transition: background var(--motion-fast), border-color var(--motion-fast), color var(--motion-fast);
+}
+.btn-primary {
+  background: var(--accent);
+  color: var(--accent-contrast);
+  border: none;
+}
+.btn-primary:hover:not(:disabled) {
+  background: var(--accent-hover);
+}
+.btn-secondary {
+  background: var(--surface);
+  color: var(--ink);
+  border: 1px solid var(--border);
+}
+.btn-secondary:hover:not(:disabled) {
+  background: var(--surface-muted);
+}
+.btn-primary:disabled,
+.btn-secondary:disabled {
+  background: var(--surface-muted);
+  color: var(--ink-faint);
+  border-color: var(--border);
+  cursor: not-allowed;
+}
+.btn-primary.btn-destructive {
+  background: var(--status-problem);
+}
+.btn-primary.btn-destructive:hover:not(:disabled) {
+  background: #991b1b;
+}
+.btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-radius: var(--radius-md);
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 15px;
+  padding: 10px 18px;
+  cursor: pointer;
+  background: transparent;
+  color: var(--ink-muted);
+  border: none;
+}
+.btn-ghost:hover:not(:disabled) {
+  background: var(--surface-muted);
+  color: var(--ink);
+}
+.btn-ghost:disabled {
+  color: var(--ink-faint);
+  cursor: not-allowed;
+}
+.btn-sm {
+  padding: 6px 12px;
+  font-size: 13px;
+}
+.btn-lg {
+  padding: 13px 24px;
+  font-size: 16px;
+}
+.btn-icon {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+.btn-icon:hover:not(:disabled) {
+  background: var(--surface-muted);
+}
+.btn-icon.btn-icon-round {
+  border-radius: var(--radius-full);
+}
+
+/* Status badges and tags — FND07 */
+.badge-complete,
+.badge-pending,
+.badge-problem,
+.badge-neutral,
+.badge-accent {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: var(--radius-full);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.badge-complete {
+  background: var(--status-complete-bg);
+  color: var(--status-complete);
+}
+.badge-pending {
+  background: var(--status-pending-bg);
+  color: var(--status-pending);
+}
+.badge-problem {
+  background: var(--status-problem-bg);
+  color: var(--status-problem);
+}
+.badge-neutral {
+  background: var(--surface-muted);
+  color: var(--ink-muted);
+}
+.badge-accent {
+  background: var(--accent);
+  color: var(--accent-contrast);
+}
+.tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 9px;
+  border-radius: var(--radius-sm);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+/* Cards — FND06's card shell, generalized for Card.tsx */
+.ds-card {
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+.ds-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 20px 0;
+}
+.ds-card-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.ds-card-description {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: var(--ink-muted);
+}
+.ds-card-content {
+  padding: 20px;
+}
+.ds-card-footer {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-top: 1px solid var(--border);
+  padding: 16px 20px;
+}
+
+/* Form controls — FND05. 44px fields, label always above. */
+.field-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.field-input,
+.field-select,
+.field-textarea {
+  width: 100%;
+  box-sizing: border-box;
+  height: 44px;
+  padding: 0 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  font-family: var(--font-body);
+  font-size: 15px;
+  color: var(--ink);
+  background: var(--surface);
+}
+.field-textarea {
+  height: auto;
+  min-height: 96px;
+  padding: 10px 14px;
+  resize: vertical;
+}
+.field-input:focus,
+.field-select:focus,
+.field-textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 20%, transparent);
+}
+.field-input.error,
+.field-textarea.error {
+  border-color: var(--status-problem);
+}
+.field-input:disabled,
+.field-select:disabled,
+.field-textarea:disabled {
+  background: var(--surface-muted);
+  color: var(--ink-faint);
+  cursor: not-allowed;
+}
+.field-hint {
+  display: block;
+  margin-top: 6px;
+  font-size: 12.5px;
+  color: var(--ink-muted);
+}
+.field-error {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 6px;
+  font-size: 12.5px;
+  color: var(--status-problem);
+}
+.field-checkbox {
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  accent-color: var(--accent);
+}
+.dropzone {
+  border: 1.5px dashed var(--border);
+  border-radius: var(--radius-lg);
+  padding: 28px;
+  text-align: center;
+  color: var(--ink-muted);
+  font-size: 14px;
+}
+.dropzone.active {
+  border-color: var(--accent);
+  background: var(--surface-muted);
+}
+
+/* Dialogs and drawers — FND09. Desktop-web idioms: centered modal, edge drawer. */
+.modal-scrim {
+  background: rgba(15, 23, 32, 0.4);
+}
+.modal {
+  background: var(--surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  padding: 28px;
+}
+.modal h2,
+.modal h3 {
+  margin: 0 0 8px;
+  font-family: var(--font-display);
+  font-size: 18px;
+  color: var(--ink);
+}
+.modal p {
+  margin: 0 0 20px;
+  font-size: 14px;
+  color: var(--ink-muted);
+  line-height: 1.5;
+}
+.drawer {
+  background: var(--surface);
+  box-shadow: var(--shadow-lg);
+  display: flex;
+  flex-direction: column;
+}
+.drawer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px 22px;
+  border-bottom: 1px solid var(--border);
+}
+.drawer-header h2,
+.drawer-header h3 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 16px;
+  color: var(--ink);
+}
+.drawer-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 22px;
+}
+.drawer-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  border-top: 1px solid var(--border);
+  padding: 18px 22px;
+}
+
+/* Progress bar — the thin accent-fill bar from FND06's course card */
+.ds-progress-track {
+  height: 6px;
+  width: 100%;
+  background: var(--border);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+}
+.ds-progress-fill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: var(--radius-full);
+  transition: width var(--motion-base);
+}
+
+/* Spinner — FND03's motion register (short, functional), recolored to the shared tokens */
+.ds-spinner {
+  border-radius: 50%;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent);
+  animation: ds-spin 0.6s linear infinite;
+}
+@keyframes ds-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ds-spinner {
+    animation-duration: 1.5s;
+  }
+}

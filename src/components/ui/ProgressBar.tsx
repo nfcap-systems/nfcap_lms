@@ -20,10 +20,12 @@ export function ProgressBar({
   return (
     <div className={cn('w-full', className)}>
       {(label || showPercentage) && (
-        <div className="mb-1.5 flex items-center justify-between text-xs text-text-secondary">
+        <div className="mb-1.5 flex items-center justify-between text-xs" style={{ color: 'var(--ink-muted)' }}>
           {label && <span>{label}</span>}
           {showPercentage && (
-            <span className="font-medium text-text-primary">{Math.round(percentage)}%</span>
+            <span className="font-medium" style={{ color: 'var(--ink)' }}>
+              {Math.round(percentage)}%
+            </span>
           )}
         </div>
       )}
@@ -32,12 +34,9 @@ export function ProgressBar({
         aria-valuenow={value}
         aria-valuemin={0}
         aria-valuemax={max}
-        className="h-2 w-full overflow-hidden rounded-full bg-bg-subtle"
+        className="ds-progress-track"
       >
-        <div
-          className="h-full rounded-full bg-brand-accent transition-all"
-          style={{ width: `${percentage}%` }}
-        />
+        <div className="ds-progress-fill" style={{ width: `${percentage}%` }} />
       </div>
     </div>
   );

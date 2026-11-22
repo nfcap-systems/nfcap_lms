@@ -3,13 +3,15 @@ import { cn } from '@/lib/cn';
 
 export type StatusTone = 'success' | 'pending' | 'restricted' | 'info' | 'danger' | 'neutral';
 
+/** Maps to FND07-StatusBadges' shared triad: complete (green), pending (amber), problem (red),
+ * neutral, and accent (the Learner/Staff accent color, used for "info"/active-state badges). */
 const toneClasses: Record<StatusTone, string> = {
-  success: 'bg-status-success-bg text-status-success-text border-status-success-border',
-  pending: 'bg-status-pending-bg text-status-pending-text border-status-pending-border',
-  restricted: 'bg-status-restricted-bg text-status-restricted-text border-status-restricted-border',
-  info: 'bg-status-info-bg text-status-info-text border-status-info-border',
-  danger: 'bg-status-danger-bg text-status-danger-text border-status-danger-border',
-  neutral: 'bg-bg-subtle text-text-secondary border-border-subtle',
+  success: 'badge-complete',
+  pending: 'badge-pending',
+  restricted: 'badge-problem',
+  danger: 'badge-problem',
+  info: 'badge-accent',
+  neutral: 'badge-neutral',
 };
 
 export type BadgeProps = HTMLAttributes<HTMLSpanElement> & {
@@ -17,14 +19,5 @@ export type BadgeProps = HTMLAttributes<HTMLSpanElement> & {
 };
 
 export function Badge({ className, tone = 'neutral', ...props }: BadgeProps) {
-  return (
-    <span
-      className={cn(
-        'inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs font-medium',
-        toneClasses[tone],
-        className,
-      )}
-      {...props}
-    />
-  );
+  return <span className={cn(toneClasses[tone], className)} {...props} />;
 }
