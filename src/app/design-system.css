@@ -703,3 +703,180 @@
   border-bottom-color: var(--ink);
   font-weight: 600;
 }
+
+/* ============================================================================
+   Step 1.4 — Learner shell retrofit (FND13-Shells). Top header over centered
+   content, matching LearnerHeader.tsx/LearnerShell.tsx structure 1:1 — only
+   the classes, not the markup shape, changed from the old @theme palette.
+   ============================================================================ */
+.lshell-page {
+  min-height: 100vh;
+  background: var(--surface-muted);
+}
+.lshell-main {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 24px 40px 48px;
+}
+.lshell-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 32px;
+}
+.lhdr {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  background: color-mix(in srgb, var(--surface-muted) 85%, transparent);
+  backdrop-filter: blur(6px);
+  padding: 16px 40px 4px;
+}
+.lhdr-bar {
+  height: 64px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
+  padding: 0 16px;
+}
+.lhdr-logo {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  flex-shrink: 0;
+}
+.lhdr-nav {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  border-radius: var(--radius-full);
+  background: var(--surface-muted);
+  padding: 4px;
+}
+.lhdr-navlink {
+  border-radius: var(--radius-full);
+  padding: 8px 14px;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--ink-muted);
+  white-space: nowrap;
+  text-decoration: none;
+}
+.lhdr-navlink.on {
+  background: var(--accent);
+  color: var(--accent-contrast);
+  font-weight: 600;
+}
+.lhdr-actions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.lhdr-avatar {
+  display: flex;
+  height: 36px;
+  width: 36px;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-full);
+  background: var(--accent);
+  color: var(--accent-contrast);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+}
+.lhdr-avatar:hover {
+  background: var(--accent-hover);
+}
+.lhdr-iconbtn {
+  display: flex;
+  height: 36px;
+  width: 36px;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-full);
+  color: var(--ink-muted);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+}
+.lhdr-iconbtn:hover {
+  background: var(--surface-muted);
+  color: var(--ink);
+}
+.lhdr-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 8px;
+  width: 260px;
+  overflow: hidden;
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-lg);
+}
+.lhdr-menu-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+}
+.lhdr-menu-group {
+  border-top: 1px solid var(--border);
+  padding: 6px;
+}
+.lhdr-menuitem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-radius: var(--radius-md);
+  padding: 8px 12px;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--ink-muted);
+  text-decoration: none;
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+}
+.lhdr-menuitem:hover {
+  background: var(--surface-muted);
+  color: var(--ink);
+}
+.lhdr-mobilenav {
+  margin-top: 8px;
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
+  padding: 8px;
+}
+.lhdr-mobile-navlink {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-radius: var(--radius-md);
+  padding: 10px 12px;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--ink-muted);
+  text-decoration: none;
+}
+.lhdr-mobile-navlink.on {
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  color: var(--accent);
+  font-weight: 600;
+}
