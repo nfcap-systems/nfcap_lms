@@ -15,6 +15,13 @@ of truth until then; it is not `tasks/TRACKER.md` and is never a substitute for 
 Accepted because: solo developer on this project right now (no collision risk), and the relevant
 boards/scope are otherwise settled.
 
+- **Added 2026-11-22, after PR #9:** bundling Step 1's remaining sub-items (new shared patterns,
+  then the Phase 0-2 retrofit) into fewer, larger PRs instead of one per sub-item — each CI run
+  (lint, build, Vitest, Playwright against real Postgres) plus a blue/green `stage` deploy was
+  costing 5-20 minutes per PR, too slow at this granularity. The progress-log table below still
+  gets one row per sub-item regardless of how many land in one PR, so Step 3's Plane backfill
+  stays exact; only the git/PR boundary got coarser, not the record of what happened.
+
 ## Step 0 — Approve the boards Phase 3 actually needs
 
 Review and mark approved (canvas comment) before building against them:
@@ -87,7 +94,7 @@ state is unverified, say so in the row (e.g., "merge status unverified") rather 
 
 | Item | Branch | PR / merge commit | State | Date |
 | --- | --- | --- | --- | --- |
-| _(none started yet)_ | | | | |
+| Step 1.2 — rebuild `src/components/ui` primitives (Button, Badge, Card, Dialog, Drawer, Field, Input, ProgressBar, Spinner) | `feature/design-system-migration-primitives` | PR #9, merge commit `c5077af` | Merged to `stage` | 2026-11-22 |
 
 ## Step 3 — Backfill into Plane, once connected
 
