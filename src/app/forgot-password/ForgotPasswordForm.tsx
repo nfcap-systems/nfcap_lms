@@ -19,13 +19,13 @@ export function ForgotPasswordForm() {
   if (sent) {
     return (
       <div className="mt-6 flex flex-col gap-4">
-        <p className="rounded-md bg-status-info-bg px-3 py-2 text-sm text-status-info-text">
+        <p className="rounded-md bg-[var(--status-pending-bg)] px-3 py-2 text-sm text-[var(--status-pending)]">
           If an account exists for that email, a password reset link is on its way. Check your inbox
           (and spam folder) — the link expires after a while, so use it soon.
         </p>
         <Link
           href="/login"
-          className="text-sm font-semibold text-brand-accent hover:text-brand-accent-hover"
+          className="text-sm font-semibold text-[var(--accent)] hover:text-[var(--accent-hover)]"
         >
           ← Back to sign in
         </Link>
@@ -37,7 +37,7 @@ export function ForgotPasswordForm() {
     <form action={formAction} className="mt-6 flex flex-col gap-5">
       <Field label="Email address" htmlFor="email">
         <div className="relative">
-          <MailIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-muted" />
+          <MailIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--ink-muted)]" />
           <Input
             id="email"
             name="email"
@@ -50,7 +50,7 @@ export function ForgotPasswordForm() {
         </div>
       </Field>
 
-      {state.error && <p className="text-sm text-status-danger-text">{state.error}</p>}
+      {state.error && <p className="text-sm text-[var(--status-problem)]">{state.error}</p>}
 
       <Button type="submit" variant="primary" size="lg" className="w-full gap-2" disabled={pending}>
         {pending ? 'Sending…' : 'Send reset link'}
@@ -59,7 +59,7 @@ export function ForgotPasswordForm() {
 
       <Link
         href="/login"
-        className="text-center text-sm font-medium text-text-secondary hover:text-brand-primary"
+        className="text-center text-sm font-medium text-[var(--ink-muted)] hover:text-[var(--accent)]"
       >
         ← Back to sign in
       </Link>

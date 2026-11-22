@@ -25,26 +25,26 @@ export function LoginForm() {
       <input type="hidden" name="next" value={next} />
 
       {justSignedUp && (
-        <p className="rounded-md bg-status-info-bg px-3 py-2 text-sm text-status-info-text">
+        <p className="rounded-md bg-[var(--status-pending-bg)] px-3 py-2 text-sm text-[var(--status-pending)]">
           Account created. Check your email to confirm it, then log in below.
         </p>
       )}
 
       {justReset && (
-        <p className="rounded-md bg-status-success-bg px-3 py-2 text-sm text-status-success-text">
+        <p className="rounded-md bg-[var(--status-complete-bg)] px-3 py-2 text-sm text-[var(--status-complete)]">
           Password updated. Sign in with your new password.
         </p>
       )}
 
       {linkExpired && (
-        <p className="rounded-md bg-status-danger-bg px-3 py-2 text-sm text-status-danger-text">
+        <p className="rounded-md bg-[var(--status-problem-bg)] px-3 py-2 text-sm text-[var(--status-problem)]">
           That link has expired or already been used. Request a new one below.
         </p>
       )}
 
       <Field label="Email address" htmlFor="email">
         <div className="relative">
-          <MailIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-muted" />
+          <MailIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--ink-muted)]" />
           <Input
             id="email"
             name="email"
@@ -59,7 +59,7 @@ export function LoginForm() {
 
       <Field label="Password" htmlFor="password">
         <div className="relative">
-          <LockIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-muted" />
+          <LockIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--ink-muted)]" />
           <Input
             id="password"
             name="password"
@@ -74,7 +74,7 @@ export function LoginForm() {
             onClick={() => setShowPassword((v) => !v)}
             aria-label={showPassword ? 'Hide password' : 'Show password'}
             aria-pressed={showPassword}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted transition-colors hover:text-text-secondary"
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--ink-muted)] transition-colors hover:text-[var(--ink-muted)]"
           >
             {showPassword ? <EyeOffIcon className="h-4 w-4" /> : <EyeIcon className="h-4 w-4" />}
           </button>
@@ -84,13 +84,13 @@ export function LoginForm() {
       <div className="flex items-center justify-end text-sm">
         <Link
           href="/forgot-password"
-          className="font-medium text-brand-accent underline-offset-2 hover:underline"
+          className="font-medium text-[var(--accent)] underline-offset-2 hover:underline"
         >
           Forgot your password?
         </Link>
       </div>
 
-      {state.error && <p className="text-sm text-status-danger-text">{state.error}</p>}
+      {state.error && <p className="text-sm text-[var(--status-problem)]">{state.error}</p>}
 
       <Button type="submit" variant="primary" size="lg" className="w-full gap-2" disabled={pending}>
         {pending ? 'Signing in…' : 'Sign in'}

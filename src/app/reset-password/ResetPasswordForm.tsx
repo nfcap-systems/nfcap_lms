@@ -21,7 +21,7 @@ export function ResetPasswordForm() {
     <form action={formAction} className="mt-6 flex flex-col gap-5">
       <Field label="New password" htmlFor="password">
         <div className="relative">
-          <LockIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-muted" />
+          <LockIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--ink-muted)]" />
           <Input
             id="password"
             name="password"
@@ -39,7 +39,7 @@ export function ResetPasswordForm() {
             onClick={() => setShowPassword((v) => !v)}
             aria-label={showPassword ? 'Hide password' : 'Show password'}
             aria-pressed={showPassword}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted transition-colors hover:text-text-secondary"
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--ink-muted)] transition-colors hover:text-[var(--ink-muted)]"
           >
             {showPassword ? <EyeOffIcon className="h-4 w-4" /> : <EyeIcon className="h-4 w-4" />}
           </button>
@@ -52,7 +52,7 @@ export function ResetPasswordForm() {
         error={mismatch ? 'Passwords do not match.' : undefined}
       >
         <div className="relative">
-          <LockIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-muted" />
+          <LockIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--ink-muted)]" />
           <Input
             id="confirmPassword"
             type={showPassword ? 'text' : 'password'}
@@ -66,7 +66,7 @@ export function ResetPasswordForm() {
         </div>
       </Field>
 
-      {state.error && <p className="text-sm text-status-danger-text">{state.error}</p>}
+      {state.error && <p className="text-sm text-[var(--status-problem)]">{state.error}</p>}
 
       <Button
         type="submit"

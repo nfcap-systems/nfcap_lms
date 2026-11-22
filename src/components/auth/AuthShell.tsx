@@ -25,18 +25,18 @@ type AuthShellProps = {
 
 export function AuthShell({ active, heading, subheading, children, footer }: AuthShellProps) {
   return (
-    <div className="min-h-screen bg-bg-card lg:pl-[50vw]">
-      <aside className="relative hidden overflow-hidden bg-bg-subtle lg:fixed lg:inset-y-0 lg:left-0 lg:flex lg:w-[50vw] lg:flex-col">
+    <div className="min-h-screen bg-[var(--surface)] lg:pl-[50vw]" data-system="learner">
+      <aside className="relative hidden overflow-hidden bg-[var(--surface-muted)] lg:fixed lg:inset-y-0 lg:left-0 lg:flex lg:w-[50vw] lg:flex-col">
         <div className="relative z-10 flex flex-1 flex-col px-14 pb-0 pt-14">
           <Image src="/nfcap-logo.png" alt="NFCAP" width={220} height={24} priority />
 
           <div className="mt-16 max-w-md">
-            <h1 className="text-[2.75rem] font-bold leading-[1.08] tracking-tight text-brand-heading">
+            <h1 className="text-[2.75rem] font-bold leading-[1.08] tracking-tight text-[var(--ink)]">
               Build your skills.
               <br />
               Build your future.
             </h1>
-            <p className="mt-5 text-[15px] leading-relaxed text-text-secondary">
+            <p className="mt-5 text-[15px] leading-relaxed text-[var(--ink-muted)]">
               The NFCAP Apprenticeship Program gives you the training, experience, and support to
               build a career in the flooring industry.
             </p>
@@ -45,8 +45,8 @@ export function AuthShell({ active, heading, subheading, children, footer }: Aut
           <ul className="mt-12 grid grid-cols-4 gap-6">
             {FEATURES.map(({ icon: Icon, label }) => (
               <li key={label} className="flex flex-col gap-3">
-                <Icon className="h-6 w-6 text-brand-primary" />
-                <span className="text-[13px] font-medium leading-snug text-text-primary">
+                <Icon className="h-6 w-6 text-[var(--accent)]" />
+                <span className="text-[13px] font-medium leading-snug text-[var(--ink)]">
                   {label}
                 </span>
               </li>
@@ -55,7 +55,7 @@ export function AuthShell({ active, heading, subheading, children, footer }: Aut
         </div>
 
         <div
-          className="relative mt-14 h-[38%] shrink-0 overflow-hidden bg-brand-primary-dark"
+          className="relative mt-14 h-[38%] shrink-0 overflow-hidden bg-[color-mix(in_srgb,var(--accent)_70%,black)]"
           style={{ clipPath: 'polygon(0 14%, 100% 0, 100% 100%, 0% 100%)' }}
         >
           <div
@@ -67,11 +67,11 @@ export function AuthShell({ active, heading, subheading, children, footer }: Aut
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
           <div
-            className="absolute -top-16 right-[22%] h-56 w-28 -rotate-[18deg] bg-brand-primary"
+            className="absolute -top-16 right-[22%] h-56 w-28 -rotate-[18deg] bg-[var(--accent)]"
             aria-hidden
           />
           <div
-            className="absolute -top-16 right-[16%] h-56 w-8 -rotate-[18deg] bg-brand-accent"
+            className="absolute -top-16 right-[16%] h-56 w-8 -rotate-[18deg] bg-[var(--accent)]"
             aria-hidden
           />
         </div>
@@ -84,13 +84,13 @@ export function AuthShell({ active, heading, subheading, children, footer }: Aut
 
         <div className="flex min-w-0 flex-1 items-center">
           <div className="mx-auto w-full min-w-0 max-w-sm">
-            <div className="flex gap-6 border-b border-border-subtle">
+            <div className="flex gap-6 border-b border-[var(--border)]">
               {TABS.map((tab) =>
                 tab.key === active ? (
                   <span
                     key={tab.key}
                     aria-current="page"
-                    className="border-b-2 border-brand-accent pb-3 text-sm font-semibold text-brand-heading"
+                    className="border-b-2 border-[var(--accent)] pb-3 text-sm font-semibold text-[var(--ink)]"
                   >
                     {tab.label}
                   </span>
@@ -98,7 +98,7 @@ export function AuthShell({ active, heading, subheading, children, footer }: Aut
                   <Link
                     key={tab.key}
                     href={tab.href}
-                    className="pb-3 text-sm font-medium text-text-secondary transition-colors hover:text-brand-primary"
+                    className="pb-3 text-sm font-medium text-[var(--ink-muted)] transition-colors hover:text-[var(--accent)]"
                   >
                     {tab.label}
                   </Link>
@@ -106,12 +106,12 @@ export function AuthShell({ active, heading, subheading, children, footer }: Aut
               )}
             </div>
 
-            <h2 className="mt-8 text-2xl font-bold text-brand-heading">{heading}</h2>
-            <p className="mt-2 text-sm leading-relaxed text-text-secondary">{subheading}</p>
+            <h2 className="mt-8 text-2xl font-bold text-[var(--ink)]">{heading}</h2>
+            <p className="mt-2 text-sm leading-relaxed text-[var(--ink-muted)]">{subheading}</p>
 
             {children}
 
-            {footer && <div className="mt-8 text-center text-sm text-text-secondary">{footer}</div>}
+            {footer && <div className="mt-8 text-center text-sm text-[var(--ink-muted)]">{footer}</div>}
           </div>
         </div>
       </main>

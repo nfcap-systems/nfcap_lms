@@ -34,7 +34,7 @@ export function SignupForm() {
         />
       </Field>
 
-      <label className="flex items-start gap-2 rounded-md border border-border-default bg-bg-subtle p-3 text-sm text-text-primary">
+      <label className="flex items-start gap-2 rounded-md border border-[var(--border)] bg-[var(--surface-muted)] p-3 text-sm text-[var(--ink)]">
         <Checkbox
           name="pursuingWioa"
           checked={pursuingWioa}
@@ -48,8 +48,8 @@ export function SignupForm() {
       </label>
 
       {pursuingWioa && (
-        <div className="flex flex-col gap-4 rounded-md border border-border-subtle p-4">
-          <p className="text-xs text-text-muted">
+        <div className="flex flex-col gap-4 rounded-md border border-[var(--border)] p-4">
+          <p className="text-xs text-[var(--ink-muted)]">
             These details are used to match you to your local workforce board — they&apos;re not
             shared anywhere else in the app.
           </p>
@@ -149,15 +149,15 @@ export function SignupForm() {
         </div>
       )}
 
-      {state.error && <p className="text-sm text-status-danger-text">{state.error}</p>}
+      {state.error && <p className="text-sm text-[var(--status-problem)]">{state.error}</p>}
 
-      <p className="text-xs text-text-secondary">
+      <p className="text-xs text-[var(--ink-muted)]">
         By signing up, you agree to the{' '}
-        <Link href="/terms" className="font-medium text-brand-accent hover:text-brand-accent-hover">
+        <Link href="/terms" className="font-medium text-[var(--accent)] hover:text-[var(--accent-hover)]">
           Terms of Service
         </Link>{' '}
         and{' '}
-        <Link href="/privacy" className="font-medium text-brand-accent hover:text-brand-accent-hover">
+        <Link href="/privacy" className="font-medium text-[var(--accent)] hover:text-[var(--accent-hover)]">
           Privacy Policy
         </Link>
         .
