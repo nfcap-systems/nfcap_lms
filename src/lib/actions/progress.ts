@@ -26,6 +26,8 @@ function revalidateLearnerViews(learnerId: string, courseSlug: string) {
   revalidatePath('/admin');
   revalidatePath('/admin/learners');
   revalidatePath(`/admin/learners/${learnerId}`);
+  revalidatePath(`/admin/learners/${learnerId}/review/${courseSlug}`);
+  revalidatePath('/admin/reviews');
 }
 
 /** The one enrollment-check point for `enroll`, `markLessonComplete`, `recordQuizAttempt`, and
@@ -161,27 +163,65 @@ export async function getEvidenceFileUrl(evidenceSubmissionId: string): Promise<
 
 type AdminActor = Awaited<ReturnType<typeof requireAdmin>>;
 
-/** Shared by `setEvidenceStatus` and `bulkApproveEvidence` — approving materializes a Certificate
- * row; a later flip back to rejected retracts it — a course can only be certified once
- * (Certificate.enrollmentId unique). Does not revalidate or require admin itself; callers do. */
-async function applyEvidenceStatus(
+/** Shared by `setEvidenceStatus`, `bulkApproveEvidence`, and `finalizeCriterionReview`
+ * (src/lib/actions/criterionReview.ts) — the one place a Certificate is materialized or retracted,
+ * so the gated-certification rule below applies no matter which caller approves a submission.
+ * A course can only be certified once (Certificate.enrollmentId unique); a later flip back to
+ * rejected retracts it. Does not revalidate or require admin itself; callers do.
+ *
+ * Gated certification (feature #7, docs/plans/phase-3-and-design-migration-kickoff.md Step 2):
+ * approving is refused unless every AssessmentCriterion with `mandatoryForCertification: true` on
+ * this course has a CriterionAssessment with `met: true` on the submission being approved. This
+ * is enforced here rather than only in the new per-criterion screen so there is exactly one path
+ * to a Certificate, not two — a course with no criteria at all has nothing to satisfy and approves
+ * exactly as it did before this feature existed. */
+export async function applyEvidenceStatus(
   admin: AdminActor,
   learnerId: string,
   courseSlug: string,
   status: 'approved' | 'rejected',
+  reviewerNote?: string,
 ): Promise<void> {
   const enrollment = await prisma.enrollment.findFirstOrThrow({
     where: { learnerId, course: { slug: courseSlug } },
-    include: { evidenceSubmissions: { orderBy: { submittedAt: 'desc' }, take: 1 } },
+    include: {
+      evidenceSubmissions: {
+        orderBy: { submittedAt: 'desc' },
+        take: 1,
+        include: { criterionAssessments: { select: { criterionId: true, met: true } } },
+      },
+      course: {
+        select: { assessmentCriteria: { select: { id: true, mandatoryForCertification: true } } },
+      },
+    },
   });
   const evidence = enrollment.evidenceSubmissions[0];
   if (!evidence) throw new Error('No evidence submission to update.');
+
+  if (status === 'approved') {
+    const mandatoryIds = enrollment.course.assessmentCriteria
+      .filter((c) => c.mandatoryForCertification)
+      .map((c) => c.id);
+    const metIds = new Set(
+      evidence.criterionAssessments.filter((a) => a.met === true).map((a) => a.criterionId),
+    );
+    const unmetCount = mandatoryIds.filter((id) => !metIds.has(id)).length;
+    if (unmetCount > 0) {
+      throw new Error(
+        `Cannot certify: ${unmetCount} mandatory criterion/criteria not yet marked Met. Use the per-criterion review screen.`,
+      );
+    }
+  }
 
   const prismaStatus =
     status === 'approved' ? PrismaEvidenceStatus.APPROVED : PrismaEvidenceStatus.REJECTED;
   await prisma.evidenceSubmission.update({
     where: { id: evidence.id },
-    data: { status: prismaStatus, statusUpdatedAt: new Date() },
+    data: {
+      status: prismaStatus,
+      statusUpdatedAt: new Date(),
+      ...(reviewerNote !== undefined ? { reviewerNote } : {}),
+    },
   });
 
   if (status === 'approved') {

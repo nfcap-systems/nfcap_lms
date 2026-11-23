@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { Check, Clipboard, Paperclip, X } from 'lucide-react';
 
 import { Badge, type badgeVariants } from '@/components/admin-ui/badge';
@@ -31,6 +32,7 @@ export function LearnerProfileView({
   courses,
   progress,
   courseUnlocks,
+  criteriaCounts = {},
 }: {
   learner: LearnerRecord;
   courses: AdminCourse[];
@@ -38,6 +40,11 @@ export function LearnerProfileView({
   /** Restricted-course access grants keyed by course slug — only relevant to the Course access
    * card below (docs/build/WIOA_BUILD_WORKFLOW.md Phase 4). */
   courseUnlocks?: Record<string, CourseUnlockRecord>;
+  /** Course slug -> criteria count (src/lib/data/courses.ts). A course with any criteria routes
+   * its evidence review to the real ADM11-PerCriterionReview screen (feature #7) instead of the
+   * inline Approve/Reject below, which only remains for the (currently nonexistent) case of a
+   * course with zero criteria. */
+  criteriaCounts?: Record<string, number>;
 }) {
   const router = useRouter();
   const [, startTransition] = useTransition();
@@ -139,7 +146,15 @@ export function LearnerProfileView({
                       </button>
                     )}
 
-                    {evidence.status === 'pending' ? (
+                    {(criteriaCounts[course.id] ?? 0) > 0 ? (
+                      <div className="pt-1">
+                        <Button size="sm" asChild>
+                          <Link href={`/admin/learners/${learner.id}/review/${course.id}`}>
+                            Review criteria →
+                          </Link>
+                        </Button>
+                      </div>
+                    ) : evidence.status === 'pending' ? (
                       <div className="flex gap-2 pt-1">
                         <Button size="sm" onClick={() => updateStatus(course.id, 'approved')}>
                           <Check className="size-4" />

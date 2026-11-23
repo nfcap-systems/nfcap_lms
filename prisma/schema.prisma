@@ -96,10 +96,12 @@ model AssessmentCriterion {
   /// Whether this criterion must be demonstrated with a photo, vs. satisfied by description alone.
   photoRequired             Boolean @default(true)
   /// Whether every EvidenceSubmission for this course must have this criterion marked Met before
-  /// a Certificate can be issued (feature #7 — gated certification isn't built yet).
+  /// a Certificate can be issued (feature #7).
   mandatoryForCertification Boolean @default(true)
   /// Display order among sibling criteria of the same course.
   order                     Int
+
+  criterionAssessments CriterionAssessment[]
 
   @@index([courseId, order])
 }
@@ -243,10 +245,37 @@ model EvidenceSubmission {
   status          EvidenceStatus @default(PENDING)
   submittedAt     DateTime       @default(now())
   statusUpdatedAt DateTime?
+  /// Admin's overall note to the learner on this submission (ADM11-PerCriterionReview's "Overall
+  /// note to learner") — distinct from the per-criterion notes on CriterionAssessment below.
+  /// Surfaced to the learner by feature #10 (not built yet); stored here starting with #7 since
+  /// the gated-certification review screen is what produces it.
+  reviewerNote    String?
 
-  certificate Certificate?
+  certificate          Certificate?
+  criterionAssessments CriterionAssessment[]
 
   @@index([enrollmentId, submittedAt])
+}
+
+/// Per-criterion verdict on one EvidenceSubmission (feature #7 — the gated-certification rules
+/// layer). One row per (submission, criterion), created/updated as Admin reviews
+/// (ADM11-PerCriterionReview); `met` stays null until a reviewer records a verdict. Scoped to the
+/// submission rather than the enrollment so a resubmission (a new EvidenceSubmission row, per the
+/// "new row per attempt, never overwrite" pattern this model follows) starts every criterion
+/// unreviewed again instead of carrying over a stale verdict from a prior attempt.
+model CriterionAssessment {
+  id                   String              @id @default(cuid())
+  evidenceSubmissionId String
+  evidenceSubmission   EvidenceSubmission  @relation(fields: [evidenceSubmissionId], references: [id], onDelete: Cascade)
+  criterionId          String
+  criterion            AssessmentCriterion @relation(fields: [criterionId], references: [id], onDelete: Cascade)
+  met                  Boolean?
+  reviewerNote         String?
+  reviewedBy           String?
+  reviewedAt           DateTime?
+
+  @@unique([evidenceSubmissionId, criterionId])
+  @@index([criterionId])
 }
 
 /// Materialized when Admin approves an EvidenceSubmission (docs/product/PRODUCT_CONTEXT.md Section 5: a

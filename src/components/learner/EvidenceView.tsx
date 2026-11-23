@@ -6,7 +6,8 @@ import { Badge, Button, Field, Textarea } from '@/components/ui';
 import { Icon } from '@/components/icons';
 import { submitEvidence, getEvidenceFileUrl } from '@/lib/actions/progress';
 import type { EvidenceSubmission } from '@/lib/data/progress';
-import type { Course } from '@/lib/types';
+import type { CriterionVerdict } from '@/lib/data/criterionReview';
+import type { AssessmentCriterion, Course } from '@/lib/types';
 
 const statusCopy: Record<
   'pending' | 'approved' | 'rejected',
@@ -20,9 +21,17 @@ const statusCopy: Record<
 export function EvidenceView({
   course,
   evidence,
+  criteria = [],
+  criterionVerdicts,
 }: {
   course: Course;
   evidence: EvidenceSubmission | undefined;
+  /** This course's assessment criteria (feature #3), for the "what this evidence needs to show"
+   * checklist (LRN06-EvidenceCriteria) shown above the submission form. */
+  criteria?: AssessmentCriterion[];
+  /** Per-criterion verdicts on the current `evidence` submission, once Admin has reviewed any of
+   * them (feature #7, src/lib/data/criterionReview.ts) — undefined before a verdict exists. */
+  criterionVerdicts?: CriterionVerdict[];
 }) {
   const router = useRouter();
   const [, startTransition] = useTransition();
@@ -37,6 +46,7 @@ export function EvidenceView({
     return (
       <div className="flex flex-col gap-5">
         <Header />
+        <CriteriaChecklist criteria={criteria} verdicts={criterionVerdicts} />
         <div className="flex flex-col items-start gap-3 rounded-xl border border-[var(--border)] bg-[var(--surface-muted)] p-5">
           <Badge tone={status.tone}>{status.label}</Badge>
           <p className="text-sm text-[var(--ink-muted)]">
@@ -94,6 +104,7 @@ export function EvidenceView({
   return (
     <div className="flex flex-col gap-5">
       <Header />
+      <CriteriaChecklist criteria={criteria} verdicts={criterionVerdicts} />
       <p className="text-sm text-[var(--ink-muted)]">{course.evidencePrompt}</p>
 
       <Field
@@ -176,6 +187,57 @@ function Header() {
         <Icon name="paperclip" className="size-3" />
         Practical Evidence
       </Badge>
+    </div>
+  );
+}
+
+/** "What this evidence needs to show" (LRN06-EvidenceCriteria) — the criteria list always shows;
+ * once Admin has reviewed any of them (feature #7), each row also shows its verdict instead of a
+ * plain unchecked box. */
+function CriteriaChecklist({
+  criteria,
+  verdicts,
+}: {
+  criteria: AssessmentCriterion[];
+  verdicts?: CriterionVerdict[];
+}) {
+  if (criteria.length === 0) return null;
+  const verdictByCriterionId = new Map((verdicts ?? []).map((v) => [v.criterionId, v]));
+
+  return (
+    <div className="overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--surface)] shadow-[var(--shadow-sm)]">
+      <div className="border-b border-[var(--border)] px-5 py-4 text-sm font-semibold text-[var(--ink)]">
+        Criteria for this submission
+      </div>
+      <div className="px-5">
+        {criteria.map((criterion) => {
+          const verdict = verdictByCriterionId.get(criterion.id);
+          return (
+            <div className="crit" key={criterion.id}>
+              {verdict?.met === true ? (
+                <span className="chk done flex items-center justify-center">
+                  <Icon name="check" className="size-3 text-white" />
+                </span>
+              ) : verdict?.met === false ? (
+                <span className="chk flex items-center justify-center border-[var(--status-problem)] bg-[var(--status-problem-bg)]">
+                  <Icon name="x" className="size-3 text-[var(--status-problem)]" />
+                </span>
+              ) : (
+                <span className="chk" />
+              )}
+              <div>
+                <b>{criterion.title}</b>
+                <div className="mt-0.5 text-[var(--ink-muted)]">{criterion.guidance}</div>
+                {verdict?.met === false && verdict.reviewerNote && (
+                  <div className="mt-1.5 text-[var(--status-problem)]">
+                    Reviewer note: {verdict.reviewerNote}
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }

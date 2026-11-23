@@ -244,7 +244,7 @@ export function ReviewQueueView({
                 </td>
                 <td style={{ textAlign: 'right' }}>
                   <Link
-                    href={`/admin/learners/${row.learnerId}`}
+                    href={`/admin/learners/${row.learnerId}/review/${row.courseId}`}
                     style={{ fontWeight: 600, fontSize: 13 }}
                   >
                     Review →

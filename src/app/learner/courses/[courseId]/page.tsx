@@ -1,11 +1,12 @@
 import Link from 'next/link';
 import { CourseLearningView } from '@/components/learner/CourseLearningView';
-import { getCourseBySlug } from '@/lib/data/courses';
+import { getAssessmentCriteria, getCourseBySlug } from '@/lib/data/courses';
 import {
   getCourseProgress,
   getCourseUnlocksForLearner,
   type CourseUnlockRecord,
 } from '@/lib/data/progress';
+import { getCriterionReview } from '@/lib/data/criterionReview';
 import { getAuthUser } from '@/lib/supabase/server';
 
 export default async function CourseLearningPage({
@@ -30,15 +31,22 @@ export default async function CourseLearningPage({
     );
   }
 
-  const [progress, unlocks]: [
+  const [progress, unlocks, criteria]: [
     Awaited<ReturnType<typeof getCourseProgress>>,
     Record<string, CourseUnlockRecord>,
+    Awaited<ReturnType<typeof getAssessmentCriteria>>,
   ] = user
     ? await Promise.all([
         getCourseProgress(user.id, courseId),
         getCourseUnlocksForLearner(user.id),
+        getAssessmentCriteria(courseId),
       ])
-    : [undefined, {}];
+    : [undefined, {}, []];
+
+  // Only fetched once evidence exists — getCriterionReview itself returns undefined otherwise,
+  // but no point running its enrollment lookup when there's nothing for it to find.
+  const criterionReview =
+    user && progress?.evidence ? await getCriterionReview(user.id, courseId) : undefined;
 
   return (
     <div className="flex flex-col gap-4">
@@ -52,6 +60,8 @@ export default async function CourseLearningPage({
         course={course}
         progress={progress}
         unlocked={Boolean(unlocks[courseId])}
+        criteria={criteria}
+        criterionVerdicts={criterionReview?.criteria}
       />
     </div>
   );

@@ -6,7 +6,14 @@ import { Badge, Button, Card, CardContent, ProgressBar } from '@/components/ui';
 import { Icon } from '@/components/icons';
 import { enroll, markLessonComplete } from '@/lib/actions/progress';
 import type { CourseProgress } from '@/lib/data/progress';
-import { courseDurationMinutes, courseLessonCount, flattenLessons, type Course } from '@/lib/types';
+import type { CriterionVerdict } from '@/lib/data/criterionReview';
+import {
+  courseDurationMinutes,
+  courseLessonCount,
+  flattenLessons,
+  type AssessmentCriterion,
+  type Course,
+} from '@/lib/types';
 import { LessonSidebar, type CourseStepId } from './LessonSidebar';
 import { LessonContent } from './LessonContent';
 import { QuizView } from './QuizView';
@@ -17,12 +24,17 @@ export function CourseLearningView({
   course,
   progress,
   unlocked = false,
+  criteria = [],
+  criterionVerdicts,
 }: {
   course: Course;
   progress: CourseProgress | undefined;
   /** A RESTRICTED course this learner has a CourseUnlock for (WIOA funding approved, or an Admin
    * grant) — self-enrollment opens up exactly as for an OPEN course. */
   unlocked?: boolean;
+  /** Passed straight through to EvidenceView (feature #7, LRN06-EvidenceCriteria). */
+  criteria?: AssessmentCriterion[];
+  criterionVerdicts?: CriterionVerdict[];
 }) {
   const router = useRouter();
   const [, startTransition] = useTransition();
@@ -187,7 +199,12 @@ export function CourseLearningView({
               onContinue={() => setActiveStepId('evidence')}
             />
           ) : activeStepId === 'evidence' ? (
-            <EvidenceView course={course} evidence={evidence} />
+            <EvidenceView
+              course={course}
+              evidence={evidence}
+              criteria={criteria}
+              criterionVerdicts={criterionVerdicts}
+            />
           ) : (
             active && (
               <>
