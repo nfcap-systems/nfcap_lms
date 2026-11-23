@@ -1,3 +1,4 @@
+import sharp from 'sharp';
 import { createAdminClient } from './admin';
 
 /** Private bucket for Practical Evidence attachments (photos, PDFs, short clips of trade work).
@@ -28,15 +29,42 @@ export class InvalidEvidenceFileError extends Error {}
 function assertValidEvidenceFile(file: File, buffer: Buffer): void {
   const maxBytes = VIDEO_TYPES.has(file.type) ? MAX_VIDEO_BYTES : MAX_IMAGE_OR_DOCUMENT_BYTES;
   if (file.size > maxBytes) {
-    throw new InvalidEvidenceFileError(
-      `File is too large (max ${maxBytes / (1024 * 1024)}MB).`,
-    );
+    throw new InvalidEvidenceFileError(`File is too large (max ${maxBytes / (1024 * 1024)}MB).`);
   }
   const matchesSignature = EVIDENCE_SIGNATURES[file.type];
   if (!matchesSignature || !matchesSignature(buffer)) {
     throw new InvalidEvidenceFileError(
       'Unsupported file type. Upload a PDF, JPG, PNG, MP4, or MOV.',
     );
+  }
+}
+
+const IMAGE_TYPES = new Set(['image/jpeg', 'image/png']);
+
+// Long edge cap + recompression at upload time, not per-request (docs/build/PERFORMANCE_PLAN.md
+// §5.2) — a learner's phone photo (often 12MP+) is far larger than any screen it's ever displayed
+// on, so every uncapped original is pure storage cost with no quality benefit.
+const MAX_IMAGE_DIMENSION_PX = 2000;
+const JPEG_QUALITY = 82;
+const PNG_COMPRESSION_LEVEL = 9;
+
+/** Resizes to a long-edge cap and recompresses, for images only — video/PDF pass through
+ * unchanged (video delivery cost is its own open decision, docs/build/PERFORMANCE_PLAN.md §5.2).
+ * `.rotate()` applies EXIF orientation before the metadata (including EXIF) is stripped by
+ * re-encoding, so re-oriented images don't end up sideways. */
+export async function downscaleImageIfNeeded(buffer: Buffer, mimeType: string): Promise<Buffer> {
+  if (!IMAGE_TYPES.has(mimeType)) return buffer;
+  try {
+    const image = sharp(buffer).rotate();
+    const resized = image.resize(MAX_IMAGE_DIMENSION_PX, MAX_IMAGE_DIMENSION_PX, {
+      fit: 'inside',
+      withoutEnlargement: true,
+    });
+    return mimeType === 'image/jpeg'
+      ? await resized.jpeg({ quality: JPEG_QUALITY }).toBuffer()
+      : await resized.png({ compressionLevel: PNG_COMPRESSION_LEVEL }).toBuffer();
+  } catch {
+    throw new InvalidEvidenceFileError('Could not process image file.');
   }
 }
 
@@ -57,12 +85,13 @@ async function ensureBucket(): Promise<void> {
 export async function uploadEvidenceFile(path: string, file: File): Promise<void> {
   const buffer = Buffer.from(await file.arrayBuffer());
   assertValidEvidenceFile(file, buffer);
+  const storedBuffer = await downscaleImageIfNeeded(buffer, file.type);
 
   await ensureBucket();
   const supabase = createAdminClient();
   const { error } = await supabase.storage
     .from(EVIDENCE_BUCKET)
-    .upload(path, buffer, { contentType: file.type || undefined, upsert: true });
+    .upload(path, storedBuffer, { contentType: file.type || undefined, upsert: true });
   if (error) throw error;
 }
 
