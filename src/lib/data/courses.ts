@@ -83,6 +83,20 @@ function mapCourse(db: DbCourse): AdminCourse {
   };
 }
 
+export type CoursePathwayEntry = { id: string; title: string };
+
+/** Course id (slug, the same lookup key `getAllCourses` uses) + title only, in pathway order —
+ * for Partner Staff's trainee-detail course-progress panel (PTN02-LearnerDetail), which needs
+ * nothing else. Deliberately bypasses `courseInclude` (CLAUDE.md performance conventions — don't
+ * add new call sites to it, fetch the narrowest shape that works). */
+export async function getCoursePathwayList(): Promise<CoursePathwayEntry[]> {
+  const courses = await prisma.course.findMany({
+    orderBy: { pathwayOrder: 'asc' },
+    select: { slug: true, title: true },
+  });
+  return courses.map((c) => ({ id: c.slug, title: c.title }));
+}
+
 /** All courses regardless of publish state — for admin, and for any learner-facing lookup where
  * a course a learner is already enrolled in must stay reachable even if Admin unpublished it. */
 export async function getAllCourses(): Promise<AdminCourse[]> {

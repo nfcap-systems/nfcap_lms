@@ -28,20 +28,23 @@ export async function getLearnerProfile(
 export type WioaCommunicationRecord = {
   id: string;
   courseId: string;
-  channel: 'EMAIL' | 'CALL';
+  channel: 'EMAIL' | 'CALL' | 'NOTE';
   recipient: string;
   subject: string | null;
   body: string | null;
   sentAt: Date;
 };
 
+/** The learner's own "Outreach log" (Funding page) — excludes the NOTE channel, which is an
+ * internal Partner Staff/Coordinator follow-up note about the learner, never meant for the
+ * learner to see (PTN02-LearnerDetail's "Add a note" is explicitly staff-facing). */
 export async function getWioaCommunications(
   viewer: SessionContext,
   learnerId: string,
 ): Promise<WioaCommunicationRecord[]> {
   return withRlsContext(viewer, (tx) =>
     tx.wioaCommunication.findMany({
-      where: { learnerId },
+      where: { learnerId, channel: { not: 'NOTE' } },
       orderBy: { sentAt: 'desc' },
     }),
   );
@@ -149,6 +152,13 @@ export type WioaCaseSummary = {
   boardName: string | null;
   createdAt: Date;
   pendingDocumentCount: number;
+  /** MISSING or REJECTED documents — the ones that need Partner Staff follow-up, distinct from
+   * `pendingDocumentCount` (UPLOADED/UNDER_REVIEW, awaiting staff review). PTN01-Roster's
+   * "Missing documents" column/KPI. */
+  missingDocumentCount: number;
+  /** Most recent communication logged against the case (any channel, including the Partner
+   * Staff "Add a note" / NOTE channel) — PTN01-Roster's "Last follow-up" column. */
+  lastFollowUp: { channel: 'EMAIL' | 'CALL' | 'NOTE'; body: string | null; sentAt: Date } | null;
   assignedPartnerStaffId: string | null;
   assignedPartnerStaffName: string | null;
   nextAppointment: { type: string; scheduledAt: Date } | null;
@@ -183,6 +193,7 @@ export async function getWioaCases(
           orderBy: { scheduledAt: 'asc' },
           take: 1,
         },
+        communications: { orderBy: { sentAt: 'desc' }, take: 1 },
       },
     }),
   );
@@ -212,6 +223,16 @@ export async function getWioaCases(
       pendingDocumentCount: c.documents.filter(
         (d) => d.status === 'UPLOADED' || d.status === 'UNDER_REVIEW',
       ).length,
+      missingDocumentCount: c.documents.filter(
+        (d) => d.status === 'MISSING' || d.status === 'REJECTED',
+      ).length,
+      lastFollowUp: c.communications[0]
+        ? {
+            channel: c.communications[0].channel,
+            body: c.communications[0].body,
+            sentAt: c.communications[0].sentAt,
+          }
+        : null,
       assignedPartnerStaffId: c.assignedPartnerStaffId,
       assignedPartnerStaffName: partnerStaff?.name ?? null,
       nextAppointment: c.appointments[0]
@@ -241,6 +262,7 @@ export type WioaFundingRecord = {
 };
 
 export type WioaCaseDetail = WioaCaseRecord & {
+  learnerId: string;
   learnerName: string;
   learnerEmail: string;
   assignedPartnerStaffId: string | null;
@@ -294,6 +316,7 @@ export async function getWioaCaseDetail(
     boardName: c.workforceBoard?.name ?? null,
     ajccName: c.ajccCenter?.name ?? null,
     contactName: c.contact?.name ?? null,
+    learnerId: c.learnerId,
     learnerName: learner?.name ?? 'Unknown',
     learnerEmail: learner?.email ?? '',
     assignedPartnerStaffId: c.assignedPartnerStaffId,

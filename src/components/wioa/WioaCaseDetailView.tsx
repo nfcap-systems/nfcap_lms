@@ -53,6 +53,18 @@ const APPOINTMENT_TYPE_LABEL: Record<string, string> = {
   FOLLOWUP: 'Follow-up',
 };
 
+const COMMUNICATION_LABEL: Record<'EMAIL' | 'CALL' | 'NOTE', string> = {
+  EMAIL: 'Email',
+  CALL: 'Call',
+  NOTE: 'Note',
+};
+
+const COMMUNICATION_ICON: Record<'EMAIL' | 'CALL' | 'NOTE', 'mail' | 'phone' | 'file-text'> = {
+  EMAIL: 'mail',
+  CALL: 'phone',
+  NOTE: 'file-text',
+};
+
 // Only these two next-statuses ever pair with scheduling an Appointment in the same action
 // (docs/build/WIOA_BUILD_WORKFLOW.md "Open decisions" — Appointment is authoritative for the date,
 // the case status is a derived label staff sets alongside creating it).
@@ -285,10 +297,11 @@ export function WioaCaseDetailView({
             ) : (
               wioaCase.communications.slice(0, 2).map((c, i) => (
                 <div className="side-row" key={c.id} style={i === 0 ? { paddingTop: 0 } : undefined}>
-                  <Icon name={c.channel === 'EMAIL' ? 'mail' : 'phone'} className="side-ic" />
+                  <Icon name={COMMUNICATION_ICON[c.channel]} className="side-ic" />
                   <div>
                     <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--ink)' }}>
-                      {formatDate(c.sentAt)} — {c.channel === 'EMAIL' ? 'Email' : 'Call'} to {c.recipient}
+                      {formatDate(c.sentAt)} — {COMMUNICATION_LABEL[c.channel]}
+                      {c.channel !== 'NOTE' && <> to {c.recipient}</>}
                     </div>
                     {c.subject && <div style={{ fontSize: 11.5, color: 'var(--ink-muted)' }}>{c.subject}</div>}
                   </div>
@@ -341,7 +354,8 @@ export function WioaCaseDetailView({
                 <div className="flex flex-col gap-2">
                   {wioaCase.communications.map((c) => (
                     <div key={c.id} className="text-sm text-[var(--ink-muted)]">
-                      {c.channel === 'EMAIL' ? 'Email' : 'Call'} to {c.recipient} — {formatDate(c.sentAt)}
+                      {COMMUNICATION_LABEL[c.channel]}
+                      {c.channel !== 'NOTE' && <> to {c.recipient}</>} — {formatDate(c.sentAt)}
                     </div>
                   ))}
                 </div>
