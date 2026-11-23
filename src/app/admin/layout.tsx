@@ -11,7 +11,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
   return (
     <TooltipProvider>
-      <SidebarProvider>
+      <SidebarProvider data-system="staff">
         <AppSidebar userName={userName} userEmail={user?.email ?? ''} />
         <SidebarInset>
           <AdminHeader firstName={firstName} />

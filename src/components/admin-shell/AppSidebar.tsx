@@ -17,7 +17,7 @@ import { NavUser } from './NavUser';
 
 export function AppSidebar({ userName, userEmail }: { userName: string; userEmail: string }) {
   return (
-    <Sidebar variant="inset" collapsible="icon">
+    <Sidebar variant="sidebar" collapsible="icon">
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>

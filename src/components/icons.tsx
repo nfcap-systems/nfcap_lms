@@ -41,7 +41,8 @@ export type IconName =
   | 'chevron-up'
   | 'chevron-down'
   | 'numbered-list'
-  | 'header';
+  | 'header'
+  | 'download';
 
 type IconProps = SVGProps<SVGSVGElement>;
 
@@ -300,6 +301,12 @@ const paths: Record<IconName, React.ReactNode> = {
       <path d="M5 4.5v15M15 4.5v15" />
       <path d="M5 12h10" />
       <path d="M18 8.5v-3l-1.5 1" />
+    </>
+  ),
+  download: (
+    <>
+      <path d="M12 3v12m0 0-4-4m4 4 4-4" />
+      <path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" />
     </>
   ),
 };

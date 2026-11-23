@@ -243,6 +243,46 @@ export async function getWioaCases(
   return result;
 }
 
+export type UpcomingAppointment = {
+  id: string;
+  caseId: string;
+  /** Resolved by the caller from an already-fetched learner roster, not looked up here — see
+   * note below. */
+  learnerId: string;
+  courseTitle: string;
+  type: AppointmentType;
+  scheduledAt: Date;
+};
+
+/** Soonest N upcoming appointments across every WIOA case (not scoped to one case) — Admin
+ * Dashboard's "Upcoming WIOA Appointments" panel (ADM02-Dashboard). Reuses getWioaCases'
+ * per-case "next appointment" query shape, just without the per-case/per-staff scoping.
+ * Returns `learnerId`, not a resolved name — the Dashboard already fetches the full learner
+ * roster for its other panels, so resolving names there reuses that data instead of adding a
+ * per-row `getLearnerById` call here (CLAUDE.md's "no per-entity queries in a loop"). */
+export async function getUpcomingWioaAppointments(
+  viewer: SessionContext,
+  limit = 4,
+): Promise<UpcomingAppointment[]> {
+  const appointments = await withRlsContext(viewer, (tx) =>
+    tx.appointment.findMany({
+      where: { scheduledAt: { gte: new Date() }, completedAt: null },
+      orderBy: { scheduledAt: 'asc' },
+      take: limit,
+      include: { wioaCase: { include: { course: { select: { title: true } } } } },
+    }),
+  );
+
+  return appointments.map((a) => ({
+    id: a.id,
+    caseId: a.wioaCaseId,
+    learnerId: a.wioaCase.learnerId,
+    courseTitle: a.wioaCase.course.title,
+    type: a.type,
+    scheduledAt: a.scheduledAt,
+  }));
+}
+
 export type WioaFundingRecord = {
   id: string;
   trainingProgram: string | null;

@@ -775,18 +775,24 @@
   max-width: 640px;
 }
 .mcard {
-  border-radius: var(--radius-lg);
-  background: var(--surface);
-  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  background: linear-gradient(
+    to top,
+    color-mix(in srgb, var(--ink) 5%, var(--surface)) 0%,
+    var(--surface) 65%
+  );
   padding: 16px 18px;
   display: flex;
   flex-direction: column;
   gap: 6px;
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.1),
+    0 1px 2px rgba(0, 0, 0, 0.03);
 }
 .mcard .ic {
   width: 28px;
   height: 28px;
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-lg);
   background: var(--surface-muted);
   display: flex;
   align-items: center;
@@ -795,15 +801,15 @@
   margin-bottom: 2px;
 }
 .mcard .l {
-  font-size: 13px;
+  font-size: 14px;
   color: var(--ink-muted);
 }
 .mcard .n {
-  font-size: 26px;
+  font-size: 30px;
   line-height: 1;
-  font-weight: 600;
+  font-weight: 500;
   font-family: var(--font-display);
-  color: var(--ink);
+  letter-spacing: -0.01em;
   font-variant-numeric: tabular-nums;
 }
 .dtbtn {
@@ -1677,4 +1683,180 @@
 .chk.done {
   background: var(--status-complete);
   border-color: var(--status-complete);
+}
+
+/* Admin UI parity (docs/plans/admin-ui-parity.md), Batch A — Dashboard review-queue list (ADM02)
+   and trend/status-dot chips ported from nfcap.css, which had them but design-system.css hadn't
+   needed them yet. */
+.trend {
+  font-size: 12px;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  border-radius: var(--radius-full);
+  padding: 2px 8px;
+  width: fit-content;
+}
+.sched-row {
+  display: grid;
+  grid-template-columns: 7.5rem 1fr auto;
+  gap: 12px;
+  align-items: center;
+  padding: 11px 0;
+  border-bottom: 1px solid var(--border);
+}
+.sched-row:last-child {
+  border-bottom: none;
+}
+.sched-left {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+}
+.sched-bar {
+  width: 4px;
+  border-radius: 3px;
+  flex: none;
+  align-self: stretch;
+}
+.sched-bar.red {
+  background: var(--status-problem);
+}
+.sched-bar.yellow {
+  background: var(--status-pending);
+}
+.sched-bar.green {
+  background: var(--status-complete);
+}
+.sched-time {
+  font-size: 12px;
+  white-space: nowrap;
+}
+.sched-time .main {
+  font-weight: 600;
+  color: var(--ink);
+}
+.sched-time .sub {
+  color: var(--ink-muted);
+}
+.sched-mid .title {
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sched-mid .sub {
+  font-size: 12px;
+  color: var(--ink-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.badge-sq {
+  flex: none;
+  border-radius: var(--radius-sm);
+  padding: 4px 9px;
+  font-size: 10px;
+  font-weight: 600;
+}
+.badge-sq.red {
+  background: var(--status-problem-bg);
+  color: var(--status-problem);
+  border: 1px solid var(--status-problem-border);
+}
+.badge-sq.yellow {
+  background: var(--status-pending-bg);
+  color: var(--status-pending);
+  border: 1px solid var(--status-pending-border);
+}
+.badge-sq.green {
+  background: var(--status-complete-bg);
+  color: var(--status-complete);
+  border: 1px solid var(--status-complete-border);
+}
+.av-dot {
+  position: absolute;
+  bottom: -1px;
+  right: -1px;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  border: 2px solid var(--surface);
+}
+.av-dot.active {
+  background: var(--status-complete);
+}
+
+/* Upcoming-events-style date tile (ADM02 Dashboard's "Upcoming WIOA Appointments" panel). */
+.evt-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 0;
+}
+.evt-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.evt-date {
+  width: 44px;
+  height: 44px;
+  flex: none;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.evt-date .mon {
+  height: 33%;
+  background: var(--surface-muted);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+}
+.evt-date .day {
+  height: 67%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+}
+.evt-mid .title {
+  font-size: 13.5px;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.evt-mid .sub {
+  font-size: 12px;
+  color: var(--ink-muted);
+}
+.badge-outline {
+  flex: none;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 4px 9px;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--ink-muted);
+}
+
+/* Muted chart palette (ADM02) — desaturated status triad, chart bars/legend only. */
+:root {
+  --chart-approved: color-mix(in srgb, var(--status-complete) 22%, var(--ink-muted) 78%);
+  --chart-pending: color-mix(in srgb, var(--status-pending) 22%, var(--ink-muted) 78%);
+  --chart-rejected: color-mix(in srgb, var(--status-problem) 22%, var(--ink-muted) 78%);
 }
