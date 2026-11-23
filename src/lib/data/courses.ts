@@ -1,6 +1,13 @@
 import { prisma } from '@/lib/prisma';
 import type { CourseWhereInput } from '@/generated/prisma/models';
-import type { Course, ContentBlock, ContentBlockType, Lesson, LessonType } from '@/lib/types';
+import type {
+  AssessmentCriterion,
+  Course,
+  ContentBlock,
+  ContentBlockType,
+  Lesson,
+  LessonType,
+} from '@/lib/types';
 
 export type AdminCourse = Course & { published: boolean };
 
@@ -114,4 +121,23 @@ export async function getPublishedCourses(): Promise<AdminCourse[]> {
 export async function getCourseBySlug(slug: string): Promise<AdminCourse | undefined> {
   const course = await prisma.course.findUnique({ where: { slug }, include: courseInclude });
   return course ? mapCourse(course) : undefined;
+}
+
+/** A course's assessment criteria, in display order — for Admin authoring (feature #4) and
+ * per-criterion review (feature #7), neither built yet. Deliberately bypasses `courseInclude`
+ * (CLAUDE.md performance conventions — don't add new call sites to it, fetch the narrowest shape
+ * that works); nothing else needs this on every course fetch yet. */
+export async function getAssessmentCriteria(courseSlug: string): Promise<AssessmentCriterion[]> {
+  const criteria = await prisma.assessmentCriterion.findMany({
+    where: { course: { slug: courseSlug } },
+    orderBy: { order: 'asc' },
+    select: {
+      id: true,
+      title: true,
+      guidance: true,
+      photoRequired: true,
+      mandatoryForCertification: true,
+    },
+  });
+  return criteria;
 }

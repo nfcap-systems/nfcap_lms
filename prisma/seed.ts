@@ -9,6 +9,16 @@ const pool = new Pool({ connectionString: process.env.DIRECT_URL! });
 const prisma = new PrismaClient({ adapter: new PrismaPg(pool) });
 
 type SeedQuestion = { prompt: string; options: string[]; correctIndex: number };
+// PLACEHOLDER content — real criteria are blocked on NFCAP's trade experts (docs/plans/
+// phase-3-and-design-migration-kickoff.md Step 2, feature #3: "Low technically — the real
+// dependency is NFCAP's trade expertise to author them"). These exist only so the
+// AssessmentCriterion model has real rows to build and test feature #4/#6/#7 against.
+type SeedCriterion = {
+  title: string;
+  guidance: string;
+  photoRequired: boolean;
+  mandatoryForCertification: boolean;
+};
 type SeedLesson = {
   title: string;
   type: 'VIDEO' | 'TEXT' | 'IMAGE' | 'RESOURCE';
@@ -44,6 +54,7 @@ type SeedCourse = {
   evidencePrompt: string;
   passThreshold: number;
   questions: SeedQuestion[];
+  criteria: SeedCriterion[];
   sections: SeedSection[];
 };
 
@@ -97,6 +108,20 @@ const courses: SeedCourse[] = [
           'Wait for a coworker to check it for you',
         ],
         correctIndex: 1,
+      },
+    ],
+    criteria: [
+      {
+        title: '[PLACEHOLDER] Correct PPE worn',
+        guidance: 'Photo shows hard hat, safety glasses, and gloves worn correctly for the task.',
+        photoRequired: true,
+        mandatoryForCertification: true,
+      },
+      {
+        title: '[PLACEHOLDER] Work area free of hazards',
+        guidance: 'Photo shows a clear, organized work area with no trip or fall hazards visible.',
+        photoRequired: true,
+        mandatoryForCertification: true,
       },
     ],
     sections: [
@@ -199,6 +224,21 @@ const courses: SeedCourse[] = [
         correctIndex: 1,
       },
     ],
+    criteria: [
+      {
+        title: '[PLACEHOLDER] Subfloor flatness checked',
+        guidance: 'Photo shows a straightedge or level being used to check subfloor flatness.',
+        photoRequired: true,
+        mandatoryForCertification: true,
+      },
+      {
+        title: '[PLACEHOLDER] Moisture tested before installation',
+        guidance:
+          'Photo or description of a moisture test performed on the subfloor before installing flooring.',
+        photoRequired: false,
+        mandatoryForCertification: true,
+      },
+    ],
     sections: [
       {
         title: 'Subfloor Preparation',
@@ -289,6 +329,20 @@ const courses: SeedCourse[] = [
           'The next crew’s schedule only',
         ],
         correctIndex: 1,
+      },
+    ],
+    criteria: [
+      {
+        title: '[PLACEHOLDER] Layout dry-fit confirmed',
+        guidance: 'Photo shows a dry-fit layout checked against the room before setting tile.',
+        photoRequired: true,
+        mandatoryForCertification: true,
+      },
+      {
+        title: '[PLACEHOLDER] Correct trowel size and pattern used',
+        guidance: 'Photo of the set tile showing even trowel ridges and the stated pattern.',
+        photoRequired: true,
+        mandatoryForCertification: true,
       },
     ],
     sections: [
@@ -385,6 +439,20 @@ const courses: SeedCourse[] = [
         correctIndex: 0,
       },
     ],
+    criteria: [
+      {
+        title: '[PLACEHOLDER] Professional communication demonstrated',
+        guidance: 'Short written account of a client or crew interaction handled professionally.',
+        photoRequired: false,
+        mandatoryForCertification: true,
+      },
+      {
+        title: '[PLACEHOLDER] Reliability demonstrated',
+        guidance: 'Short written account of punctuality or schedule coordination on a job site.',
+        photoRequired: false,
+        mandatoryForCertification: false,
+      },
+    ],
     sections: [
       {
         title: 'On the Job',
@@ -436,6 +504,7 @@ async function main() {
     // trying to diff section/lesson/question lists — simplest correct approach for a seed script.
     await prisma.section.deleteMany({ where: { courseId: course.id } });
     await prisma.assessment.deleteMany({ where: { courseId: course.id } });
+    await prisma.assessmentCriterion.deleteMany({ where: { courseId: course.id } });
 
     for (const [sectionIndex, section] of c.sections.entries()) {
       await prisma.section.create({
@@ -476,6 +545,17 @@ async function main() {
           })),
         },
       },
+    });
+
+    await prisma.assessmentCriterion.createMany({
+      data: c.criteria.map((criterion, criterionIndex) => ({
+        courseId: course.id,
+        title: criterion.title,
+        guidance: criterion.guidance,
+        photoRequired: criterion.photoRequired,
+        mandatoryForCertification: criterion.mandatoryForCertification,
+        order: criterionIndex,
+      })),
     });
 
     console.log(`Seeded course: ${c.title} (${c.slug})`);

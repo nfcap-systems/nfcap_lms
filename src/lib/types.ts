@@ -52,6 +52,21 @@ export type Assessment = {
   questions: QuizQuestion[];
 };
 
+// Per-course criteria a trainee must demonstrate for certification (docs/client/
+// NFCAP_LMS_Feature_Detail_Client.md, "Per-Course Assessment Criteria"). Deliberately not nested
+// on `Course` below — authoring (feature #4) and per-criterion review (feature #7) aren't built
+// yet, so nothing needs it on every course fetch; see `getAssessmentCriteria` in
+// src/lib/data/courses.ts for the narrow fetch this uses instead.
+export type AssessmentCriterion = {
+  id: string;
+  title: string;
+  guidance: string;
+  /** Whether this criterion must be demonstrated with a photo, vs. satisfied by description alone. */
+  photoRequired: boolean;
+  /** Whether a Certificate requires this criterion to be marked Met (feature #7, not built yet). */
+  mandatoryForCertification: boolean;
+};
+
 export type Course = {
   id: string;
   title: string;
