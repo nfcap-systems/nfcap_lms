@@ -113,7 +113,7 @@ canonical `.dtcard` reference per `docs/MOCKUP-INDEX.md` line 260), `ADM08-Pathw
 
 | Batch | Branch | PR / merge commit | State | Date |
 | --- | --- | --- | --- | --- |
-| A — Dashboard, Learners, Audit Log | `feature/admin-ui-parity-dashboard-learners-audit` | Not yet pushed | Built, not committed | 2026-11-23 |
+| A — Dashboard, Learners, Audit Log | `feature/admin-ui-parity-dashboard-learners-audit` | commit `26e4a22`, not pushed | Committed 2026-11-24; `npm run build` clean (first run on this work). Visual pass still owed by the user. | 2026-11-23 |
 | B — Courses, Pathway, Roles | | | Not started | |
 | C — WIOA admin trio | | | Not started | |
 

@@ -113,8 +113,8 @@ Verified against `prisma/schema.prisma` (32 models) — none of the below exist 
 | `Announcement` + audience targeting + read state | `ADM14`, `LRN01-Home`'s announcement banner | Announcements | 6 | 14 |
 | `Notification` + read/unread + type | `ADM18-NotificationsPanel`, the topbar bell on **every** staff board, Learner header | Notification Coverage Completion | 6 | 18 |
 | `MessageThread`, `Message`, participants, read state | `ADM26-Inbox`, `ADM22-InboxEmpty`, `LRN14`, `LRN14b`, `LRN15`, the Inbox button in the staff shell | Trainee ↔ Staff Messaging | 6 | 36 |
-| `PhotoAnnotation` (x/y-pinned note on an evidence file) | `ADM12-PhotoAnnotation`, `ADM11` | Photo Annotation | 3 #8 | 20 |
-| `CriterionEvidenceFile` (file **per criterion**, not per submission) | `LRN06b/06c` guided capture, `LRN06d/e/f`, `ADM11`, `ADM12` | Guided Evidence Capture + Feedback/Resubmission + Attempt History | 3 #9–#11 | 64 |
+| ~~`PhotoAnnotation`~~ | ~~`ADM12`, `ADM11`~~ | **DONE on stage** — shipped as `CriterionAssessment.annotationData` (Json, normalized 0–1 coords) + `src/lib/types/annotation.ts`, not a separate model. PR #20. | 3 #8 | ~~20~~ |
+| ~~`CriterionEvidenceFile`~~ | ~~`LRN06b/06c`, `LRN06d/e/f`~~ | **DONE on stage** — shipped as fields on `CriterionAssessment` (`learnerFilePath`, `learnerFileName`, `learnerDescription`, `submittedAt`, `carriedForward`), not a separate model. PRs #20/#21. A better design than this plan's: per-criterion capture lives on the existing verdict row. | 3 #9–#11 | ~~64~~ |
 | Learner activity timestamp (new field, or surface `CompletedLesson.completedAt`) | `ADM03`'s three-tier `.av-dot`, `ADM02` Recent Learners, `RPT01` at-risk flags | Admin Reporting Depth | 6 | — |
 | Point-in-time status history / snapshots | `ADM02`'s trend badges (render `—` today), `RPT01` trends | Admin Reporting Depth | 6 | 28 |
 | Credential public verification token / slug | `LRN09-PublicVerify` | Public Verification Page + QR | 4 | 20 |
@@ -127,10 +127,13 @@ Verified against `prisma/schema.prisma` (32 models) — none of the below exist 
 
 1. **One read-state pattern, not three.** Notifications, Announcements and Messages all need
    per-user read/unread. Design a single shared receipt pattern once.
-2. **`CriterionEvidenceFile` must be designed together with what already shipped** — Phase 3 #1's
-   `EvidenceSubmission.filePath`, #7's `CriterionAssessment`, and the certification gate in
-   `applyEvidenceStatus`. It changes the grain of evidence from per-submission to per-criterion.
-   Getting this wrong means re-migrating live data.
+2. ~~`CriterionEvidenceFile` design~~ — **moot, already solved on stage.** The evidence grain is
+   already per-criterion via `CriterionAssessment`'s learner-capture fields (PRs #20/#21,
+   migrations `20261123120000_add_criterion_capture_and_annotation` and
+   `20261123150000_add_criterion_carried_forward`). **Read those two migrations and the
+   `CriterionAssessment` doc comments before designing anything evidence-adjacent** — they encode
+   real decisions (carried-forward Met verdicts are excluded from attempt history; annotations are
+   reviewer-only and never surfaced to the learner).
 3. **RLS policies for every new model.** `src/lib/db/rls.ts`'s `withRlsContext`, per Phase 1.
    Remember the infinite-recursion bug in `app_can_access_case`/`app_can_access_learner`
    (migration `20261117050000`) — helper functions that reference the tables they guard recurse.
@@ -202,7 +205,7 @@ role — this is the point of role-wise ordering).
 | `LRN01-Home`, `LRN02`+`02b`+`02c`, `LRN07`+`07b`, `LRN08`+`08b`, `LRN13`, `LRN11`, `LRN12`, auth | `/learner`, `/my-learning`, `/portfolio`, `/certificates`, `/explore`, `/account`, `/signup`, `/login` etc. | **Matched** (Step 1.4). Verify only. Confirm the 5 empty-state splits exist in code — `StateCard` currently appears in **no** learner component, only Admin/WIOA ones. | done |
 | `LRN04`, `LRN05`, `LRN05b`, `LRN05c` | `/learner/courses/[courseId]` | **Token sweep only, never structurally matched.** **Decision 2026-11-24: build the boards' own structure** — overview (`LRN03`) → player (`LRN04`) → quiz (`LRN05`→`05b`→`05c`) as discrete screens, not one combined screen. This is a restructure of the real route, not a reskin. Quiz depth (banks, random order, attempt limits) comes with it. | 6 — Quiz Engine Depth (32h) |
 | `LRN03-CourseOverview` | **no route — build one** | Syllabus/overview screen before the player. **Decision 2026-11-24: build it as drawn.** Today the app jumps straight into `/learner/courses/[courseId]`; this becomes the course's landing screen with the player behind it. | unscoped — raise against Curriculum & Pathway |
-| `LRN06`, `LRN06b`, `LRN06c`, `LRN06d`, `LRN06e`, `LRN06f` | evidence flow | `LRN06`'s criteria checklist shipped with #7. The rest needs Layer 1's `CriterionEvidenceFile`. | 3 #9/#10/#11 (64h) |
+| `LRN06`, `LRN06b`, `LRN06c`, `LRN06d`, `LRN06e`, `LRN06f` | evidence flow, `/learner/courses/[courseId]/attempts/[criterionId]` | **ALL BUILT on stage** (PRs #20–#22): `GuidedEvidenceCapture.tsx` (`LRN06b/06c`), `EvidenceNotMet.tsx` (`LRN06d/06e`), `AttemptHistoryView.tsx` + a real route (`LRN06f`), criteria checklist in `EvidenceView.tsx` (`LRN06`). **Verify parity against the boards; do not rebuild.** | 3 — done |
 | `LRN10`+`10c`/`10e`/`10f`/`10g`/`10h`, `LRN10d` | `/learner/funding` | Token sweep only. **The code is ahead of the board.** **Decision 2026-11-24: redraw the canvas to match the code** (stream **C1**), following the existing LRN board pattern — then retrofit the route to the redrawn board. **Blocked on C1.** | 5 — Funding Progress Transparency (28h) |
 | `LRN10b-EligibilitySelfCheck` | **no route** | Pre-screening quiz. | 5 (20h) |
 | `LRN10i-Appointments` | **no route found** | `Appointment` model exists; Coordinator schedules into it. Learner-facing view unverified. | 5 |
@@ -222,7 +225,7 @@ Furthest from matched. Exercises the staff shell hardest, so it shakes out Layer
 | `ADM05`, `ADM08`, `ADM17` | `/admin/courses`, `/admin/pathway`(+detail), `/admin/roles` | Mechanical — `DataTableCard` family already exists. | parity |
 | `WIOA01`–`WIOA04` | `/admin/wioa/*` | Two are dialog-heavy. Retrofit to the locked `.dtcard` pattern from `ADM03`, **not** to `WIOA01`'s own stale table. | parity |
 | `ADM10`, `ADM25`, `ADM11` | `/admin/reviews`, review screen | Shipped (#6, #7). **#7's certification gate was merged CI-green with no manual pass** — see §Verification debt. | 3 (done) |
-| `ADM12-PhotoAnnotation` | — | Needs Layer 1's `PhotoAnnotation`. | 3 #8 (20h) |
+| `ADM12-PhotoAnnotation` | inside the review screen | **BUILT on stage** (PR #20) — `src/components/admin/PhotoAnnotationDialog.tsx`, `.tool` class in `design-system.css`. **Verify parity; do not rebuild.** | 3 — done |
 | `ADM13-Cohorts` | **no route** | Needs `Cohort`. | 6 (24h) |
 | `ADM14-AnnouncementsNotifications` | **no route** | Needs `Announcement` + `Notification`. | 6 (14+18h) |
 | `ADM15-DataInOut` | **no route** | CSV enrol + export. | 6 (18+14h) |
@@ -252,19 +255,27 @@ Board-backed work remaining, by phase. Hours from the scope doc, not estimated h
 
 | Phase | Total | Already shipped | Board-backed remaining |
 | --- | ---: | --- | ---: |
-| 3 — Evidence & Competency | 260h | #1, #2, #3, #4, #6, #7 (150h) | **110h** (#5 12 · #8 20 · #9 28 · #10 24 · #11 12 · #12 14) |
+| 3 — Evidence & Competency | 260h | **COMPLETE** — all 11 engineering features merged (PRs #13–#22) | **0h** (only #5, 12h of NFCAP trade-expert sessions, is non-engineering — confirm with the client whether it's considered delivered) |
 | 4 — Credential Integrity | 80h | — | **80h** |
 | 5 — Funding Productisation | 130h | part of Funding Impact Reporting | **~130h** |
 | 6 — Communication & Operations | 184h | — | **184h** |
-| **Board-backed total** | | | **~504h** |
+| **Board-backed total** | | | **~394h** |
 | UI parity (Layers 0/2 + 3B retrofits) | not in the 65-feature plan | | unestimated, ~80–120h |
 | 7 — Accessibility, 8 — Hardening & Launch | | | **stay phase-wise** — no boards drive them |
 
-**Timeline, honestly:** ~504h of board-backed work plus parity is roughly **7–8 weeks with two
-engineers**, double that with one — before Phases 7 and 8. Phases 0–2 are complete and Phase 3 is
-over half done, so this is consistent with the approved ~18-week / 1,431h plan, not a departure
-from it. **It does not land before a client presentation.** What a presentation shows is the canvas
-plus the working slice, with this ledger as the roadmap.
+**Timeline, honestly:** ~394h of board-backed work plus parity is roughly **5–6 weeks with two
+engineers**, double that with one — before Phases 7 and 8. **Phases 0, 1, 2 and 3 are all
+complete**, so this is consistent with the approved ~18-week / 1,431h plan, not a departure from
+it. **It does not land before a client presentation.** What a presentation shows is the canvas plus
+the working slice — which is now a substantial slice, since Phase 3 is the product's starred core —
+with this ledger as the roadmap.
+
+> **Corrected 2026-11-24.** This plan was first written believing Phase 3 had ~110h left. It did
+> not: PRs #20, #21 and #22 (Photo Annotation, Guided Capture, Feedback/Resubmission, Attempt
+> History, Legacy Regression) had already merged to `stage`, 8 commits ahead of the branch this
+> plan was written on. The ledger, Layer 1 and the 3A/3B tables above are corrected. **Check
+> `stage` before trusting any status claim in any plan doc** — that is exactly the drift
+> `docs/MOCKUP-INDEX.md`'s own maintenance rule warns about, and it happened here too.
 
 ---
 
@@ -308,8 +319,14 @@ plus the working slice, with this ledger as the roadmap.
    `CLAUDE.local.md` #1 is what happens otherwise.
 8. **Don't fabricate data to fill a board.** If a board shows a field the schema lacks, that's a
    Layer 1 item, not an invented column.
-9. **`docs/build/PHASE_3_PROGRESS.md` is stale** (says "all 12 not started"). The live record is
-   `docs/plans/phase-3-and-design-migration-kickoff.md`'s progress log. Fix or delete it.
+9. **Verify status against `stage`, never from a plan doc.** `docs/build/PHASE_3_PROGRESS.md` was
+   stale (claimed "all 12 not started") and was fixed on `stage` in `9753e2b` — but this plan was
+   itself written off a branch 8 commits behind and inherited the same error. Before acting on any
+   "not started" or "remaining" claim: `git fetch && git log --oneline <your-base>..origin/stage`.
+10. **Run `npx prisma generate` after any merge that touches `prisma/schema.prisma`.**
+   `src/generated/prisma` is gitignored, so a merge brings the schema without a matching client and
+   every downstream type error looks like a real conflict. Restart the dev server too —
+   `CLAUDE.local.md` #3.
 
 ---
 
@@ -342,6 +359,6 @@ Accuracy rule, same as the Phase 3 tracker: update the moment a state changes, v
 | 3A — Learner (overview/player/quiz restructure) | | | Not started — unblocked | |
 | 3A — Learner (funding) | | | Blocked on C1 | |
 | 3A — Learner (profile) | | | Blocked on C2 | |
-| 3B — Admin (Batch A commit) | `feature/admin-ui-parity-dashboard-learners-audit` | | Built, uncommitted | 2026-11-23 |
+| 3B — Admin (Batch A) | `feature/admin-ui-parity-dashboard-learners-audit` | commit `26e4a22`, not pushed | **Committed.** `npm run build` clean (first run on this work), `tsc`/`lint` clean. Visual pass still owed by the user. | 2026-11-24 |
 | 3B — Admin (remaining) | | | Not started | |
 | 3C — Coordinator + Partner | | | Not started | |
