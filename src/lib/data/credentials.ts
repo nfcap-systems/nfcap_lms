@@ -2,9 +2,24 @@ import { prisma } from '@/lib/prisma';
 import type { AdminCourse } from './courses';
 import type { EvidenceSubmission } from './progress';
 
+/** One criterion's own capture on a guided submission (feature #9) — what the learner actually
+ * showed for it. Empty for legacy submissions, whose evidence lives on the submission itself. */
+export type CredentialCriterion = {
+  criterionAssessmentId: string;
+  title: string;
+  description?: string;
+  fileName?: string;
+  hasFile: boolean;
+};
+
 export type Credential = {
   course: AdminCourse;
   evidence: EvidenceSubmission;
+  /** Per-criterion captures, in criterion order, for a guided submission; empty for a legacy one.
+   * Without this the Portfolio renders a guided submission as a blank card, since the submission's
+   * own `description`/`fileName` are empty by design on that path
+   * (docs/plans/phase-3-and-design-migration-kickoff.md Step 2, feature #12). */
+  criteria: CredentialCriterion[];
   certificateId: string;
 };
 
@@ -19,7 +34,13 @@ export async function getCredentialsForLearner(
     where: { enrollment: { learnerId } },
     include: {
       enrollment: { include: { course: { select: { slug: true } } } },
-      evidenceSubmission: true,
+      evidenceSubmission: {
+        include: {
+          criterionAssessments: {
+            include: { criterion: { select: { title: true, order: true } } },
+          },
+        },
+      },
     },
   });
 
@@ -30,17 +51,30 @@ export async function getCredentialsForLearner(
       const course = courseBySlug.get(cert.enrollment.course.slug);
       if (!course) return null;
       const evidence = cert.evidenceSubmission;
+      const assessments = [...evidence.criterionAssessments].sort(
+        (a, b) => a.criterion.order - b.criterion.order,
+      );
       return {
         course,
         evidence: {
           id: evidence.id,
           description: evidence.description,
           fileName: evidence.fileName ?? undefined,
-          hasFile: Boolean(evidence.filePath),
+          hasFile:
+            Boolean(evidence.filePath) || assessments.some((a) => Boolean(a.learnerFilePath)),
+          hasSubmissionFile: Boolean(evidence.filePath),
+          isPerCriterion: assessments.length > 0,
           status: evidence.status.toLowerCase() as EvidenceSubmission['status'],
           submittedAt: evidence.submittedAt.toISOString(),
           statusUpdatedAt: evidence.statusUpdatedAt?.toISOString(),
         },
+        criteria: assessments.map((a) => ({
+          criterionAssessmentId: a.id,
+          title: a.criterion.title,
+          description: a.learnerDescription ?? undefined,
+          fileName: a.learnerFileName ?? undefined,
+          hasFile: Boolean(a.learnerFilePath),
+        })),
         certificateId: cert.certificateCode,
       };
     })

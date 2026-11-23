@@ -432,18 +432,42 @@ export async function setEvidenceStatus(
   revalidateLearnerViews(learnerId, courseSlug);
 }
 
+export type BulkApproveResult = {
+  approved: number;
+  /** Submissions that could not be approved, each with the reason — almost always feature #7's
+   * gated-certification rule (a mandatory criterion not yet marked Met). */
+  skipped: { learnerId: string; courseSlug: string; reason: string }[];
+};
+
 /** Reviewer Queue's "Bulk approve" (docs/plans/phase-3-and-design-migration-kickoff.md Step 2,
  * feature #6 / board ADM10-ReviewQueue) — approves every selected submission in one round trip
  * instead of one server-action call per row. Revalidates each distinct learner/course pair once,
- * not once per item. */
+ * not once per item.
+ *
+ * Collects per-item failures instead of throwing on the first one (feature #12): since feature #7
+ * made `applyEvidenceStatus` refuse approval while a mandatory criterion is unmet, a single such
+ * row in the selection used to abort the whole call — after some of the earlier rows had already
+ * been approved and committed — and surfaced as the global error page, losing the queue. Now every
+ * approvable row is approved and the caller is told which ones need per-criterion review. */
 export async function bulkApproveEvidence(
   items: { learnerId: string; courseSlug: string }[],
-): Promise<void> {
+): Promise<BulkApproveResult> {
   const admin = await requireAdmin();
+  const result: BulkApproveResult = { approved: 0, skipped: [] };
   for (const { learnerId, courseSlug } of items) {
-    await applyEvidenceStatus(admin, learnerId, courseSlug, 'approved');
+    try {
+      await applyEvidenceStatus(admin, learnerId, courseSlug, 'approved');
+      result.approved += 1;
+    } catch (e) {
+      result.skipped.push({
+        learnerId,
+        courseSlug,
+        reason: e instanceof Error ? e.message : 'Could not be approved.',
+      });
+    }
   }
   for (const { learnerId, courseSlug } of items) {
     revalidateLearnerViews(learnerId, courseSlug);
   }
+  return result;
 }

@@ -48,9 +48,23 @@ export function EvidenceView({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [resubmitting, setResubmitting] = useState(false);
 
+  // Whether a NEW submission goes through the guided per-criterion flow — a property of the
+  // course, since that is what decides the form the learner is given.
   const guided = criteria.length > 0;
+  // Whether the EXISTING submission was made that way. Not the same question: a submission made
+  // before feature #9 (or before this course had criteria) keeps its evidence in
+  // `description`/`fileName`, and rendering it through the guided summary hides it entirely —
+  // the legacy-data regression this split fixes
+  // (docs/plans/phase-3-and-design-migration-kickoff.md Step 2, feature #12).
+  const submissionIsGuided = Boolean(evidence?.isPerCriterion);
 
-  if (evidence && !resubmitting && guided && evidence.status === 'rejected' && resubmission) {
+  if (
+    evidence &&
+    !resubmitting &&
+    submissionIsGuided &&
+    evidence.status === 'rejected' &&
+    resubmission
+  ) {
     return (
       <EvidenceNotMet
         course={course}
@@ -66,7 +80,7 @@ export function EvidenceView({
     return (
       <div className="flex flex-col gap-5">
         <Header />
-        {guided ? (
+        {submissionIsGuided ? (
           <GuidedEvidenceCapture
             course={course}
             criteria={criteria}
@@ -91,8 +105,10 @@ export function EvidenceView({
                 ? '. Your course is complete and your certificate has been issued.'
                 : '. Update your submission below and resubmit for another review.'}
           </p>
-          {!guided && <p className="text-sm text-[var(--ink)]">{evidence.description}</p>}
-          {!guided && evidence.hasFile && (
+          {!submissionIsGuided && (
+            <p className="text-sm text-[var(--ink)]">{evidence.description}</p>
+          )}
+          {!submissionIsGuided && evidence.hasSubmissionFile && (
             <button
               type="button"
               onClick={() => {

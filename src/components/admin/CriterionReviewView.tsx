@@ -149,8 +149,16 @@ export function CriterionReviewView({
               No attachment submitted.
             </p>
           )}
+          {/* Guided submissions (feature #9) carry no course-level description — this used to
+              render as a bare pair of quote marks (feature #12). */}
           <div style={{ fontSize: 13, color: 'var(--ink-muted)', lineHeight: 1.5 }}>
-            &ldquo;{review.description}&rdquo;
+            {review.description.trim().length > 0 ? (
+              <>&ldquo;{review.description}&rdquo;</>
+            ) : (
+              <span style={{ color: 'var(--ink-faint)' }}>
+                No overall description — this evidence was submitted criterion by criterion.
+              </span>
+            )}
           </div>
         </div>
 
