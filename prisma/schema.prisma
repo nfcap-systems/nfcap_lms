@@ -213,8 +213,11 @@ model EvidenceSubmission {
   enrollmentId    String
   enrollment      Enrollment     @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
   description     String
-  /// Display filename only — no real file storage yet (Supabase Storage integration deferred).
+  /// Display filename only — the original name the learner uploaded.
   fileName        String?
+  /// Private-bucket storage object key (`src/lib/supabase/evidence-storage.ts`). Null for rows
+  /// submitted before this field existed, or for description-only submissions with no attachment.
+  filePath        String?
   status          EvidenceStatus @default(PENDING)
   submittedAt     DateTime       @default(now())
   statusUpdatedAt DateTime?

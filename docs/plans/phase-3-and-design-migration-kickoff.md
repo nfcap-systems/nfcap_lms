@@ -78,6 +78,27 @@ Build against the now-updated component library, matching `LRN06`/`JRN09`/`ADM10
 | 11 | Attempt History | 12 | Reuse the "latest attempt computed at query time" pattern already used by `QuizAttempt`/`EvidenceSubmission`. |
 | 12 | Legacy Data & Regression Pass | 14 | Confirm certificates, portfolio, dashboards, search, and the WIOA module are unaffected. |
 
+**Board → feature mapping — added 2026-11-23, after PR #13.** Each of Step 0's 10 approved boards
+belongs to exactly one feature below; when that feature is built, the board is the literal spec
+(visual-compare verified, same standard as Step 1.4's retrofit — "close enough" doesn't count).
+Features #1 and #2 have **no board** — they're storage/cost plumbing underneath the existing
+(pre-redesign) evidence UI, not a visual change. The per-criterion model (`LRN06-EvidenceCriteria`
+itself) can't be built before #3's criteria tree exists, which is why the real visual rebuild of
+the evidence screen doesn't start until #7/#9, not #1.
+
+| Board | Delivered by |
+| --- | --- |
+| `LRN06-EvidenceCriteria` | #7 Per-Criterion Review & Gated Certification |
+| `LRN06b-EvidenceCapture`, `LRN06c-EvidenceCapturePhone` | #9 Guided Evidence Capture |
+| `LRN06d-EvidenceNotMet`, `LRN06e-EvidenceResubmit` | #10 Per-Criterion Feedback & Targeted Resubmission |
+| `LRN06f-AttemptHistory` | #11 Attempt History |
+| `JRN09-AdminReview`, `ADM10-ReviewQueue`, `ADM11-PerCriterionReview` | #6 Reviewer Queue + #7 |
+| `ADM12-PhotoAnnotation` | #8 Photo Annotation |
+
+**Decision 2026-11-23 (re: PR #13 UI question):** explicitly keeping the planned order — PR #13
+(Feature #1) stays storage-only, no `LRN06b/c` visual pull-forward. The real visual rework happens
+later alongside the per-criterion model in #7/#9, not decoupled into an earlier pass.
+
 One branch per feature: `feature/phase3-<n>-<short-name>` → PR `Phase 3.<n>: <name>` → `stage`.
 Each one gets the normal quality gates: `npm run lint`, `npm run build`, `npm test`
 (`npm run test:e2e` where Docker is available), plus a real visual compare against its approved

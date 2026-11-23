@@ -11,7 +11,7 @@ import { Progress } from '@/components/admin-ui/progress';
 import type { AdminCourse } from '@/lib/data/courses';
 import type { LearnerRecord } from '@/lib/data/learners';
 import type { CourseProgress, CourseUnlockRecord } from '@/lib/data/progress';
-import { setEvidenceStatus, grantCourseUnlock } from '@/lib/actions/progress';
+import { setEvidenceStatus, grantCourseUnlock, getEvidenceFileUrl } from '@/lib/actions/progress';
 import { courseLessonCount } from '@/lib/types';
 import { getCourseStatus, courseStatusLabel, courseStatusTone } from '@/lib/course-status';
 import type { StatusTone } from '@/components/ui/Badge';
@@ -123,11 +123,20 @@ export function LearnerProfileView({
                       </span>
                     </div>
                     <p className="text-sm text-muted-foreground">{evidence.description}</p>
-                    {evidence.fileName && (
-                      <div className="flex w-fit items-center gap-2 rounded-lg border bg-card px-3 py-2 text-sm text-muted-foreground">
+                    {evidence.hasFile && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          startTransition(async () => {
+                            const url = await getEvidenceFileUrl(evidence.id);
+                            window.open(url, '_blank', 'noopener,noreferrer');
+                          });
+                        }}
+                        className="flex w-fit items-center gap-2 rounded-lg border bg-card px-3 py-2 text-sm text-muted-foreground hover:text-foreground"
+                      >
                         <Paperclip className="size-4 shrink-0 text-primary" />
-                        {evidence.fileName}
-                      </div>
+                        {evidence.fileName ?? 'View attachment'}
+                      </button>
                     )}
 
                     {evidence.status === 'pending' ? (

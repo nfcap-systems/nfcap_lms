@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { prisma } from '@/lib/prisma';
-import { enroll, submitEvidence, setEvidenceStatus } from '@/lib/actions/progress';
+import { enroll, submitEvidence, setEvidenceStatus, getEvidenceFileUrl } from '@/lib/actions/progress';
 import { mockAuthUser } from '../setup/auth-mock';
 import { createCourse, fakeUserId } from '../setup/fixtures';
 
@@ -15,7 +15,7 @@ describe('evidence → certificate', () => {
   async function enrollAndSubmit() {
     const course = await createCourse({ access: 'OPEN' });
     await enroll(course.slug);
-    await submitEvidence(course.slug, 'Finished the flooring section.', 'photo.jpg');
+    await submitEvidence(course.slug, 'Finished the flooring section.', null);
     return course;
   }
 
@@ -74,6 +74,32 @@ describe('evidence → certificate', () => {
 
     await expect(setEvidenceStatus(learnerId, course.slug, 'approved')).rejects.toThrow(
       /no evidence submission/i,
+    );
+  });
+
+  it('refuses to sign a file URL for a submission with no attachment', async () => {
+    const course = await enrollAndSubmit();
+    const enrollment = await prisma.enrollment.findUniqueOrThrow({
+      where: { learnerId_courseId: { learnerId, courseId: course.id } },
+      include: { evidenceSubmissions: true },
+    });
+
+    await expect(getEvidenceFileUrl(enrollment.evidenceSubmissions[0].id)).rejects.toThrow(
+      /no file attached/i,
+    );
+  });
+
+  it('refuses to sign a file URL for a learner who does not own the submission', async () => {
+    const course = await enrollAndSubmit();
+    const enrollment = await prisma.enrollment.findUniqueOrThrow({
+      where: { learnerId_courseId: { learnerId, courseId: course.id } },
+      include: { evidenceSubmissions: true },
+    });
+
+    mockAuthUser('LEARNER', fakeUserId());
+
+    await expect(getEvidenceFileUrl(enrollment.evidenceSubmissions[0].id)).rejects.toThrow(
+      /not your evidence submission/i,
     );
   });
 });

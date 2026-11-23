@@ -3,8 +3,10 @@ import { prisma } from '@/lib/prisma';
 export type QuizAttempt = { scorePercent: number; passed: boolean; submittedAt: string };
 export type EvidenceStatus = 'pending' | 'approved' | 'rejected';
 export type EvidenceSubmission = {
+  id: string;
   description: string;
   fileName?: string;
+  hasFile: boolean;
   status: EvidenceStatus;
   submittedAt: string;
   statusUpdatedAt?: string;
@@ -48,8 +50,10 @@ function mapEnrollment(enrollment: DbEnrollment): CourseProgress {
       : undefined,
     evidence: evidence
       ? {
+          id: evidence.id,
           description: evidence.description,
           fileName: evidence.fileName ?? undefined,
+          hasFile: Boolean(evidence.filePath),
           status: evidence.status.toLowerCase() as EvidenceStatus,
           submittedAt: evidence.submittedAt.toISOString(),
           statusUpdatedAt: evidence.statusUpdatedAt?.toISOString(),

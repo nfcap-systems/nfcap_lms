@@ -4,7 +4,7 @@ import { useRef, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { Badge, Button, Field, Textarea } from '@/components/ui';
 import { Icon } from '@/components/icons';
-import { submitEvidence } from '@/lib/actions/progress';
+import { submitEvidence, getEvidenceFileUrl } from '@/lib/actions/progress';
 import type { EvidenceSubmission } from '@/lib/data/progress';
 import type { Course } from '@/lib/types';
 
@@ -53,11 +53,20 @@ export function EvidenceView({
                 : '. Update your submission below and resubmit for another review.'}
           </p>
           <p className="text-sm text-[var(--ink)]">{evidence.description}</p>
-          {evidence.fileName && (
-            <div className="flex items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--ink-muted)]">
+          {evidence.hasFile && (
+            <button
+              type="button"
+              onClick={() => {
+                startTransition(async () => {
+                  const url = await getEvidenceFileUrl(evidence.id);
+                  window.open(url, '_blank', 'noopener,noreferrer');
+                });
+              }}
+              className="flex items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--ink-muted)] hover:text-[var(--ink)]"
+            >
               <Icon name="paperclip" className="size-4 shrink-0 text-[var(--accent)]" />
-              {evidence.fileName}
-            </div>
+              {evidence.fileName ?? 'View attachment'}
+            </button>
           )}
           {evidence.status === 'approved' && (
             <Button size="sm" onClick={() => router.push('/learner/certificates')}>
@@ -134,6 +143,7 @@ export function EvidenceView({
         <input
           ref={fileInputRef}
           type="file"
+          accept="image/jpeg,image/png,application/pdf,video/mp4,video/quicktime"
           className="hidden"
           onChange={(e) => setFile(e.target.files?.[0] ?? null)}
         />
@@ -144,9 +154,9 @@ export function EvidenceView({
           disabled={description.trim().length === 0}
           onClick={() => {
             const desc = description.trim();
-            const fileName = file?.name;
+            const attachment = file;
             startTransition(async () => {
-              await submitEvidence(course.id, desc, fileName);
+              await submitEvidence(course.id, desc, attachment);
               router.refresh();
             });
             setResubmitting(false);
