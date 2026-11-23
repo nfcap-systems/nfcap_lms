@@ -10,8 +10,6 @@ import { Resend } from 'resend';
  * email until a real NFCAP sending subdomain is verified. Swap EMAIL_FROM once that's done — no
  * code change needed. */
 
-const resend = new Resend(process.env.RESEND_API_KEY);
-
 export async function sendEmail(params: {
   to: string;
   subject: string;
@@ -24,6 +22,11 @@ export async function sendEmail(params: {
     return;
   }
 
+  // Constructed lazily, not at module scope — the Resend constructor throws immediately when
+  // the key is missing/undefined, which was crashing any test file that merely imported this
+  // module (even indirectly) in an environment with no RESEND_API_KEY, before sendEmail was ever
+  // called.
+  const resend = new Resend(process.env.RESEND_API_KEY);
   const from = process.env.EMAIL_FROM || 'NFCAP <onboarding@resend.dev>';
   const { error } = await resend.emails.send({
     from,
