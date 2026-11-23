@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { Icon } from '@/components/icons';
 import { Badge } from '@/components/admin-ui/badge';
 import { CurriculumBuilderView } from '@/components/admin/CurriculumBuilderView';
-import { getCourseBySlug } from '@/lib/data/courses';
+import { getAssessmentCriteria, getCourseBySlug } from '@/lib/data/courses';
 
 export default async function CurriculumBuilderPage({
   params,
@@ -10,7 +10,10 @@ export default async function CurriculumBuilderPage({
   params: Promise<{ courseId: string }>;
 }) {
   const { courseId } = await params;
-  const course = await getCourseBySlug(courseId);
+  const [course, criteria] = await Promise.all([
+    getCourseBySlug(courseId),
+    getAssessmentCriteria(courseId),
+  ]);
 
   if (!course) {
     return (
@@ -54,7 +57,7 @@ export default async function CurriculumBuilderPage({
           Preview as Learner
         </Link>
       </div>
-      <CurriculumBuilderView course={course} />
+      <CurriculumBuilderView course={course} criteria={criteria} />
     </div>
   );
 }

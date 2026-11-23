@@ -8,6 +8,7 @@ import { cn } from '@/lib/cn';
 import { Badge } from '@/components/admin-ui/badge';
 import { Button } from '@/components/admin-ui/button';
 import { Card, CardContent } from '@/components/admin-ui/card';
+import { Checkbox } from '@/components/admin-ui/checkbox';
 import {
   Dialog,
   DialogContent,
@@ -28,20 +29,25 @@ import {
 import { Textarea } from '@/components/admin-ui/textarea';
 import {
   addContentBlock,
+  addCriterion,
   addLesson,
   addQuestion,
   addSection,
   deleteContentBlock,
+  deleteCriterion,
   deleteLesson,
   deleteQuestion,
   deleteSection,
   moveContentBlock,
+  moveCriterion,
   updateContentBlock,
+  updateCriterion,
   updateLesson,
   updateQuestion,
   updateSection,
 } from '@/lib/actions/curriculum';
 import type {
+  AssessmentCriterion,
   Course,
   ContentBlockType,
   Lesson,
@@ -51,13 +57,18 @@ import type {
 } from '@/lib/types';
 
 type RailSelection =
-  { type: 'general' } | { type: 'section'; sectionId: string } | { type: 'assessment' };
+  | { type: 'general' }
+  | { type: 'section'; sectionId: string }
+  | { type: 'assessment' }
+  | { type: 'criteria' };
 
 type LessonEditorTarget =
   | { mode: 'add'; sectionId: string; sectionTitle: string }
   | { mode: 'edit'; sectionId: string; lessonId: string };
 
 type QuestionEditorTarget = { mode: 'add' } | { mode: 'edit'; question: QuizQuestion };
+
+type CriterionEditorTarget = { mode: 'add' } | { mode: 'edit'; criterion: AssessmentCriterion };
 
 type SectionDialogTarget = 'add' | { editSectionId: string };
 
@@ -87,13 +98,20 @@ function LabeledField({
   );
 }
 
-export function CurriculumBuilderView({ course }: { course: Course }) {
+export function CurriculumBuilderView({
+  course,
+  criteria,
+}: {
+  course: Course;
+  criteria: AssessmentCriterion[];
+}) {
   const router = useRouter();
   const [, startTransition] = useTransition();
   const [railSelection, setRailSelection] = useState<RailSelection>({ type: 'general' });
   const [sectionDialog, setSectionDialog] = useState<SectionDialogTarget | null>(null);
   const [lessonEditor, setLessonEditor] = useState<LessonEditorTarget | null>(null);
   const [questionEditor, setQuestionEditor] = useState<QuestionEditorTarget | null>(null);
+  const [criterionEditor, setCriterionEditor] = useState<CriterionEditorTarget | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<ConfirmDeleteState | null>(null);
 
   function runAndRefresh(action: Promise<void>) {
@@ -140,6 +158,26 @@ export function CurriculumBuilderView({ course }: { course: Course }) {
 
       <div className="min-w-0 flex-1">
         {railSelection.type === 'general' && <GeneralInfoPanel course={course} />}
+
+        {railSelection.type === 'criteria' && (
+          <CriteriaPanel
+            courseSlug={course.id}
+            criteria={criteria}
+            runAndRefresh={runAndRefresh}
+            onAddCriterion={() => setCriterionEditor({ mode: 'add' })}
+            onEditCriterion={(criterion) => setCriterionEditor({ mode: 'edit', criterion })}
+            onDeleteCriterion={(criterion) =>
+              setConfirmDelete({
+                title: 'Delete criterion?',
+                description: `"${criterion.title}" will be permanently removed.`,
+                onConfirm: () => {
+                  runAndRefresh(deleteCriterion(course.id, criterion.id));
+                  setConfirmDelete(null);
+                },
+              })
+            }
+          />
+        )}
 
         {railSelection.type === 'section' &&
           (selectedSection ? (
@@ -237,6 +275,20 @@ export function CurriculumBuilderView({ course }: { course: Course }) {
               questionEditor.mode === 'edit'
                 ? updateQuestion(course.id, questionEditor.question.id, q)
                 : addQuestion(course.id, q),
+            )
+          }
+        />
+      )}
+
+      {criterionEditor && (
+        <CriterionDialog
+          initial={criterionEditor.mode === 'edit' ? criterionEditor.criterion : undefined}
+          onClose={() => setCriterionEditor(null)}
+          onSubmit={(c) =>
+            runAndRefresh(
+              criterionEditor.mode === 'edit'
+                ? updateCriterion(course.id, criterionEditor.criterion.id, c)
+                : addCriterion(course.id, c),
             )
           }
         />
@@ -373,6 +425,17 @@ function LeftRail({
               </div>
             ))
           )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardContent>
+          <RailButton
+            active={selection.type === 'criteria'}
+            onClick={() => onSelect({ type: 'criteria' })}
+            icon="list"
+            label="Assessment Criteria"
+          />
         </CardContent>
       </Card>
 
@@ -555,6 +618,105 @@ function AssessmentPanel({
               </li>
             ))}
           </ul>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+function CriteriaPanel({
+  courseSlug,
+  criteria,
+  runAndRefresh,
+  onAddCriterion,
+  onEditCriterion,
+  onDeleteCriterion,
+}: {
+  courseSlug: string;
+  criteria: AssessmentCriterion[];
+  runAndRefresh: (action: Promise<void>) => void;
+  onAddCriterion: () => void;
+  onEditCriterion: (criterion: AssessmentCriterion) => void;
+  onDeleteCriterion: (criterion: AssessmentCriterion) => void;
+}) {
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="flex items-center justify-between">
+        <h2 className="text-sm font-semibold text-foreground">Assessment Criteria</h2>
+        <Button size="sm" variant="outline" onClick={onAddCriterion}>
+          <Icon name="plus" className="size-4" />
+          Add Criterion
+        </Button>
+      </div>
+
+      <Card>
+        <CardContent className="flex flex-col gap-4">
+          <p className="text-xs text-muted-foreground">
+            The specific things a trainee must demonstrate for this course&apos;s evidence
+            submission to be certifiable. {criteria.length} criteria.
+          </p>
+          {criteria.length === 0 ? (
+            <p className="text-xs text-muted-foreground">No criteria yet.</p>
+          ) : (
+            <ul className="flex flex-col gap-3">
+              {criteria.map((criterion, i) => (
+                <li key={criterion.id} className="group rounded-xl border p-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <p className="text-sm font-medium text-foreground">
+                      {i + 1}. {criterion.title}
+                    </p>
+                    <div className="flex shrink-0 items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          runAndRefresh(moveCriterion(courseSlug, criterion.id, 'up'))
+                        }
+                        disabled={i === 0}
+                        className="rounded p-1 text-muted-foreground hover:bg-muted disabled:opacity-30"
+                        aria-label="Move criterion up"
+                      >
+                        <Icon name="chevron-up" className="size-4" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          runAndRefresh(moveCriterion(courseSlug, criterion.id, 'down'))
+                        }
+                        disabled={i === criteria.length - 1}
+                        className="rounded p-1 text-muted-foreground hover:bg-muted disabled:opacity-30"
+                        aria-label="Move criterion down"
+                      >
+                        <Icon name="chevron-down" className="size-4" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => onEditCriterion(criterion)}
+                        className="rounded p-1 text-muted-foreground opacity-0 hover:bg-muted hover:text-foreground group-hover:opacity-100"
+                        aria-label="Edit criterion"
+                      >
+                        <Icon name="edit" className="size-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => onDeleteCriterion(criterion)}
+                        className="rounded p-1 text-destructive opacity-0 hover:bg-muted group-hover:opacity-100"
+                        aria-label="Delete criterion"
+                      >
+                        <Icon name="trash" className="size-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                  <p className="mt-1 text-xs text-muted-foreground">{criterion.guidance}</p>
+                  <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                    {criterion.photoRequired && <Badge variant="outline">Photo required</Badge>}
+                    {criterion.mandatoryForCertification && (
+                      <Badge variant="outline">Required for certification</Badge>
+                    )}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
         </CardContent>
       </Card>
     </div>
@@ -1097,6 +1259,92 @@ function QuestionDialog({
             }}
           >
             {initial ? 'Save' : 'Add question'}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function CriterionDialog({
+  initial,
+  onClose,
+  onSubmit,
+}: {
+  initial?: AssessmentCriterion;
+  onClose: () => void;
+  onSubmit: (criterion: {
+    title: string;
+    guidance: string;
+    photoRequired: boolean;
+    mandatoryForCertification: boolean;
+  }) => void;
+}) {
+  const [title, setTitle] = useState(initial?.title ?? '');
+  const [guidance, setGuidance] = useState(initial?.guidance ?? '');
+  const [photoRequired, setPhotoRequired] = useState(initial?.photoRequired ?? true);
+  const [mandatoryForCertification, setMandatoryForCertification] = useState(
+    initial?.mandatoryForCertification ?? true,
+  );
+
+  const valid = title.trim().length > 0 && guidance.trim().length > 0;
+
+  return (
+    <Dialog open onOpenChange={(open) => !open && onClose()}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{initial ? 'Edit criterion' : 'Add criterion'}</DialogTitle>
+        </DialogHeader>
+        <div className="flex flex-col gap-4">
+          <LabeledField label="Criterion" htmlFor="criterion-title">
+            <Input
+              id="criterion-title"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="e.g. Correct PPE worn"
+              autoFocus
+            />
+          </LabeledField>
+          <LabeledField label="Guidance" htmlFor="criterion-guidance">
+            <Textarea
+              id="criterion-guidance"
+              value={guidance}
+              onChange={(e) => setGuidance(e.target.value)}
+              placeholder="What the trainee's photo or description must show to satisfy this criterion."
+            />
+          </LabeledField>
+          <label className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Checkbox
+              checked={photoRequired}
+              onCheckedChange={(checked) => setPhotoRequired(checked === true)}
+            />
+            Photo required
+          </label>
+          <label className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Checkbox
+              checked={mandatoryForCertification}
+              onCheckedChange={(checked) => setMandatoryForCertification(checked === true)}
+            />
+            Required for certification
+          </label>
+        </div>
+        <DialogFooter>
+          <Button variant="ghost" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button
+            disabled={!valid}
+            onClick={() => {
+              onSubmit({
+                title: title.trim(),
+                guidance: guidance.trim(),
+                photoRequired,
+                mandatoryForCertification,
+              });
+              onClose();
+            }}
+          >
+            {initial ? 'Save' : 'Add criterion'}
           </Button>
         </DialogFooter>
       </DialogContent>

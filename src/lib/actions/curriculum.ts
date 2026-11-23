@@ -279,3 +279,97 @@ export async function deleteQuestion(courseSlug: string, questionId: string): Pr
   await prisma.quizQuestion.delete({ where: { id: questionId } });
   revalidateCourse(courseSlug);
 }
+
+export type NewCriterionInput = {
+  title: string;
+  guidance: string;
+  photoRequired: boolean;
+  mandatoryForCertification: boolean;
+};
+
+export async function addCriterion(
+  courseSlug: string,
+  criterion: NewCriterionInput,
+): Promise<void> {
+  await requireAdmin();
+  const course = await prisma.course.findUniqueOrThrow({
+    where: { slug: courseSlug },
+    select: { id: true },
+  });
+  const maxOrder = await prisma.assessmentCriterion.aggregate({
+    where: { courseId: course.id },
+    _max: { order: true },
+  });
+  await prisma.assessmentCriterion.create({
+    data: {
+      courseId: course.id,
+      title: criterion.title,
+      guidance: criterion.guidance,
+      photoRequired: criterion.photoRequired,
+      mandatoryForCertification: criterion.mandatoryForCertification,
+      order: (maxOrder._max.order ?? -1) + 1,
+    },
+  });
+  revalidateCourse(courseSlug);
+}
+
+export type UpdateCriterionInput = {
+  title: string;
+  guidance: string;
+  photoRequired: boolean;
+  mandatoryForCertification: boolean;
+};
+
+export async function updateCriterion(
+  courseSlug: string,
+  criterionId: string,
+  criterion: UpdateCriterionInput,
+): Promise<void> {
+  await requireAdmin();
+  await prisma.assessmentCriterion.update({
+    where: { id: criterionId },
+    data: {
+      title: criterion.title,
+      guidance: criterion.guidance,
+      photoRequired: criterion.photoRequired,
+      mandatoryForCertification: criterion.mandatoryForCertification,
+    },
+  });
+  revalidateCourse(courseSlug);
+}
+
+export async function deleteCriterion(courseSlug: string, criterionId: string): Promise<void> {
+  await requireAdmin();
+  await prisma.assessmentCriterion.delete({ where: { id: criterionId } });
+  revalidateCourse(courseSlug);
+}
+
+export async function moveCriterion(
+  courseSlug: string,
+  criterionId: string,
+  direction: 'up' | 'down',
+): Promise<void> {
+  await requireAdmin();
+  const course = await prisma.course.findUniqueOrThrow({
+    where: { slug: courseSlug },
+    select: { id: true },
+  });
+  const criteria = await prisma.assessmentCriterion.findMany({
+    where: { courseId: course.id },
+    orderBy: { order: 'asc' },
+  });
+  const index = criteria.findIndex((c) => c.id === criterionId);
+  if (index === -1)
+    throw new Error(`Criterion "${criterionId}" not found on course "${courseSlug}".`);
+
+  const neighborIndex = direction === 'up' ? index - 1 : index + 1;
+  if (neighborIndex < 0 || neighborIndex >= criteria.length) return;
+
+  const current = criteria[index];
+  const neighbor = criteria[neighborIndex];
+  await prisma.$transaction([
+    prisma.assessmentCriterion.update({ where: { id: current.id }, data: { order: neighbor.order } }),
+    prisma.assessmentCriterion.update({ where: { id: neighbor.id }, data: { order: current.order } }),
+  ]);
+  revalidateCourse(courseSlug);
+}
