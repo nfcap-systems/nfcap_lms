@@ -22,7 +22,14 @@ export type CourseProgress = {
 const progressInclude = {
   completedLessons: true,
   quizAttempts: { orderBy: { submittedAt: 'desc' as const }, take: 1 },
-  evidenceSubmissions: { orderBy: { submittedAt: 'desc' as const }, take: 1 },
+  evidenceSubmissions: {
+    orderBy: { submittedAt: 'desc' as const },
+    take: 1,
+    // Narrow select, not the full relation: `hasFile` below needs to know only whether ANY
+    // criterion has a learner-submitted photo (feature #9 — guided capture stores files here,
+    // not on EvidenceSubmission.filePath, which stays null for every guided submission).
+    include: { criterionAssessments: { select: { learnerFilePath: true } } },
+  },
   certificate: true,
 };
 
@@ -53,7 +60,9 @@ function mapEnrollment(enrollment: DbEnrollment): CourseProgress {
           id: evidence.id,
           description: evidence.description,
           fileName: evidence.fileName ?? undefined,
-          hasFile: Boolean(evidence.filePath),
+          hasFile:
+            Boolean(evidence.filePath) ||
+            evidence.criterionAssessments.some((ca) => Boolean(ca.learnerFilePath)),
           status: evidence.status.toLowerCase() as EvidenceStatus,
           submittedAt: evidence.submittedAt.toISOString(),
           statusUpdatedAt: evidence.statusUpdatedAt?.toISOString(),
