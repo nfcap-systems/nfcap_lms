@@ -60,3 +60,6 @@ next-env.d.ts
 # Working plan docs (not committed project docs)
 /docs/build/CURRICULUM_BUILDER_REDESIGN_PLAN.md
 
+# Local-only, personal agent notes — never pushed (standard Claude Code companion to CLAUDE.md)
+/CLAUDE.local.md
+
