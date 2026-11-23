@@ -51,6 +51,7 @@ model Pathway {
   updatedAt   DateTime @updatedAt
 
   courses Course[]
+  cohorts Cohort[]
 }
 
 model Course {
@@ -163,11 +164,18 @@ model ContentBlock {
 }
 
 model Assessment {
-  id            String @id @default(cuid())
-  courseId      String @unique
-  course        Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  id                  String  @id @default(cuid())
+  courseId            String  @unique
+  course              Course  @relation(fields: [courseId], references: [id], onDelete: Cascade)
   /// Fraction of questions (0-1) a learner must answer correctly to pass.
-  passThreshold Float
+  passThreshold       Float
+  /// Layer 1 (docs/build/LAYER1_DATA_MODEL_DESIGN.md) — Quiz Engine Depth (Phase 6). Null means
+  /// show every question (today's behavior, unchanged); set to draw a random subset per attempt.
+  questionsPerAttempt Int?
+  /// Shuffle question order per attempt. Default false preserves today's fixed order.
+  randomizeOrder      Boolean @default(false)
+  /// Null means unlimited attempts (today's behavior, unchanged).
+  maxAttempts         Int?
 
   questions QuizQuestion[]
 }
@@ -200,6 +208,7 @@ model Enrollment {
   quizAttempts        QuizAttempt[]
   evidenceSubmissions EvidenceSubmission[]
   certificate         Certificate?
+  snapshots           EnrollmentSnapshot[]
 
   @@unique([learnerId, courseId])
   @@index([learnerId])
@@ -312,6 +321,10 @@ model Certificate {
   evidenceSubmissionId String             @unique
   evidenceSubmission   EvidenceSubmission @relation(fields: [evidenceSubmissionId], references: [id])
   certificateCode      String             @unique
+  /// Layer 1 (docs/build/LAYER1_DATA_MODEL_DESIGN.md) — Public Verification Page + QR (Phase 4).
+  /// Null for every certificate issued before this field existed, same nullable-backfill pattern
+  /// as EvidenceSubmission.filePath.
+  publicSlug           String?            @unique
   issuedAt             DateTime           @default(now())
 }
 
@@ -397,6 +410,10 @@ model LearnerProfile {
   fundingSource                  FundingSource @default(SELF_PAY)
   dateOfBirth                    DateTime?
   mobilePhone                    String?
+  /// Layer 1 (docs/build/LAYER1_DATA_MODEL_DESIGN.md) — Shareable Verified Portfolio (Phase 4).
+  /// One active share link per learner; both fields null means never shared, or revoked.
+  portfolioShareToken            String?       @unique
+  portfolioSharedAt              DateTime?
   createdAt                      DateTime      @default(now())
   updatedAt                      DateTime      @updatedAt
 }
@@ -772,4 +789,188 @@ model RateLimitBucket {
 
   @@unique([identifier, action, windowStart])
   @@index([windowStart])
+}
+
+// ---------------------------------------------------------------------------------------------
+// Layer 1 — board-driven data-model design pass (docs/build/LAYER1_DATA_MODEL_DESIGN.md,
+// docs/plans/mockup-complete-build.md). Additive only; nothing above this line changes shape.
+// ---------------------------------------------------------------------------------------------
+
+/// Cohorts & Deadlines (Phase 6). pathwayId is nullable — a cohort need not be scoped to one
+/// pathway, deliberately unopinionated about the still-open "how does NFCAP run intakes" question.
+model Cohort {
+  id        String    @id @default(cuid())
+  name      String
+  pathwayId String?
+  pathway   Pathway?  @relation(fields: [pathwayId], references: [id])
+  startDate DateTime
+  endDate   DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  memberships CohortMembership[]
+  deadlines   CohortDeadline[]
+
+  @@index([pathwayId])
+}
+
+/// learnerId is a Supabase auth.users.id, same app-enforced-FK convention as Enrollment.learnerId.
+model CohortMembership {
+  id        String   @id @default(cuid())
+  cohortId  String
+  cohort    Cohort   @relation(fields: [cohortId], references: [id], onDelete: Cascade)
+  learnerId String
+  joinedAt  DateTime @default(now())
+
+  @@unique([cohortId, learnerId])
+  @@index([learnerId])
+}
+
+model CohortDeadline {
+  id       String   @id @default(cuid())
+  cohortId String
+  cohort   Cohort   @relation(fields: [cohortId], references: [id], onDelete: Cascade)
+  label    String
+  dueDate  DateTime
+
+  @@index([cohortId, dueDate])
+}
+
+enum AnnouncementAudience {
+  ALL
+  LEARNERS
+  ADMIN
+  COORDINATOR
+  PARTNER
+}
+
+/// Announcements (Phase 6). Read state via the shared ReadReceipt table below
+/// (subjectType = ANNOUNCEMENT), not a dedicated join table — see the design doc's decision #1.
+model Announcement {
+  id          String               @id @default(cuid())
+  title       String
+  body        String
+  audience    AnnouncementAudience @default(ALL)
+  createdBy   String
+  publishedAt DateTime             @default(now())
+  expiresAt   DateTime?
+
+  @@index([audience, publishedAt])
+}
+
+enum NotificationType {
+  EVIDENCE_REVIEWED
+  CASE_STATUS_CHANGED
+  MESSAGE_RECEIVED
+  ANNOUNCEMENT_PUBLISHED
+  DEADLINE_UPCOMING
+  COHORT_UPDATE
+}
+
+/// Notification Coverage Completion (Phase 6). One row per recipient per event — not broadcast,
+/// so readAt lives directly on this row rather than the shared ReadReceipt table (design doc
+/// decision #1 — Notification is already 1:1 with its recipient).
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  type      NotificationType
+  title     String
+  body      String
+  link      String?
+  metadata  Json?
+  readAt    DateTime?
+  createdAt DateTime         @default(now())
+
+  @@index([userId, createdAt])
+  @@index([userId, readAt])
+}
+
+/// Trainee <-> Staff Messaging (Phase 6). Gets Postgres RLS via src/lib/db/rls.ts's
+/// withRlsContext (design doc decision #3) — a message is as sensitive as a WIOA communication.
+model MessageThread {
+  id        String   @id @default(cuid())
+  subject   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  participants MessageThreadParticipant[]
+  messages     Message[]
+}
+
+/// userId is a Supabase auth.users.id (learner or staff) — app-enforced FK, same convention as
+/// Enrollment.learnerId. This is the table the RLS helper function checks membership against.
+model MessageThreadParticipant {
+  id       String        @id @default(cuid())
+  threadId String
+  thread   MessageThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  userId   String
+
+  @@unique([threadId, userId])
+  @@index([userId])
+}
+
+model Message {
+  id       String        @id @default(cuid())
+  threadId String
+  thread   MessageThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  senderId String
+  body     String
+  sentAt   DateTime      @default(now())
+
+  @@index([threadId, sentAt])
+}
+
+enum ReadReceiptSubjectType {
+  ANNOUNCEMENT
+  MESSAGE_THREAD
+}
+
+/// Shared read-state pattern for the two broadcast/shared models above (design doc decision #1).
+/// subjectId is Announcement.id or MessageThread.id depending on subjectType; message-thread read
+/// status is per-thread, not per-message, matching ADM26-Inbox's per-conversation unread count.
+model ReadReceipt {
+  id          String                 @id @default(cuid())
+  userId      String
+  subjectType ReadReceiptSubjectType
+  subjectId   String
+  readAt      DateTime               @default(now())
+
+  @@unique([userId, subjectType, subjectId])
+  @@index([subjectType, subjectId])
+}
+
+/// Admin Reporting Depth (Phase 6) — point-in-time completion snapshots so ADM02's trend badges
+/// and RPT01's trends have something to compare against. One row per enrollment per capture; a
+/// periodic capture job is a Layer 3 concern, not this schema.
+model EnrollmentSnapshot {
+  id                String     @id @default(cuid())
+  enrollmentId      String
+  enrollment        Enrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  completionPercent Float
+  capturedAt        DateTime   @default(now())
+
+  @@index([enrollmentId, capturedAt])
+}
+
+/// Eligibility Self-Check (Phase 5) — LRN10b. learnerId nullable since this is a pre-screening
+/// check reachable before signup.
+model EligibilityQuestion {
+  id                 String   @id @default(cuid())
+  prompt             String
+  options            String[]
+  /// Index into `options` that counts as a disqualifying answer, or null if every answer passes.
+  disqualifyingIndex Int?
+  order              Int
+
+  @@index([order])
+}
+
+model EligibilityCheckResult {
+  id        String   @id @default(cuid())
+  learnerId String?
+  answers   Json
+  eligible  Boolean
+  createdAt DateTime @default(now())
+
+  @@index([learnerId])
 }
