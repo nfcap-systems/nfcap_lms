@@ -63,7 +63,7 @@ export type AssessmentCriterion = {
   guidance: string;
   /** Whether this criterion must be demonstrated with a photo, vs. satisfied by description alone. */
   photoRequired: boolean;
-  /** Whether a Certificate requires this criterion to be marked Met (feature #7, not built yet). */
+  /** Whether a Certificate requires this criterion to be marked Met (feature #7). */
   mandatoryForCertification: boolean;
 };
 

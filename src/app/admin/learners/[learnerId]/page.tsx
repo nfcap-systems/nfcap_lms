@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
 import { getLearnerById } from '@/lib/data/learners';
-import { getAllCourses } from '@/lib/data/courses';
+import { getAllCourses, getCriteriaCountsByCourseSlug } from '@/lib/data/courses';
 import { getLearnerProgressMap, getCourseUnlocksForLearner } from '@/lib/data/progress';
 import { LearnerProfileView } from '@/components/admin/LearnerProfileView';
 
@@ -13,10 +13,11 @@ export default async function AdminLearnerProfilePage({
   const learner = await getLearnerById(learnerId);
   if (!learner) notFound();
 
-  const [courses, progress, courseUnlocks] = await Promise.all([
+  const [courses, progress, courseUnlocks, criteriaCounts] = await Promise.all([
     getAllCourses(),
     getLearnerProgressMap(learnerId),
     getCourseUnlocksForLearner(learnerId),
+    getCriteriaCountsByCourseSlug(),
   ]);
 
   return (
@@ -31,6 +32,7 @@ export default async function AdminLearnerProfilePage({
         courses={courses}
         progress={progress}
         courseUnlocks={courseUnlocks}
+        criteriaCounts={criteriaCounts}
       />
     </div>
   );

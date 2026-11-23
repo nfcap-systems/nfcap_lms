@@ -141,3 +141,19 @@ export async function getAssessmentCriteria(courseSlug: string): Promise<Assessm
   });
   return criteria;
 }
+
+/** Criteria count per course slug — lets Admin's learner-detail view (feature #7) decide whether
+ * a course's evidence goes through the per-criterion review screen or the old whole-submission
+ * approve/reject path (courses with zero criteria, none exist today but the model allows it).
+ * One query, grouped in memory — same "no per-entity query in a loop" convention as
+ * getProgressByLearner. */
+export async function getCriteriaCountsByCourseSlug(): Promise<Record<string, number>> {
+  const rows = await prisma.assessmentCriterion.findMany({
+    select: { course: { select: { slug: true } } },
+  });
+  const counts: Record<string, number> = {};
+  for (const row of rows) {
+    counts[row.course.slug] = (counts[row.course.slug] ?? 0) + 1;
+  }
+  return counts;
+}
