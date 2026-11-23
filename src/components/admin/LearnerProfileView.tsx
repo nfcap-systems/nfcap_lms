@@ -129,8 +129,20 @@ export function LearnerProfileView({
                         })}
                       </span>
                     </div>
-                    <p className="text-sm text-muted-foreground">{evidence.description}</p>
-                    {evidence.hasFile && (
+                    {/* A guided submission (feature #9) has no course-level description or file —
+                        its evidence hangs off each criterion, behind "Review criteria" below.
+                        Rendering the course-level attachment button for one produced a 500 from
+                        `getEvidenceFileUrl` (docs/plans/phase-3-and-design-migration-kickoff.md
+                        Step 2, feature #12). */}
+                    {evidence.isPerCriterion ? (
+                      <p className="text-sm text-muted-foreground">
+                        Submitted per criterion — open the per-criterion review below to see each
+                        photo and note.
+                      </p>
+                    ) : (
+                      <p className="text-sm text-muted-foreground">{evidence.description}</p>
+                    )}
+                    {evidence.hasSubmissionFile && (
                       <button
                         type="button"
                         onClick={() => {
