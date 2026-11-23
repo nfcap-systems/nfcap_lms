@@ -106,7 +106,7 @@ export function WioaCaseFeed({ wioaCase }: { wioaCase: WioaCaseRecord }) {
           </CardHeader>
           <CardContent className="flex flex-col gap-3">
             {wioaCase.appointments.map((a) => (
-              <div key={a.id} className="rounded-lg border border-[var(--border)] p-3">
+              <div key={a.id} className="rounded-lg border border-[var(--nfcap-border)] p-3">
                 <p className="text-sm font-medium text-[var(--ink)]">
                   {a.type === 'ORIENTATION'
                     ? 'Orientation'
@@ -157,7 +157,7 @@ function DocumentCard({ doc }: { doc: WioaDocumentRecord }) {
   const canUpload = doc.status === 'MISSING' || doc.status === 'REJECTED';
 
   return (
-    <div className="flex flex-col gap-2 rounded-lg border border-[var(--border)] p-3">
+    <div className="flex flex-col gap-2 rounded-lg border border-[var(--nfcap-border)] p-3">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
           <p className="text-sm font-medium text-[var(--ink)]">{doc.requirementName}</p>
@@ -167,7 +167,7 @@ function DocumentCard({ doc }: { doc: WioaDocumentRecord }) {
       </div>
       {doc.fileName && (
         <div className="flex items-center gap-2 text-xs text-[var(--ink-muted)]">
-          <Icon name="paperclip" className="size-3.5 text-[var(--accent)]" />
+          <Icon name="paperclip" className="size-3.5 text-[var(--nfcap-accent)]" />
           {doc.fileName}
         </div>
       )}

@@ -3,7 +3,13 @@
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Badge, DataTableCard, DataTableCardHeader, DataTableFilters, StateCard } from '@/components/ui';
+import {
+  Badge,
+  DataTableCard,
+  DataTableCardHeader,
+  DataTableFilters,
+  StateCard,
+} from '@/components/ui';
 import type { StatusTone } from '@/components/ui/Badge';
 import { Icon } from '@/components/icons';
 import type { WioaCaseSummary } from '@/lib/data/wioa';
@@ -45,12 +51,23 @@ function daysOpen(createdAt: Date): number {
 
 function formatAppointment(appt: WioaCaseSummary['nextAppointment']): string {
   if (!appt) return '—';
-  const date = new Date(appt.scheduledAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  const date = new Date(appt.scheduledAt).toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+  });
   return `${date} · ${APPOINTMENT_TYPE_LABEL[appt.type] ?? appt.type}`;
 }
 
 function toCsv(cases: WioaCaseSummary[]): string {
-  const header = ['Learner', 'Course', 'Workforce board', 'Phase', 'Status', 'Days open', 'Next appointment'];
+  const header = [
+    'Learner',
+    'Course',
+    'Workforce board',
+    'Phase',
+    'Status',
+    'Days open',
+    'Next appointment',
+  ];
   const rows = cases.map((c) => [
     c.learnerName,
     c.courseTitle,
@@ -60,7 +77,9 @@ function toCsv(cases: WioaCaseSummary[]): string {
     String(daysOpen(c.createdAt)),
     formatAppointment(c.nextAppointment),
   ]);
-  return [header, ...rows].map((row) => row.map((cell) => `"${cell.replace(/"/g, '""')}"`).join(',')).join('\n');
+  return [header, ...rows]
+    .map((row) => row.map((cell) => `"${cell.replace(/"/g, '""')}"`).join(','))
+    .join('\n');
 }
 
 export function WioaCaseListView({
@@ -91,7 +110,8 @@ export function WioaCaseListView({
       if (phaseFilter !== 'all' && WIOA_STATUS_PHASE[c.status] !== phaseFilter) return false;
       if (boardFilter !== 'all' && c.boardName !== boardFilter) return false;
       if (followUpOnly && !isFollowUp(c)) return false;
-      if (q && !c.learnerName.toLowerCase().includes(q) && !c.courseTitle.toLowerCase().includes(q)) return false;
+      if (q && !c.learnerName.toLowerCase().includes(q) && !c.courseTitle.toLowerCase().includes(q))
+        return false;
       return true;
     });
   }, [cases, phaseFilter, boardFilter, followUpOnly, search]);
@@ -102,7 +122,9 @@ export function WioaCaseListView({
       total: cases.length,
       followUp: cases.filter(isFollowUp).length,
       appointmentsThisWeek: cases.filter(
-        (c) => c.nextAppointment && new Date(c.nextAppointment.scheduledAt).getTime() - now < 7 * 86_400_000,
+        (c) =>
+          c.nextAppointment &&
+          new Date(c.nextAppointment.scheduledAt).getTime() - now < 7 * 86_400_000,
       ).length,
       fundingRequest: cases.filter((c) => WIOA_STATUS_PHASE[c.status] === 'Funding Request').length,
     }),
@@ -140,7 +162,10 @@ export function WioaCaseListView({
           <span className="n">{kpis.total}</span>
         </div>
         <div className="mcard">
-          <div className="ic" style={{ background: 'var(--status-problem-bg)', color: 'var(--status-problem)' }}>
+          <div
+            className="ic"
+            style={{ background: 'var(--status-problem-bg)', color: 'var(--status-problem)' }}
+          >
             <Icon name="clock" className="h-4 w-4" />
           </div>
           <span className="l">Needs follow-up</span>
@@ -189,7 +214,10 @@ export function WioaCaseListView({
           <div className="dt-filter-group">
             <div className="dt-filter">
               <span className="lbl">Phase:</span>
-              <select value={phaseFilter} onChange={(e) => setPhaseFilter(e.target.value as PhaseFilter)}>
+              <select
+                value={phaseFilter}
+                onChange={(e) => setPhaseFilter(e.target.value as PhaseFilter)}
+              >
                 <option value="all">All</option>
                 {[...WIOA_UI_PHASES, 'Closed' as const].map((phase) => (
                   <option key={phase} value={phase}>
@@ -236,13 +264,25 @@ export function WioaCaseListView({
           </thead>
           <tbody>
             {filtered.map((c) => (
-              <CaseRow key={c.id} c={c} basePath={basePath} partnerStaffRoster={partnerStaffRoster} />
+              <CaseRow
+                key={c.id}
+                c={c}
+                basePath={basePath}
+                partnerStaffRoster={partnerStaffRoster}
+              />
             ))}
           </tbody>
         </table>
 
         {filtered.length === 0 ? (
-          <div style={{ padding: '40px 20px', textAlign: 'center', fontSize: 13.5, color: 'var(--ink-muted)' }}>
+          <div
+            style={{
+              padding: '40px 20px',
+              textAlign: 'center',
+              fontSize: 13.5,
+              color: 'var(--ink-muted)',
+            }}
+          >
             No cases match this filter.
           </div>
         ) : (
@@ -321,8 +361,8 @@ function CaseRow({
             onChange={(e) => assign(e.target.value)}
             style={{
               height: 30,
-              border: '1px solid var(--border)',
-              borderRadius: 'var(--radius-md)',
+              border: '1px solid var(--nfcap-border)',
+              borderRadius: 'var(--nfcap-radius-md)',
               fontSize: 12.5,
               padding: '0 6px',
               color: 'var(--ink)',

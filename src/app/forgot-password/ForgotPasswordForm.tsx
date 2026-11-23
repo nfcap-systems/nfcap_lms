@@ -25,7 +25,7 @@ export function ForgotPasswordForm() {
         </p>
         <Link
           href="/login"
-          className="text-sm font-semibold text-[var(--accent)] hover:text-[var(--accent-hover)]"
+          className="text-sm font-semibold text-[var(--nfcap-accent)] hover:text-[var(--nfcap-accent-hover)]"
         >
           ← Back to sign in
         </Link>
@@ -59,7 +59,7 @@ export function ForgotPasswordForm() {
 
       <Link
         href="/login"
-        className="text-center text-sm font-medium text-[var(--ink-muted)] hover:text-[var(--accent)]"
+        className="text-center text-sm font-medium text-[var(--ink-muted)] hover:text-[var(--nfcap-accent)]"
       >
         ← Back to sign in
       </Link>

@@ -138,10 +138,10 @@ export function CriterionReviewView({
             <button
               type="button"
               onClick={viewAttachment}
-              className="flex items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--surface-muted)] px-3 py-2 text-sm text-[var(--ink-muted)] hover:text-[var(--ink)]"
+              className="flex items-center gap-2 rounded-lg border border-[var(--nfcap-border)] bg-[var(--surface-muted)] px-3 py-2 text-sm text-[var(--ink-muted)] hover:text-[var(--ink)]"
               style={{ marginBottom: 14 }}
             >
-              <Icon name="paperclip" className="size-4 shrink-0 text-[var(--accent)]" />
+              <Icon name="paperclip" className="size-4 shrink-0 text-[var(--nfcap-accent)]" />
               {review.fileName ?? 'View attachment'}
             </button>
           ) : (
@@ -188,7 +188,7 @@ export function CriterionReviewView({
                       <button
                         type="button"
                         onClick={() => viewCriterionFile(criterion.criterionAssessmentId)}
-                        className="flex items-center gap-1.5 text-xs text-[var(--accent)] hover:underline"
+                        className="flex items-center gap-1.5 text-xs text-[var(--nfcap-accent)] hover:underline"
                       >
                         <Icon name="paperclip" className="size-3.5" />
                         {criterion.learnerFileName ?? 'View photo'}
@@ -196,7 +196,7 @@ export function CriterionReviewView({
                       <button
                         type="button"
                         onClick={() => setAnnotatingCriterionId(criterion.criterionId)}
-                        className="flex items-center gap-1.5 text-xs text-[var(--accent)] hover:underline"
+                        className="flex items-center gap-1.5 text-xs text-[var(--nfcap-accent)] hover:underline"
                       >
                         <Icon name="edit" className="size-3.5" />
                         {criterion.annotationData && criterion.annotationData.length > 0

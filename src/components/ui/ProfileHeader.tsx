@@ -9,7 +9,12 @@ export type CompletionRingProps = {
   className?: string;
 };
 
-export function CompletionRing({ percentage, initials, size = 76, className }: CompletionRingProps) {
+export function CompletionRing({
+  percentage,
+  initials,
+  size = 76,
+  className,
+}: CompletionRingProps) {
   const radius = size / 2 - 4;
   const circumference = 2 * Math.PI * radius;
   const offset = circumference * (1 - Math.min(100, Math.max(0, percentage)) / 100);
@@ -17,13 +22,20 @@ export function CompletionRing({ percentage, initials, size = 76, className }: C
   return (
     <div className={cn('pring', className)} style={{ width: size, height: size }}>
       <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} aria-hidden="true">
-        <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="var(--border)" strokeWidth={4} />
         <circle
           cx={size / 2}
           cy={size / 2}
           r={radius}
           fill="none"
-          stroke="var(--accent)"
+          stroke="var(--nfcap-border)"
+          strokeWidth={4}
+        />
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          fill="none"
+          stroke="var(--nfcap-accent)"
           strokeWidth={4}
           strokeDasharray={circumference}
           strokeDashoffset={offset}

@@ -48,9 +48,9 @@ export function NotificationsMenu() {
         <div
           role="dialog"
           aria-label="Notifications"
-          className="absolute top-full right-0 mt-2 w-[min(20rem,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface)] shadow-elevated"
+          className="absolute top-full right-0 mt-2 w-[min(20rem,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-[var(--nfcap-border)] bg-[var(--surface)] shadow-elevated"
         >
-          <p className="border-b border-[var(--border)] px-4 py-3 text-sm font-semibold text-[var(--ink)]">
+          <p className="border-b border-[var(--nfcap-border)] px-4 py-3 text-sm font-semibold text-[var(--ink)]">
             Notifications
           </p>
           <p className="px-4 py-6 text-center text-sm text-[var(--ink-muted)]">

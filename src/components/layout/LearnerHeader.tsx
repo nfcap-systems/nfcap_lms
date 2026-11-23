@@ -205,7 +205,10 @@ export function LearnerHeader({
                   </li>
                 );
               })}
-              <li className="mt-1" style={{ borderTop: '1px solid var(--border)', paddingTop: 8 }}>
+              <li
+                className="mt-1"
+                style={{ borderTop: '1px solid var(--nfcap-border)', paddingTop: 8 }}
+              >
                 <LogoutButton className="lhdr-mobile-navlink w-full" />
               </li>
             </ul>

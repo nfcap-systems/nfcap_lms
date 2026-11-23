@@ -144,7 +144,7 @@ export function GuidedEvidenceCapture({
               {lastAttempt.reviewerNote ?? 'Your reviewer asked you to resubmit this criterion.'}
             </div>
           </div>
-          <div className="flex items-center gap-3.5 rounded-xl border border-[var(--border)] bg-[var(--surface)] px-4 py-3.5 opacity-70">
+          <div className="flex items-center gap-3.5 rounded-xl border border-[var(--nfcap-border)] bg-[var(--surface)] px-4 py-3.5 opacity-70">
             {lastAttempt.thumbUrl && (
               // eslint-disable-next-line @next/next/no-img-element -- short-lived signed Supabase URL
               <img
@@ -162,7 +162,7 @@ export function GuidedEvidenceCapture({
         </>
       )}
 
-      <div className="flex overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--surface)] shadow-[var(--shadow-sm)]">
+      <div className="flex overflow-hidden rounded-xl border border-[var(--nfcap-border)] bg-[var(--surface)] shadow-[var(--nfcap-shadow-sm)]">
         <div className="flex-1 p-5">
           <div className="mb-2 text-xs font-semibold tracking-wide text-[var(--ink-muted)] uppercase">
             What to show
@@ -190,7 +190,7 @@ export function GuidedEvidenceCapture({
       >
         {draft.file ? (
           <div className="flex items-center justify-center gap-2">
-            <Icon name="paperclip" className="size-4 text-[var(--accent)]" />
+            <Icon name="paperclip" className="size-4 text-[var(--nfcap-accent)]" />
             <span>{draft.file.name}</span>
             <button
               type="button"
@@ -208,7 +208,7 @@ export function GuidedEvidenceCapture({
           <>
             <div>
               Drag {resubmission ? 'your new' : 'a'} photo here, or{' '}
-              <span className="font-semibold text-[var(--accent)]">browse</span>
+              <span className="font-semibold text-[var(--nfcap-accent)]">browse</span>
             </div>
             <div className="mt-1.5 text-xs">JPG or PNG, up to 10MB</div>
           </>
@@ -238,7 +238,7 @@ export function GuidedEvidenceCapture({
         />
       </Field>
 
-      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[var(--border)] pt-5">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[var(--nfcap-border)] pt-5">
         <Button
           variant="outline"
           size="sm"
@@ -295,8 +295,8 @@ function StepIndicator({
             onClick={() => onSelect(c.id)}
             className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium ${
               active
-                ? 'border-[var(--accent)] bg-[var(--surface-muted)] text-[var(--ink)]'
-                : 'border-[var(--border)] text-[var(--ink-muted)]'
+                ? 'border-[var(--nfcap-accent)] bg-[var(--surface-muted)] text-[var(--ink)]'
+                : 'border-[var(--nfcap-border)] text-[var(--ink-muted)]'
             }`}
           >
             {complete ? (
@@ -330,8 +330,8 @@ function CriteriaSummary({
   }
 
   return (
-    <div className="overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--surface)] shadow-[var(--shadow-sm)]">
-      <div className="border-b border-[var(--border)] px-5 py-4 text-sm font-semibold text-[var(--ink)]">
+    <div className="overflow-hidden rounded-xl border border-[var(--nfcap-border)] bg-[var(--surface)] shadow-[var(--nfcap-shadow-sm)]">
+      <div className="border-b border-[var(--nfcap-border)] px-5 py-4 text-sm font-semibold text-[var(--ink)]">
         Criteria for this submission
       </div>
       <div className="px-5">
@@ -357,7 +357,7 @@ function CriteriaSummary({
                   <button
                     type="button"
                     onClick={() => viewFile(verdict.criterionAssessmentId)}
-                    className="mt-1.5 flex items-center gap-1.5 text-[var(--accent)] hover:underline"
+                    className="mt-1.5 flex items-center gap-1.5 text-[var(--nfcap-accent)] hover:underline"
                   >
                     <Icon name="paperclip" className="size-3.5" />
                     {verdict.learnerFileName ?? 'View submitted photo'}

@@ -17,8 +17,8 @@ export function CertificateDocument({
   return (
     <div
       style={{
-        borderRadius: 'var(--radius-lg)',
-        border: '2px solid var(--accent)',
+        borderRadius: 'var(--nfcap-radius-lg)',
+        border: '2px solid var(--nfcap-accent)',
         background: 'var(--surface)',
         padding: 32,
         textAlign: 'center',
@@ -30,8 +30,8 @@ export function CertificateDocument({
           width: 56,
           height: 56,
           borderRadius: '50%',
-          background: 'var(--accent)',
-          color: 'var(--accent-contrast)',
+          background: 'var(--nfcap-accent)',
+          color: 'var(--nfcap-accent-contrast)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -39,14 +39,27 @@ export function CertificateDocument({
       >
         <Icon name="award" className="h-7 w-7" />
       </div>
-      <p style={{ marginTop: 16, fontSize: 12, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--ink-muted)' }}>
+      <p
+        style={{
+          marginTop: 16,
+          fontSize: 12,
+          fontWeight: 600,
+          textTransform: 'uppercase',
+          letterSpacing: '0.08em',
+          color: 'var(--ink-muted)',
+        }}
+      >
         NFCAP · Certificate of Completion
       </p>
-      <h2 style={{ marginTop: 12, fontSize: 24, fontWeight: 600, color: 'var(--ink)' }}>{learnerName}</h2>
+      <h2 style={{ marginTop: 12, fontSize: 24, fontWeight: 600, color: 'var(--ink)' }}>
+        {learnerName}
+      </h2>
       <p style={{ marginTop: 8, fontSize: 14, color: 'var(--ink-muted)' }}>
         has successfully completed the requirements for
       </p>
-      <p style={{ marginTop: 4, fontSize: 18, fontWeight: 600, color: 'var(--ink)' }}>{course.title}</p>
+      <p style={{ marginTop: 4, fontSize: 18, fontWeight: 600, color: 'var(--ink)' }}>
+        {course.title}
+      </p>
       <p style={{ marginTop: 4, fontSize: 12, color: 'var(--ink-muted)' }}>{course.category}</p>
 
       <div
@@ -56,7 +69,7 @@ export function CertificateDocument({
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          borderTop: '1px solid var(--border)',
+          borderTop: '1px solid var(--nfcap-border)',
           paddingTop: 16,
           fontSize: 12,
           color: 'var(--ink-muted)',

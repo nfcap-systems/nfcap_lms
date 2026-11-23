@@ -23,7 +23,7 @@ export default async function AttemptHistoryPage({
     <div className="mx-auto flex max-w-[720px] flex-col gap-5">
       <Link
         href={`/learner/courses/${course.id}`}
-        className="text-sm font-medium text-[var(--accent)] hover:underline"
+        className="text-sm font-medium text-[var(--nfcap-accent)] hover:underline"
       >
         &larr; Back to {course.title}
       </Link>

@@ -76,7 +76,10 @@ function trendPct(current: number, thirtyDaysAgo: number): { pct: number; up: bo
 function TrendBadge({ trend }: { trend: { pct: number; up: boolean } | null }) {
   if (!trend) {
     return (
-      <span className="trend" style={{ background: 'var(--surface-muted)', color: 'var(--ink-faint)' }}>
+      <span
+        className="trend"
+        style={{ background: 'var(--surface-muted)', color: 'var(--ink-faint)' }}
+      >
         —
       </span>
     );
@@ -136,9 +139,7 @@ export function DashboardView({
   const activeLearnerRate =
     learners.length === 0 ? 0 : Math.round((activeLearners / learners.length) * 100);
 
-  const learnersThirtyDaysAgo = learners.filter(
-    (l) => l.createdAt.getTime() <= cutoff30,
-  ).length;
+  const learnersThirtyDaysAgo = learners.filter((l) => l.createdAt.getTime() <= cutoff30).length;
 
   const kpis = [
     {
@@ -256,13 +257,21 @@ export function DashboardView({
         ))}
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '5fr 7fr', gap: 16, alignItems: 'stretch' }}>
+      <div
+        style={{ display: 'grid', gridTemplateColumns: '5fr 7fr', gap: 16, alignItems: 'stretch' }}
+      >
         <ReviewQueueCard items={pendingReviews} />
         <EvidenceByWeekChart data={evidenceByWeek} />
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '8fr 4fr', gap: 16, alignItems: 'stretch' }}>
-        <RecentLearnersTable rows={recentLearners} courses={courses} totalLearners={learners.length} />
+      <div
+        style={{ display: 'grid', gridTemplateColumns: '8fr 4fr', gap: 16, alignItems: 'stretch' }}
+      >
+        <RecentLearnersTable
+          rows={recentLearners}
+          courses={courses}
+          totalLearners={learners.length}
+        />
         <UpcomingAppointmentsCard appointments={upcomingAppointments} learners={learners} />
       </div>
 
@@ -322,7 +331,14 @@ function ReviewQueueCard({
         </Link>
       </div>
       {items.length === 0 ? (
-        <p style={{ padding: '32px 0', textAlign: 'center', fontSize: 13.5, color: 'var(--ink-muted)' }}>
+        <p
+          style={{
+            padding: '32px 0',
+            textAlign: 'center',
+            fontSize: 13.5,
+            color: 'var(--ink-muted)',
+          }}
+        >
           No practical evidence is waiting on review.
         </p>
       ) : (
@@ -382,43 +398,85 @@ function EvidenceByWeekChart({
   return (
     <div className="panel" style={{ height: '100%' }}>
       <div
-        style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 10 }}
+        style={{
+          display: 'flex',
+          alignItems: 'baseline',
+          justifyContent: 'space-between',
+          marginBottom: 10,
+        }}
       >
         <div style={{ fontWeight: 600, fontSize: 14.5 }}>Evidence submissions by week</div>
         <div className="segrange">
-          <button type="button" className={range === 'today' ? 'on' : undefined} onClick={() => setRange('today')}>
+          <button
+            type="button"
+            className={range === 'today' ? 'on' : undefined}
+            onClick={() => setRange('today')}
+          >
             Today
           </button>
-          <button type="button" className={range === '7d' ? 'on' : undefined} onClick={() => setRange('7d')}>
+          <button
+            type="button"
+            className={range === '7d' ? 'on' : undefined}
+            onClick={() => setRange('7d')}
+          >
             7d
           </button>
-          <button type="button" className={range === '30d' ? 'on' : undefined} onClick={() => setRange('30d')}>
+          <button
+            type="button"
+            className={range === '30d' ? 'on' : undefined}
+            onClick={() => setRange('30d')}
+          >
             30d
           </button>
         </div>
       </div>
-      <div style={{ display: 'flex', gap: 16, fontSize: 11.5, color: 'var(--ink-muted)', marginBottom: 10 }}>
+      <div
+        style={{
+          display: 'flex',
+          gap: 16,
+          fontSize: 11.5,
+          color: 'var(--ink-muted)',
+          marginBottom: 10,
+        }}
+      >
         <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-          <span style={{ width: 8, height: 8, borderRadius: 2, background: 'var(--chart-approved)' }} />
+          <span
+            style={{ width: 8, height: 8, borderRadius: 2, background: 'var(--chart-approved)' }}
+          />
           Approved
         </span>
         <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-          <span style={{ width: 8, height: 8, borderRadius: 2, background: 'var(--chart-pending)' }} />
+          <span
+            style={{ width: 8, height: 8, borderRadius: 2, background: 'var(--chart-pending)' }}
+          />
           Pending
         </span>
         <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-          <span style={{ width: 8, height: 8, borderRadius: 2, background: 'var(--chart-rejected)' }} />
+          <span
+            style={{ width: 8, height: 8, borderRadius: 2, background: 'var(--chart-rejected)' }}
+          />
           Rejected
         </span>
       </div>
       {!hasData ? (
-        <p style={{ padding: '32px 0', textAlign: 'center', fontSize: 13.5, color: 'var(--ink-muted)' }}>
+        <p
+          style={{
+            padding: '32px 0',
+            textAlign: 'center',
+            fontSize: 13.5,
+            color: 'var(--ink-muted)',
+          }}
+        >
           No practical evidence submitted in the last 4 weeks.
         </p>
       ) : (
         <ChartContainer config={evidenceWeekChartConfig} className="h-55 w-full">
-          <BarChart accessibilityLayer data={data} margin={{ left: 0, right: 0, top: 0, bottom: 0 }}>
-            <CartesianGrid vertical={false} stroke="var(--border)" />
+          <BarChart
+            accessibilityLayer
+            data={data}
+            margin={{ left: 0, right: 0, top: 0, bottom: 0 }}
+          >
+            <CartesianGrid vertical={false} stroke="var(--nfcap-border)" />
             <XAxis
               axisLine={false}
               dataKey="week"
@@ -427,9 +485,19 @@ function EvidenceByWeekChart({
               tick={{ fill: 'var(--ink-muted)' }}
             />
             <ChartTooltip cursor={false} content={<ChartTooltipContent />} />
-            <Bar dataKey="approved" stackId="status" fill="var(--color-approved)" radius={[0, 0, 4, 4]} />
+            <Bar
+              dataKey="approved"
+              stackId="status"
+              fill="var(--color-approved)"
+              radius={[0, 0, 4, 4]}
+            />
             <Bar dataKey="pending" stackId="status" fill="var(--color-pending)" />
-            <Bar dataKey="rejected" stackId="status" fill="var(--color-rejected)" radius={[4, 4, 0, 0]} />
+            <Bar
+              dataKey="rejected"
+              stackId="status"
+              fill="var(--color-rejected)"
+              radius={[4, 4, 0, 0]}
+            />
           </BarChart>
         </ChartContainer>
       )}
@@ -442,7 +510,10 @@ function RecentLearnersTable({
   courses,
   totalLearners,
 }: {
-  rows: { learner: LearnerRecord; activity: { course: AdminCourse; progress: CourseProgress; at: number } | null }[];
+  rows: {
+    learner: LearnerRecord;
+    activity: { course: AdminCourse; progress: CourseProgress; at: number } | null;
+  }[];
   courses: AdminCourse[];
   totalLearners: number;
 }) {
@@ -453,7 +524,7 @@ function RecentLearnersTable({
           padding: '16px 20px',
           fontWeight: 600,
           fontSize: 14.5,
-          borderBottom: '1px solid var(--border)',
+          borderBottom: '1px solid var(--nfcap-border)',
           display: 'flex',
           justifyContent: 'space-between',
         }}
@@ -464,7 +535,14 @@ function RecentLearnersTable({
         </Link>
       </div>
       {rows.length === 0 ? (
-        <p style={{ padding: '32px 20px', textAlign: 'center', fontSize: 13.5, color: 'var(--ink-muted)' }}>
+        <p
+          style={{
+            padding: '32px 20px',
+            textAlign: 'center',
+            fontSize: 13.5,
+            color: 'var(--ink-muted)',
+          }}
+        >
           No learner activity yet.
         </p>
       ) : (
@@ -512,7 +590,9 @@ function RecentLearnersTable({
         </>
       )}
       {courses.length === 0 && (
-        <p style={{ padding: '0 20px 16px', fontSize: 12, color: 'var(--ink-faint)' }}>No courses yet.</p>
+        <p style={{ padding: '0 20px 16px', fontSize: 12, color: 'var(--ink-faint)' }}>
+          No courses yet.
+        </p>
       )}
     </div>
   );
@@ -534,9 +614,18 @@ function UpcomingAppointmentsCard({
   const learnerNameById = new Map(learners.map((l) => [l.id, l.name]));
   return (
     <div className="panel" style={{ height: '100%' }}>
-      <div style={{ fontWeight: 600, fontSize: 14.5, marginBottom: 6 }}>Upcoming WIOA Appointments</div>
+      <div style={{ fontWeight: 600, fontSize: 14.5, marginBottom: 6 }}>
+        Upcoming WIOA Appointments
+      </div>
       {appointments.length === 0 ? (
-        <p style={{ padding: '32px 0', textAlign: 'center', fontSize: 13.5, color: 'var(--ink-muted)' }}>
+        <p
+          style={{
+            padding: '32px 0',
+            textAlign: 'center',
+            fontSize: 13.5,
+            color: 'var(--ink-muted)',
+          }}
+        >
           No upcoming appointments scheduled.
         </p>
       ) : (
@@ -545,11 +634,15 @@ function UpcomingAppointmentsCard({
             <div className="evt-row" key={a.id}>
               <div className="evt-left">
                 <div className="evt-date">
-                  <div className="mon">{new Date(a.scheduledAt).toLocaleDateString(undefined, { month: 'short' })}</div>
+                  <div className="mon">
+                    {new Date(a.scheduledAt).toLocaleDateString(undefined, { month: 'short' })}
+                  </div>
                   <div className="day">{new Date(a.scheduledAt).getDate()}</div>
                 </div>
                 <div className="evt-mid">
-                  <div className="title">{learnerNameById.get(a.learnerId) ?? 'Unknown learner'}</div>
+                  <div className="title">
+                    {learnerNameById.get(a.learnerId) ?? 'Unknown learner'}
+                  </div>
                   <div className="sub">
                     {a.courseTitle} ·{' '}
                     {new Date(a.scheduledAt).toLocaleTimeString(undefined, {
@@ -569,7 +662,7 @@ function UpcomingAppointmentsCard({
 }
 
 const performanceChartConfig = {
-  avgScore: { label: 'Avg. Score', color: 'var(--accent)' },
+  avgScore: { label: 'Avg. Score', color: 'var(--nfcap-accent)' },
 } satisfies ChartConfig;
 
 function PerformanceHighlightBar({
@@ -598,21 +691,28 @@ function PerformanceHighlightBar({
   return (
     <g>
       <rect
-        fill="color-mix(in oklch, var(--accent) 16%, transparent)"
+        fill="color-mix(in oklch, var(--nfcap-accent) 16%, transparent)"
         height={barHeight}
         rx={radius}
         width={width}
         x={x}
         y={barY}
       />
-      <rect fill="var(--accent)" height={barHeight} rx={radius} width={fillWidth} x={x} y={barY} />
+      <rect
+        fill="var(--nfcap-accent)"
+        height={barHeight}
+        rx={radius}
+        width={fillWidth}
+        x={x}
+        y={barY}
+      />
       {payload.topScorers.map((student, index) => (
         <g key={`${student.initials}-${index}`}>
           <circle
             cx={avatarStart + index * 14 + avatarSize / 2}
             cy={avatarY + avatarSize / 2}
             r={avatarSize / 2}
-            fill="var(--accent-contrast)"
+            fill="var(--nfcap-accent-contrast)"
             fillOpacity={0.9}
           />
           <text
@@ -622,7 +722,7 @@ function PerformanceHighlightBar({
             dominantBaseline="middle"
             fontSize={8}
             fontWeight={600}
-            fill="var(--accent)"
+            fill="var(--nfcap-accent)"
           >
             {student.initials}
           </text>
@@ -646,13 +746,26 @@ function PerformanceHighlightBar({
 function PerformanceHighlights({
   data,
 }: {
-  data: { course: string; avgScore: number; topScorers: { initials: string; name: string; score: number }[] }[];
+  data: {
+    course: string;
+    avgScore: number;
+    topScorers: { initials: string; name: string; score: number }[];
+  }[];
 }) {
   return (
     <div className="panel">
-      <div style={{ fontWeight: 600, fontSize: 14.5, marginBottom: 10 }}>Performance Highlights</div>
+      <div style={{ fontWeight: 600, fontSize: 14.5, marginBottom: 10 }}>
+        Performance Highlights
+      </div>
       {data.length === 0 ? (
-        <p style={{ padding: '32px 0', textAlign: 'center', fontSize: 13.5, color: 'var(--ink-muted)' }}>
+        <p
+          style={{
+            padding: '32px 0',
+            textAlign: 'center',
+            fontSize: 13.5,
+            color: 'var(--ink-muted)',
+          }}
+        >
           No quiz attempts recorded yet.
         </p>
       ) : (
@@ -663,7 +776,7 @@ function PerformanceHighlights({
             layout="vertical"
             margin={{ bottom: 0, left: 0, right: 8, top: 0 }}
           >
-            <CartesianGrid horizontal={false} strokeDasharray="4 4" stroke="var(--border)" />
+            <CartesianGrid horizontal={false} strokeDasharray="4 4" stroke="var(--nfcap-border)" />
             <XAxis
               axisLine={false}
               domain={[0, 100]}

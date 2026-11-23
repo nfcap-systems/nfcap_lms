@@ -84,7 +84,7 @@ export function LoginForm() {
       <div className="flex items-center justify-end text-sm">
         <Link
           href="/forgot-password"
-          className="font-medium text-[var(--accent)] underline-offset-2 hover:underline"
+          className="font-medium text-[var(--nfcap-accent)] underline-offset-2 hover:underline"
         >
           Forgot your password?
         </Link>

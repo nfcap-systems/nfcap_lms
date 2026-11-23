@@ -49,7 +49,7 @@ export function LessonSidebar({
                     className={cn(
                       'flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm transition-colors',
                       active
-                        ? 'bg-[var(--accent)] text-[var(--accent-contrast)]'
+                        ? 'bg-[var(--nfcap-accent)] text-[var(--nfcap-accent-contrast)]'
                         : 'text-[var(--ink-muted)] hover:bg-[var(--surface-muted)]',
                     )}
                   >
@@ -58,7 +58,9 @@ export function LessonSidebar({
                         name="check"
                         className={cn(
                           'size-4 shrink-0',
-                          active ? 'text-[var(--accent-contrast)]' : 'text-[var(--status-complete)]',
+                          active
+                            ? 'text-[var(--nfcap-accent-contrast)]'
+                            : 'text-[var(--status-complete)]',
                         )}
                       />
                     ) : (
@@ -66,7 +68,9 @@ export function LessonSidebar({
                         name={lessonTypeIcon[lesson.type]}
                         className={cn(
                           'size-4 shrink-0',
-                          active ? 'text-[var(--accent-contrast)]' : 'text-[var(--ink-muted)]',
+                          active
+                            ? 'text-[var(--nfcap-accent-contrast)]'
+                            : 'text-[var(--ink-muted)]',
                         )}
                       />
                     )}
@@ -139,7 +143,7 @@ function StepItem({
         className={cn(
           'flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm transition-colors',
           locked && 'cursor-not-allowed text-[var(--ink-muted)] opacity-60',
-          !locked && active && 'bg-[var(--accent)] text-[var(--accent-contrast)]',
+          !locked && active && 'bg-[var(--nfcap-accent)] text-[var(--nfcap-accent-contrast)]',
           !locked && !active && 'text-[var(--ink-muted)] hover:bg-[var(--surface-muted)]',
         )}
       >
@@ -148,12 +152,18 @@ function StepItem({
         ) : state === 'complete' ? (
           <Icon
             name="check"
-            className={cn('size-4 shrink-0', active ? 'text-[var(--accent-contrast)]' : 'text-[var(--status-complete)]')}
+            className={cn(
+              'size-4 shrink-0',
+              active ? 'text-[var(--nfcap-accent-contrast)]' : 'text-[var(--status-complete)]',
+            )}
           />
         ) : (
           <Icon
             name={icon}
-            className={cn('size-4 shrink-0', active ? 'text-[var(--accent-contrast)]' : 'text-[var(--ink-muted)]')}
+            className={cn(
+              'size-4 shrink-0',
+              active ? 'text-[var(--nfcap-accent-contrast)]' : 'text-[var(--ink-muted)]',
+            )}
           />
         )}
         <span className="flex-1 truncate">{label}</span>

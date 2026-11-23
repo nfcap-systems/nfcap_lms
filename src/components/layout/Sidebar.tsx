@@ -54,7 +54,7 @@ function ProfileMenu({
               {roleLabel}
             </p>
           </div>
-          <div style={{ borderTop: '1px solid var(--border)', padding: 6 }}>
+          <div style={{ borderTop: '1px solid var(--nfcap-border)', padding: 6 }}>
             <Link
               href={`/${role}/account`}
               role="menuitem"
@@ -65,7 +65,7 @@ function ProfileMenu({
               Account Settings
             </Link>
           </div>
-          <div style={{ borderTop: '1px solid var(--border)', padding: 6 }}>
+          <div style={{ borderTop: '1px solid var(--nfcap-border)', padding: 6 }}>
             <LogoutButton role="menuitem" className="lhdr-menuitem">
               <Icon name="log-out" className="h-4.5 w-4.5" />
               Sign out
@@ -130,7 +130,10 @@ export function Sidebar({
         <div className="sshell-brand-mark">N</div>
         {!isCollapsed && (
           <div className="min-w-0">
-            <p className="truncate text-sm font-semibold" style={{ color: 'var(--sidebar-fg)' }}>
+            <p
+              className="truncate text-sm font-semibold"
+              style={{ color: 'var(--nfcap-sidebar-fg)' }}
+            >
               NFCAP LMS
             </p>
             <p className="truncate text-xs" style={{ color: 'var(--ink-muted)' }}>
@@ -220,7 +223,12 @@ export function Sidebar({
       </nav>
 
       <div className="sshell-profile-wrap">
-        <ProfileMenu userName={userName} userEmail={userEmail} role={role} collapsed={isCollapsed} />
+        <ProfileMenu
+          userName={userName}
+          userEmail={userEmail}
+          role={role}
+          collapsed={isCollapsed}
+        />
       </div>
     </div>
   );

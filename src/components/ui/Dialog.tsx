@@ -60,7 +60,7 @@ export function Dialog({
       {footer && (
         <div
           className="flex items-center justify-end gap-3 border-t p-7"
-          style={{ borderColor: 'var(--border)' }}
+          style={{ borderColor: 'var(--nfcap-border)' }}
         >
           {footer}
         </div>

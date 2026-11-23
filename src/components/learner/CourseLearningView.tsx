@@ -126,10 +126,10 @@ export function CourseLearningView({
               {course.sections.map((section) => (
                 <div key={section.id}>
                   <h3 className="mb-2 text-sm font-semibold text-[var(--ink)]">{section.title}</h3>
-                  <ul className="flex flex-col divide-y divide-[var(--border)]">
+                  <ul className="flex flex-col divide-y divide-[var(--nfcap-border)]">
                     {section.lessons.map((lesson) => (
                       <li key={lesson.id} className="flex items-center gap-3 py-2.5">
-                        <span className="flex size-5 shrink-0 items-center justify-center rounded-full border border-[var(--border)] text-[var(--ink-muted)]">
+                        <span className="flex size-5 shrink-0 items-center justify-center rounded-full border border-[var(--nfcap-border)] text-[var(--ink-muted)]">
                           <Icon name={lessonTypeIcon[lesson.type]} className="size-3" />
                         </span>
                         <span className="flex-1 text-sm text-[var(--ink)]">{lesson.title}</span>
@@ -156,7 +156,7 @@ export function CourseLearningView({
                   {Math.round(course.assessment.passThreshold * 100)}% to pass
                 </p>
               </div>
-              <div className="flex flex-col gap-1.5 border-t border-[var(--border)] pt-4">
+              <div className="flex flex-col gap-1.5 border-t border-[var(--nfcap-border)] pt-4">
                 <p className="text-sm font-medium text-[var(--ink)]">Practical Evidence</p>
                 <p className="text-xs text-[var(--ink-muted)]">{course.evidencePrompt}</p>
               </div>
@@ -214,7 +214,7 @@ export function CourseLearningView({
               <>
                 <LessonContent lesson={active.lesson} />
 
-                <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[var(--border)] pt-5">
+                <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[var(--nfcap-border)] pt-5">
                   <Button
                     variant="outline"
                     size="sm"
