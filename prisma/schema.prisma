@@ -262,7 +262,11 @@ model EvidenceSubmission {
 /// (ADM11-PerCriterionReview); `met` stays null until a reviewer records a verdict. Scoped to the
 /// submission rather than the enrollment so a resubmission (a new EvidenceSubmission row, per the
 /// "new row per attempt, never overwrite" pattern this model follows) starts every criterion
-/// unreviewed again instead of carrying over a stale verdict from a prior attempt.
+/// unreviewed again instead of carrying over a stale verdict from a prior attempt — with one
+/// exception, feature #10's targeted resubmission: a criterion already Met on the rejected
+/// submission is copied forward into the new one (`carriedForward: true`) so the learner only
+/// redoes what wasn't met. Carried-forward rows are NOT attempts; feature #11's attempt history
+/// filters them out (`src/lib/data/criterionAttempts.ts`).
 model CriterionAssessment {
   id                   String              @id @default(cuid())
   evidenceSubmissionId String
@@ -290,6 +294,9 @@ model CriterionAssessment {
   reviewerNote         String?
   reviewedBy           String?
   reviewedAt           DateTime?
+  /// True when this row is a copy of a Met verdict from the previous (rejected) submission rather
+  /// than a fresh learner capture (feature #10). Excluded from attempt history (feature #11).
+  carriedForward       Boolean             @default(false)
 
   @@unique([evidenceSubmissionId, criterionId])
   @@index([criterionId])
