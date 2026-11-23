@@ -44,6 +44,7 @@ export const adminNav: NavEntry[] = [
   { label: 'Courses', href: '/admin/courses', icon: 'layers' },
   { label: 'Pathway', href: '/admin/pathway', icon: 'compass' },
   { label: 'Learners', href: '/admin/learners', icon: 'users' },
+  { label: 'Review Queue', href: '/admin/reviews', icon: 'check' },
   { label: 'Roles', href: '/admin/roles', icon: 'user' },
   // WIOA case operations moved to /coordinator and /partner (docs/build/WIOA_BUILD_WORKFLOW.md
   // Phase 3, retiring the Phase 2 /admin/wioa stopgap) — Admin keeps only the reference-data CRUD

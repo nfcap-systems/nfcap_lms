@@ -159,16 +159,17 @@ export async function getEvidenceFileUrl(evidenceSubmissionId: string): Promise<
   return getEvidenceFileSignedUrl(evidence.filePath);
 }
 
-/** Admin-only evidence review (docs/product/PRODUCT_CONTEXT.md Section 5: a course completes only once
- * Admin verifies evidence). Approving materializes a Certificate row; a later flip back to
- * rejected retracts it — a course can only be certified once (Certificate.enrollmentId unique). */
-export async function setEvidenceStatus(
+type AdminActor = Awaited<ReturnType<typeof requireAdmin>>;
+
+/** Shared by `setEvidenceStatus` and `bulkApproveEvidence` — approving materializes a Certificate
+ * row; a later flip back to rejected retracts it — a course can only be certified once
+ * (Certificate.enrollmentId unique). Does not revalidate or require admin itself; callers do. */
+async function applyEvidenceStatus(
+  admin: AdminActor,
   learnerId: string,
   courseSlug: string,
   status: 'approved' | 'rejected',
 ): Promise<void> {
-  const admin = await requireAdmin();
-
   const enrollment = await prisma.enrollment.findFirstOrThrow({
     where: { learnerId, course: { slug: courseSlug } },
     include: { evidenceSubmissions: { orderBy: { submittedAt: 'desc' }, take: 1 } },
@@ -205,6 +206,32 @@ export async function setEvidenceStatus(
     targetId: evidence.id,
     metadata: { status, learnerId, courseSlug },
   });
+}
 
+/** Admin-only evidence review (docs/product/PRODUCT_CONTEXT.md Section 5: a course completes only once
+ * Admin verifies evidence). */
+export async function setEvidenceStatus(
+  learnerId: string,
+  courseSlug: string,
+  status: 'approved' | 'rejected',
+): Promise<void> {
+  const admin = await requireAdmin();
+  await applyEvidenceStatus(admin, learnerId, courseSlug, status);
   revalidateLearnerViews(learnerId, courseSlug);
+}
+
+/** Reviewer Queue's "Bulk approve" (docs/plans/phase-3-and-design-migration-kickoff.md Step 2,
+ * feature #6 / board ADM10-ReviewQueue) — approves every selected submission in one round trip
+ * instead of one server-action call per row. Revalidates each distinct learner/course pair once,
+ * not once per item. */
+export async function bulkApproveEvidence(
+  items: { learnerId: string; courseSlug: string }[],
+): Promise<void> {
+  const admin = await requireAdmin();
+  for (const { learnerId, courseSlug } of items) {
+    await applyEvidenceStatus(admin, learnerId, courseSlug, 'approved');
+  }
+  for (const { learnerId, courseSlug } of items) {
+    revalidateLearnerViews(learnerId, courseSlug);
+  }
 }
