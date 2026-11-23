@@ -7,6 +7,7 @@ import { Icon } from '@/components/icons';
 import { enroll, markLessonComplete } from '@/lib/actions/progress';
 import type { CourseProgress } from '@/lib/data/progress';
 import type { CriterionVerdict } from '@/lib/data/criterionReview';
+import type { ResubmissionContext } from '@/lib/data/criterionAttempts';
 import {
   courseDurationMinutes,
   courseLessonCount,
@@ -26,6 +27,7 @@ export function CourseLearningView({
   unlocked = false,
   criteria = [],
   criterionVerdicts,
+  resubmission,
 }: {
   course: Course;
   progress: CourseProgress | undefined;
@@ -35,6 +37,7 @@ export function CourseLearningView({
   /** Passed straight through to EvidenceView (feature #7, LRN06-EvidenceCriteria). */
   criteria?: AssessmentCriterion[];
   criterionVerdicts?: CriterionVerdict[];
+  resubmission?: ResubmissionContext;
 }) {
   const router = useRouter();
   const [, startTransition] = useTransition();
@@ -204,6 +207,7 @@ export function CourseLearningView({
               evidence={evidence}
               criteria={criteria}
               criterionVerdicts={criterionVerdicts}
+              resubmission={resubmission}
             />
           ) : (
             active && (

@@ -201,7 +201,14 @@ export type GuidedCriterionCapture = {
  * across a Storage call), then one transaction creates the EvidenceSubmission + all
  * CriterionAssessment rows — a resubmission after `rejected` always lands here fresh, so it's
  * always a new EvidenceSubmission row (and therefore new CriterionAssessment rows), per
- * CriterionAssessment's own doc comment. */
+ * CriterionAssessment's own doc comment.
+ *
+ * Feature #10 — targeted resubmission (LRN06e-EvidenceResubmit): when the learner's latest
+ * submission was rejected, every criterion already marked Met on it is copied forward into the new
+ * submission (`carriedForward: true`, same file/verdict/reviewer) and `captures` must cover only
+ * the remaining criteria. The carry-forward set is decided here from the database, never from the
+ * client, so a forged capture list can't skip a criterion that wasn't actually met. Gated
+ * certification (applyEvidenceStatus) stays correct because carried rows keep `met: true`. */
 export async function submitGuidedEvidence(
   courseSlug: string,
   captures: GuidedCriterionCapture[],
@@ -219,9 +226,28 @@ export async function submitGuidedEvidence(
   const criterionIds = new Set(course.assessmentCriteria.map((c) => c.id));
   const criterionById = new Map(course.assessmentCriteria.map((c) => [c.id, c]));
 
+  // Feature #10: what the previous (rejected) attempt already got right.
+  const previous = await prisma.evidenceSubmission.findFirst({
+    where: { enrollment: { learnerId: user.id, courseId: course.id } },
+    orderBy: { submittedAt: 'desc' },
+    include: { criterionAssessments: { where: { met: true } } },
+  });
+  const carried =
+    previous?.status === PrismaEvidenceStatus.REJECTED
+      ? previous.criterionAssessments.filter((a) => criterionIds.has(a.criterionId))
+      : [];
+  const carriedIds = new Set(carried.map((a) => a.criterionId));
+
+  const captureIds = new Set(captures.map((c) => c.criterionId));
+  if (captureIds.size !== captures.length) {
+    throw new Error('Each criterion can only be submitted once.');
+  }
   for (const capture of captures) {
     if (!criterionIds.has(capture.criterionId)) {
       throw new Error('This criterion does not belong to this course.');
+    }
+    if (carriedIds.has(capture.criterionId)) {
+      throw new Error('This criterion was already met — it carries forward automatically.');
     }
     if (containsSsnPattern(capture.description)) {
       throw new Error('Evidence notes cannot contain a Social Security Number.');
@@ -233,6 +259,11 @@ export async function submitGuidedEvidence(
     }
     if (!hasFile && capture.description.trim().length === 0) {
       throw new Error('Add a photo or a note for each criterion before submitting.');
+    }
+  }
+  for (const id of criterionIds) {
+    if (!carriedIds.has(id) && !captureIds.has(id)) {
+      throw new Error('Submit evidence for every criterion that still needs it.');
     }
   }
 
@@ -266,14 +297,30 @@ export async function submitGuidedEvidence(
       data: { enrollmentId: enrollment.id, description: '', status: PrismaEvidenceStatus.PENDING },
     });
     await tx.criterionAssessment.createMany({
-      data: uploaded.map((u) => ({
-        evidenceSubmissionId: submission.id,
-        criterionId: u.criterionId,
-        learnerFilePath: u.filePath,
-        learnerFileName: u.fileName,
-        learnerDescription: u.description || null,
-        submittedAt: new Date(),
-      })),
+      data: [
+        ...carried.map((a) => ({
+          evidenceSubmissionId: submission.id,
+          criterionId: a.criterionId,
+          learnerFilePath: a.learnerFilePath,
+          learnerFileName: a.learnerFileName,
+          learnerDescription: a.learnerDescription,
+          submittedAt: a.submittedAt,
+          annotationData: a.annotationData ?? undefined,
+          met: true,
+          reviewerNote: a.reviewerNote,
+          reviewedBy: a.reviewedBy,
+          reviewedAt: a.reviewedAt,
+          carriedForward: true,
+        })),
+        ...uploaded.map((u) => ({
+          evidenceSubmissionId: submission.id,
+          criterionId: u.criterionId,
+          learnerFilePath: u.filePath,
+          learnerFileName: u.fileName,
+          learnerDescription: u.description || null,
+          submittedAt: new Date(),
+        })),
+      ],
     });
   });
 

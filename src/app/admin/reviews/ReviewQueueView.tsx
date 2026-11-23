@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { StateCard } from '@/components/ui';
 import { Icon } from '@/components/icons';
 import { bulkApproveEvidence } from '@/lib/actions/progress';
+import { timeAgo } from '@/lib/time-ago';
 
 export type ReviewQueueRow = {
   evidenceId: string;
@@ -20,16 +21,6 @@ export type ReviewQueueRow = {
 };
 
 type SortOrder = 'oldest' | 'newest';
-
-function timeAgo(isoDate: string): string {
-  const ms = Date.now() - new Date(isoDate).getTime();
-  const minutes = Math.round(ms / 60_000);
-  if (minutes < 60) return minutes <= 1 ? '1 minute ago' : `${minutes} minutes ago`;
-  const hours = Math.round(minutes / 60);
-  if (hours < 24) return hours === 1 ? '1 hour ago' : `${hours} hours ago`;
-  const days = Math.round(hours / 24);
-  return days === 1 ? '1 day ago' : `${days} days ago`;
-}
 
 export function ReviewQueueView({
   rows,

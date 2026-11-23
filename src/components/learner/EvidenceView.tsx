@@ -8,7 +8,9 @@ import { submitEvidence, getEvidenceFileUrl } from '@/lib/actions/progress';
 import type { EvidenceSubmission } from '@/lib/data/progress';
 import type { CriterionVerdict } from '@/lib/data/criterionReview';
 import type { AssessmentCriterion, Course } from '@/lib/types';
+import type { ResubmissionContext } from '@/lib/data/criterionAttempts';
 import { GuidedEvidenceCapture } from './GuidedEvidenceCapture';
+import { EvidenceNotMet } from './EvidenceNotMet';
 
 const statusCopy: Record<
   'pending' | 'approved' | 'rejected',
@@ -24,6 +26,7 @@ export function EvidenceView({
   evidence,
   criteria = [],
   criterionVerdicts,
+  resubmission,
 }: {
   course: Course;
   evidence: EvidenceSubmission | undefined;
@@ -33,6 +36,9 @@ export function EvidenceView({
   /** Per-criterion verdicts on the current `evidence` submission, once Admin has reviewed any of
    * them (feature #7, src/lib/data/criterionReview.ts) — undefined before a verdict exists. */
   criterionVerdicts?: CriterionVerdict[];
+  /** Feedback + carry-forward info when the latest submission was sent back (feature #10,
+   * src/lib/data/criterionAttempts.ts) — undefined otherwise. */
+  resubmission?: ResubmissionContext;
 }) {
   const router = useRouter();
   const [, startTransition] = useTransition();
@@ -43,6 +49,17 @@ export function EvidenceView({
   const [resubmitting, setResubmitting] = useState(false);
 
   const guided = criteria.length > 0;
+
+  if (evidence && !resubmitting && guided && evidence.status === 'rejected' && resubmission) {
+    return (
+      <EvidenceNotMet
+        course={course}
+        criterionVerdicts={criterionVerdicts ?? []}
+        context={resubmission}
+        onResubmit={() => setResubmitting(true)}
+      />
+    );
+  }
 
   if (evidence && !resubmitting) {
     const status = statusCopy[evidence.status];
@@ -121,6 +138,7 @@ export function EvidenceView({
           course={course}
           criteria={criteria}
           criterionVerdicts={criterionVerdicts ?? []}
+          resubmission={evidence?.status === 'rejected' ? resubmission : undefined}
           mode="capture"
           onSubmitted={() => setResubmitting(false)}
         />

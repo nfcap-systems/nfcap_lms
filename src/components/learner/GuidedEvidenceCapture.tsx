@@ -2,10 +2,12 @@
 
 import { useMemo, useRef, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button, Field, Textarea } from '@/components/ui';
+import { Badge, Button, Field, Textarea } from '@/components/ui';
 import { Icon } from '@/components/icons';
 import { submitGuidedEvidence, getCriterionFileUrl } from '@/lib/actions/progress';
 import type { CriterionVerdict } from '@/lib/data/criterionReview';
+import type { ResubmissionContext } from '@/lib/data/criterionAttempts';
+import { timeAgo } from '@/lib/time-ago';
 import type { AssessmentCriterion, Course } from '@/lib/types';
 
 type DraftCapture = { file: File | null; description: string };
@@ -18,14 +20,18 @@ type DraftCapture = { file: File | null; description: string };
  * criteria still use EvidenceView's legacy form. */
 export function GuidedEvidenceCapture({
   course,
-  criteria,
+  criteria: allCriteria,
   criterionVerdicts,
+  resubmission,
   mode,
   onSubmitted,
 }: {
   course: Course;
   criteria: AssessmentCriterion[];
   criterionVerdicts: CriterionVerdict[];
+  /** Feature #10 — set when redoing a rejected submission (LRN06e-EvidenceResubmit). The walkthrough
+   * then covers only the criteria that still need evidence; the rest carry forward server-side. */
+  resubmission?: ResubmissionContext;
   /** 'summary' shows what's already on the current submission, read-only (pending/approved, or
    * rejected before the learner chooses to resubmit) — EvidenceView decides which, same gate it
    * already applied for the legacy single-file flow. 'capture' is the guided walkthrough. */
@@ -34,6 +40,13 @@ export function GuidedEvidenceCapture({
 }) {
   const router = useRouter();
   const [, startTransition] = useTransition();
+  // Targeted resubmission (feature #10): only criteria still needing evidence get a step.
+  const needsEvidenceIds = resubmission
+    ? new Set(resubmission.notMet.map((c) => c.criterionId))
+    : undefined;
+  const criteria = needsEvidenceIds
+    ? allCriteria.filter((c) => needsEvidenceIds.has(c.id))
+    : allCriteria;
   const [drafts, setDrafts] = useState<Record<string, DraftCapture>>({});
   const [activeCriterionId, setActiveCriterionId] = useState<string>(criteria[0]?.id ?? '');
   const [error, setError] = useState<string | null>(null);
@@ -91,13 +104,13 @@ export function GuidedEvidenceCapture({
   }
 
   if (mode === 'summary') {
-    return <CriteriaSummary criteria={criteria} verdictByCriterionId={verdictByCriterionId} />;
+    return <CriteriaSummary criteria={allCriteria} verdictByCriterionId={verdictByCriterionId} />;
   }
 
   if (!activeCriterion) return null;
 
   const draft = captureFor(activeCriterion.id);
-  const verdict = verdictByCriterionId.get(activeCriterion.id);
+  const lastAttempt = resubmission?.notMet.find((c) => c.criterionId === activeCriterion.id);
 
   return (
     <div className="flex flex-col gap-5">
@@ -115,9 +128,39 @@ export function GuidedEvidenceCapture({
           {activeCriterion.title}
         </div>
         <div className="mt-1 text-xl font-semibold font-[family-name:var(--font-display,inherit)] text-[var(--ink)]">
-          Submit your evidence
+          {resubmission ? 'Resubmit your evidence' : 'Submit your evidence'}
         </div>
       </div>
+
+      {lastAttempt && (
+        <>
+          <div className="flex items-start gap-3 rounded-xl border border-[var(--status-problem-border)] bg-[var(--status-problem-bg)] px-5 py-4">
+            <Icon
+              name="alert-circle"
+              className="mt-0.5 size-4 shrink-0 text-[var(--status-problem)]"
+            />
+            <div className="text-sm leading-relaxed text-[var(--status-problem)]">
+              <b>Last attempt:</b>{' '}
+              {lastAttempt.reviewerNote ?? 'Your reviewer asked you to resubmit this criterion.'}
+            </div>
+          </div>
+          <div className="flex items-center gap-3.5 rounded-xl border border-[var(--border)] bg-[var(--surface)] px-4 py-3.5 opacity-70">
+            {lastAttempt.thumbUrl && (
+              // eslint-disable-next-line @next/next/no-img-element -- short-lived signed Supabase URL
+              <img
+                src={lastAttempt.thumbUrl}
+                alt="Your previous submission"
+                className="size-[52px] shrink-0 rounded-md object-cover"
+              />
+            )}
+            <div className="flex-1 text-xs text-[var(--ink-muted)]">
+              Previous submission — attempt {lastAttempt.attemptNumber},{' '}
+              {timeAgo(lastAttempt.attemptSubmittedAt)}
+            </div>
+            <Badge tone="danger">● Not Met</Badge>
+          </div>
+        </>
+      )}
 
       <div className="flex overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--surface)] shadow-[var(--shadow-sm)]">
         <div className="flex-1 p-5">
@@ -164,7 +207,7 @@ export function GuidedEvidenceCapture({
         ) : (
           <>
             <div>
-              Drag a photo here, or{' '}
+              Drag {resubmission ? 'your new' : 'a'} photo here, or{' '}
               <span className="font-semibold text-[var(--accent)]">browse</span>
             </div>
             <div className="mt-1.5 text-xs">JPG or PNG, up to 10MB</div>
@@ -195,12 +238,6 @@ export function GuidedEvidenceCapture({
         />
       </Field>
 
-      {verdict?.met === false && verdict.reviewerNote && (
-        <div className="rounded-lg border border-[var(--status-problem-border)] bg-[var(--status-problem-bg)] px-3 py-2 text-sm text-[var(--status-problem)]">
-          Reviewer note from your last attempt: {verdict.reviewerNote}
-        </div>
-      )}
-
       <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[var(--border)] pt-5">
         <Button
           variant="outline"
@@ -225,7 +262,7 @@ export function GuidedEvidenceCapture({
             </Button>
           ) : (
             <Button size="sm" disabled={!allComplete || submitting} onClick={handleSubmit}>
-              Submit evidence
+              {resubmission ? 'Resubmit evidence' : 'Submit evidence'}
             </Button>
           )}
         </div>

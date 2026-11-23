@@ -7,6 +7,7 @@ import {
   type CourseUnlockRecord,
 } from '@/lib/data/progress';
 import { getCriterionReview } from '@/lib/data/criterionReview';
+import { getResubmissionContext } from '@/lib/data/criterionAttempts';
 import { getAuthUser } from '@/lib/supabase/server';
 
 export default async function CourseLearningPage({
@@ -45,8 +46,15 @@ export default async function CourseLearningPage({
 
   // Only fetched once evidence exists — getCriterionReview itself returns undefined otherwise,
   // but no point running its enrollment lookup when there's nothing for it to find.
-  const criterionReview =
-    user && progress?.evidence ? await getCriterionReview(user.id, courseId) : undefined;
+  const [criterionReview, resubmission] =
+    user && progress?.evidence
+      ? await Promise.all([
+          getCriterionReview(user.id, courseId),
+          progress.evidence.status === 'rejected'
+            ? getResubmissionContext(user.id, courseId)
+            : undefined,
+        ])
+      : [undefined, undefined];
 
   return (
     <div className="flex flex-col gap-4">
@@ -62,6 +70,7 @@ export default async function CourseLearningPage({
         unlocked={Boolean(unlocks[courseId])}
         criteria={criteria}
         criterionVerdicts={criterionReview?.criteria}
+        resubmission={resubmission}
       />
     </div>
   );
