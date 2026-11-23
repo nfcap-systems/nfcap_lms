@@ -251,6 +251,10 @@ enum ContactType {
 enum CommunicationChannel {
   EMAIL
   CALL
+  /// Internal Partner Staff/Coordinator follow-up note on a case — not sent to anyone
+  /// (PTN02-LearnerDetail's "Add a note"). `recipient` still holds the learner's email for
+  /// consistency with the other channels, even though nothing is actually delivered.
+  NOTE
 }
 
 /// The 18 canonical statuses (docs/wioa/WIOA_Eligibility_Matching_App_Developer_Specification.pdf

@@ -15,6 +15,8 @@ import { containsSsnPattern } from '@/lib/pii';
 import { enforceRateLimit } from '@/lib/rate-limit';
 import { withRlsContext } from '@/lib/db/rls';
 import type { PrismaClient } from '@/generated/prisma/client';
+import { getLearnerById } from '@/lib/data/learners';
+import { sendEmail } from '@/lib/email';
 
 /** Case-level authorization for staff actions (docs/build/WIOA_BUILD_WORKFLOW.md Phase 3 — every
  * transition is staff-driven: Coordinator for any case, Partner Staff only for their assigned
@@ -602,4 +604,104 @@ export async function assignWioaCasePartnerStaff(
   revalidatePath('/coordinator');
   revalidatePath(`/coordinator/${caseId}`);
   revalidatePath('/partner');
+}
+
+/** Partner Staff/Coordinator follow-up note on a case (PTN02-LearnerDetail's "Add a note") —
+ * logged as a WioaCommunication with the NOTE channel, which `getWioaCommunications` explicitly
+ * excludes from the learner's own Funding-page outreach log. `recipient` is a fixed placeholder,
+ * not a real address — nothing is sent, this is purely an internal log entry. */
+export async function addWioaCaseNote(caseId: string, body: string): Promise<void> {
+  const user = await requireCaseAccess(caseId);
+  const role = getRole(user) ?? 'PARTNER_STAFF';
+  const trimmed = body.trim();
+  if (!trimmed) throw new Error('Note cannot be empty.');
+  if (trimmed.length > 2000) throw new Error('Note is too long.');
+
+  await withRlsContext({ userId: user.id, role }, async (tx) => {
+    const wioaCase = await tx.wioaCase.findUniqueOrThrow({
+      where: { id: caseId },
+      select: { learnerId: true, courseId: true },
+    });
+    await tx.wioaCommunication.create({
+      data: {
+        learnerId: wioaCase.learnerId,
+        courseId: wioaCase.courseId,
+        wioaCaseId: caseId,
+        channel: 'NOTE',
+        recipient: 'internal note',
+        body: trimmed,
+      },
+    });
+  });
+
+  revalidatePath('/partner');
+  revalidatePath(`/partner/${caseId}`);
+  revalidatePath('/coordinator');
+  revalidatePath(`/coordinator/${caseId}`);
+}
+
+/** Sends a real reminder email (src/lib/email.ts — Resend) listing the case's missing/rejected
+ * documents, and logs it the same way sendWioaOutreach does. Known limitation carried over from
+ * Phase 2 (docs/build/PHASE_2_PROGRESS.md): no sending domain is verified in Resend yet, so
+ * delivery only actually reaches Resend's own verified test address until that's resolved —
+ * sendEmail() still runs for real and the WioaCommunication log entry is real either way. */
+export async function sendWioaCaseReminder(caseId: string): Promise<void> {
+  const user = await requireCaseAccess(caseId);
+  const role = getRole(user) ?? 'PARTNER_STAFF';
+  await enforceRateLimit(user.id, 'wioa-case-reminder', 20, 15 * 60 * 1000);
+
+  const { learnerId, courseId, courseTitle, missingDocumentNames } = await withRlsContext(
+    { userId: user.id, role },
+    async (tx) => {
+      const wioaCase = await tx.wioaCase.findUniqueOrThrow({
+        where: { id: caseId },
+        include: {
+          course: { select: { id: true, title: true } },
+          documents: { include: { requirement: true } },
+        },
+      });
+      return {
+        learnerId: wioaCase.learnerId,
+        courseId: wioaCase.course.id,
+        courseTitle: wioaCase.course.title,
+        missingDocumentNames: wioaCase.documents
+          .filter((d) => d.status === 'MISSING' || d.status === 'REJECTED')
+          .map((d) => d.requirement.name),
+      };
+    },
+  );
+
+  // Supabase Auth Admin API call — must happen outside the RLS transaction above (CLAUDE.md
+  // performance conventions: never hold a pooler slot across a network call), same reasoning as
+  // getWioaCases' per-case name lookups.
+  const learner = await getLearnerById(learnerId);
+  if (!learner?.email) throw new Error('Learner has no email on file.');
+
+  const subject = `Reminder: documents needed for ${courseTitle}`;
+  const list =
+    missingDocumentNames.length > 0
+      ? `<ul>${missingDocumentNames.map((name) => `<li>${name}</li>`).join('')}</ul>`
+      : '<p>Please check your document checklist for anything still outstanding.</p>';
+  const html = `<p>Hi ${learner.name || 'there'},</p><p>This is a reminder that the following document(s) are still needed for <strong>${courseTitle}</strong>:</p>${list}<p>Thanks,<br/>NFCAP</p>`;
+
+  await sendEmail({ to: learner.email, subject, html });
+
+  await withRlsContext({ userId: user.id, role }, (tx) =>
+    tx.wioaCommunication.create({
+      data: {
+        learnerId,
+        courseId,
+        wioaCaseId: caseId,
+        channel: 'EMAIL',
+        recipient: learner.email,
+        subject,
+        body: html,
+      },
+    }),
+  );
+
+  revalidatePath('/partner');
+  revalidatePath(`/partner/${caseId}`);
+  revalidatePath('/coordinator');
+  revalidatePath(`/coordinator/${caseId}`);
 }

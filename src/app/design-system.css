@@ -984,6 +984,103 @@
   background: var(--status-complete);
 }
 
+/* Step 1.4 follow-up — Partner Staff's dedicated views (PTN01-Roster, PTN02-LearnerDetail). */
+.rowpathway {
+  font-size: 13px;
+}
+.rowpathway .sub {
+  font-size: 12px;
+  color: var(--ink-muted);
+}
+.doccard {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  overflow: hidden;
+}
+.docrow {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+}
+.docrow:last-child {
+  border-bottom: none;
+}
+.doc-ic {
+  width: 38px;
+  height: 38px;
+  border-radius: var(--radius-md);
+  background: var(--surface-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ink-muted);
+  flex: none;
+}
+.doc-main {
+  flex: 1;
+  min-width: 0;
+}
+.doc-name {
+  font-size: 14px;
+  font-weight: 600;
+}
+.doc-desc {
+  font-size: 12.5px;
+  color: var(--ink-muted);
+  margin-top: 2px;
+  max-width: 480px;
+}
+.doc-meta {
+  flex: none;
+  text-align: right;
+  min-width: 150px;
+}
+.doc-actions {
+  flex: none;
+  display: flex;
+  gap: 6px;
+}
+.crsrow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 0;
+  border-bottom: 1px solid var(--border);
+}
+.crsrow:last-child {
+  border-bottom: none;
+}
+.crsrow .nm {
+  font-size: 13.5px;
+  font-weight: 500;
+  flex: 1;
+}
+.noterow {
+  display: flex;
+  gap: 10px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+}
+.noterow:last-child {
+  border-bottom: none;
+}
+.note-av {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--surface-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--ink-muted);
+  flex: none;
+}
+
 /* ============================================================================
    Step 1.4 — Learner shell retrofit (FND13-Shells). Top header over centered
    content, matching LearnerHeader.tsx/LearnerShell.tsx structure 1:1 — only
