@@ -76,10 +76,32 @@ model Course {
 
   sections           Section[]
   assessment         Assessment?
+  assessmentCriteria AssessmentCriterion[]
   enrollments        Enrollment[]
   wioaCommunications WioaCommunication[]
   wioaCases          WioaCase[]
   courseUnlocks      CourseUnlock[]
+}
+
+/// A specific thing a trainee must demonstrate for a course's evidence submission to be
+/// certifiable (docs/client/NFCAP_LMS_Feature_Detail_Client.md, "Per-Course Assessment
+/// Criteria"). Authored by Admin (docs/plans/phase-3-and-design-migration-kickoff.md Step 2,
+/// feature #4 — not yet built); reviewed per-criterion against evidence photos by feature #7.
+model AssessmentCriterion {
+  id                        String  @id @default(cuid())
+  courseId                  String
+  course                    Course  @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  title                     String
+  guidance                  String
+  /// Whether this criterion must be demonstrated with a photo, vs. satisfied by description alone.
+  photoRequired             Boolean @default(true)
+  /// Whether every EvidenceSubmission for this course must have this criterion marked Met before
+  /// a Certificate can be issued (feature #7 — gated certification isn't built yet).
+  mandatoryForCertification Boolean @default(true)
+  /// Display order among sibling criteria of the same course.
+  order                     Int
+
+  @@index([courseId, order])
 }
 
 model Section {
