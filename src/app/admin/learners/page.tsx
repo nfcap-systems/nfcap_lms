@@ -12,19 +12,6 @@ export default async function AdminLearnersPage() {
   const progressByLearner = await getProgressByLearner(learners.map((l) => l.id));
 
   return (
-    <div className="flex flex-col gap-4">
-      <div>
-        <h1 className="text-xl font-semibold text-foreground">Learners</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Roster of all learners with progress visibility across the program.
-        </p>
-      </div>
-
-      <LearnersRosterView
-        learners={learners}
-        courses={courses}
-        progressByLearner={progressByLearner}
-      />
-    </div>
+    <LearnersRosterView learners={learners} courses={courses} progressByLearner={progressByLearner} />
   );
 }

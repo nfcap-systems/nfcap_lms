@@ -1,17 +1,18 @@
 import { createAdminClient } from '@/lib/supabase/admin';
 
-export type LearnerRecord = { id: string; name: string; email: string };
+export type LearnerRecord = { id: string; name: string; email: string; createdAt: Date };
 
 function toLearnerRecord(user: {
   id: string;
   email?: string;
   user_metadata?: Record<string, unknown>;
+  created_at: string;
 }): LearnerRecord {
   const name =
     typeof user.user_metadata?.name === 'string'
       ? user.user_metadata.name
       : (user.email ?? 'Learner');
-  return { id: user.id, name, email: user.email ?? '' };
+  return { id: user.id, name, email: user.email ?? '', createdAt: new Date(user.created_at) };
 }
 
 /** Admin roster (Admin > Learners) — Supabase Auth is the only user store in this app, so the

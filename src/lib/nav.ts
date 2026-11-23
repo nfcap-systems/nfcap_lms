@@ -4,12 +4,17 @@ export type NavItem = {
   label: string;
   href: string;
   icon: IconName;
+  /** Section header rendered above this entry when it differs from the previous entry's
+   * section — matches the design canvas's Sidebar.dc.html `.navgroup` labels (e.g. "Learning &
+   * curriculum", "System"). Optional: a nav with no sections just renders flat. */
+  section?: string;
 };
 
 export type NavGroup = {
   label: string;
   icon: IconName;
   children: NavItem[];
+  section?: string;
 };
 
 export type NavEntry = NavItem | NavGroup;
@@ -39,19 +44,24 @@ export const learnerNav: NavItem[] = [
 // Section 4/7 — fundingSource is a routing/UX signal, this is its one nav-visibility effect).
 export const wioaNavItem: NavItem = { label: 'Funding', href: '/learner/funding', icon: 'map-pin' };
 
+// Section labels and grouping match the design canvas's Sidebar.dc.html ("Dashboards" /
+// "Learning & curriculum" / "Review & cohorts" / "Funding (WIOA)" / "System"). The board also
+// groups in "Quiz Bank", "Cohorts", "Announcements", and "Data Import/Export" — none of those
+// have a real route yet (docs/MOCKUP-INDEX.md's routing-gaps list), so they're left out rather
+// than linked to a page that doesn't exist.
 export const adminNav: NavEntry[] = [
-  { label: 'Dashboard', href: '/admin', icon: 'grid' },
-  { label: 'Courses', href: '/admin/courses', icon: 'layers' },
+  { label: 'Dashboard', href: '/admin', icon: 'grid', section: 'Dashboards' },
+  { label: 'Courses', href: '/admin/courses', icon: 'layers', section: 'Learning & curriculum' },
   { label: 'Pathway', href: '/admin/pathway', icon: 'compass' },
+  { label: 'Review Queue', href: '/admin/reviews', icon: 'check', section: 'Review & cohorts' },
   { label: 'Learners', href: '/admin/learners', icon: 'users' },
-  { label: 'Review Queue', href: '/admin/reviews', icon: 'check' },
-  { label: 'Roles', href: '/admin/roles', icon: 'user' },
   // WIOA case operations moved to /coordinator and /partner (docs/build/WIOA_BUILD_WORKFLOW.md
   // Phase 3, retiring the Phase 2 /admin/wioa stopgap) — Admin keeps only the reference-data CRUD
   // that has no other owner (workforce boards/contacts, document requirements).
   {
     label: 'WIOA',
     icon: 'map-pin',
+    section: 'Funding (WIOA)',
     children: [
       { label: 'Boards', href: '/admin/wioa/boards', icon: 'map-pin' },
       { label: 'Documents', href: '/admin/wioa/document-requirements', icon: 'clipboard' },
@@ -59,8 +69,9 @@ export const adminNav: NavEntry[] = [
       { label: 'Reports', href: '/admin/wioa/reports', icon: 'bar-chart' },
     ],
   },
-  { label: 'Analytics', href: '/admin/analytics', icon: 'bar-chart' },
+  { label: 'Analytics', href: '/admin/analytics', icon: 'bar-chart', section: 'System' },
   { label: 'Audit Log', href: '/admin/audit', icon: 'lock' },
+  { label: 'Roles', href: '/admin/roles', icon: 'user' },
   { label: 'Settings', href: '/admin/settings', icon: 'settings' },
 ];
 

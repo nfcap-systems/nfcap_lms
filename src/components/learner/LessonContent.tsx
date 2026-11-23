@@ -64,29 +64,37 @@ function ContentBlockView({ block }: { block: ContentBlock }) {
             <img
               src={block.url}
               alt={block.content || 'Lesson image'}
-              className="w-full rounded-xl border border-[var(--border)] object-cover"
+              className="w-full rounded-xl border border-[var(--nfcap-border)] object-cover"
             />
           ) : (
             <div className="flex aspect-video w-full items-center justify-center rounded-xl bg-[var(--surface-muted)] text-[var(--ink-muted)]">
               <Icon name="image" className="size-10" />
             </div>
           )}
-          {block.content && <figcaption className="text-xs text-[var(--ink-muted)]">{block.content}</figcaption>}
+          {block.content && (
+            <figcaption className="text-xs text-[var(--ink-muted)]">{block.content}</figcaption>
+          )}
         </figure>
       );
     case 'video':
       return (
         <figure className="flex flex-col gap-2">
           {block.url ? (
-            <video controls className="w-full rounded-xl border border-[var(--border)]" src={block.url} />
+            <video
+              controls
+              className="w-full rounded-xl border border-[var(--nfcap-border)]"
+              src={block.url}
+            />
           ) : (
-            <div className="flex aspect-video w-full items-center justify-center rounded-xl bg-[var(--accent)] text-[var(--accent-contrast)]">
+            <div className="flex aspect-video w-full items-center justify-center rounded-xl bg-[var(--nfcap-accent)] text-[var(--nfcap-accent-contrast)]">
               <div className="flex size-14 items-center justify-center rounded-full bg-white/15">
                 <Icon name="play" className="size-6" />
               </div>
             </div>
           )}
-          {block.content && <figcaption className="text-xs text-[var(--ink-muted)]">{block.content}</figcaption>}
+          {block.content && (
+            <figcaption className="text-xs text-[var(--ink-muted)]">{block.content}</figcaption>
+          )}
         </figure>
       );
     case 'text':

@@ -137,8 +137,8 @@ export function GlobalSearch() {
       </button>
 
       {open && (
-        <div className="absolute top-full right-0 mt-2 w-[min(22rem,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface)] shadow-elevated">
-          <div className="relative border-b border-[var(--border)] p-2">
+        <div className="absolute top-full right-0 mt-2 w-[min(22rem,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-[var(--nfcap-border)] bg-[var(--surface)] shadow-elevated">
+          <div className="relative border-b border-[var(--nfcap-border)] p-2">
             <Icon
               name="search"
               className="pointer-events-none absolute top-1/2 left-5 h-4 w-4 -translate-y-1/2 text-[var(--ink-muted)]"

@@ -34,7 +34,7 @@ export function SignupForm() {
         />
       </Field>
 
-      <label className="flex items-start gap-2 rounded-md border border-[var(--border)] bg-[var(--surface-muted)] p-3 text-sm text-[var(--ink)]">
+      <label className="flex items-start gap-2 rounded-md border border-[var(--nfcap-border)] bg-[var(--surface-muted)] p-3 text-sm text-[var(--ink)]">
         <Checkbox
           name="pursuingWioa"
           checked={pursuingWioa}
@@ -42,13 +42,12 @@ export function SignupForm() {
           className="mt-0.5"
         />
         <span>
-          I want to explore WIOA funding for apprenticeship tuition instead of paying out of
-          pocket.
+          I want to explore WIOA funding for apprenticeship tuition instead of paying out of pocket.
         </span>
       </label>
 
       {pursuingWioa && (
-        <div className="flex flex-col gap-4 rounded-md border border-[var(--border)] p-4">
+        <div className="flex flex-col gap-4 rounded-md border border-[var(--nfcap-border)] p-4">
           <p className="text-xs text-[var(--ink-muted)]">
             These details are used to match you to your local workforce board — they&apos;re not
             shared anywhere else in the app.
@@ -80,7 +79,13 @@ export function SignupForm() {
 
           <div className="grid grid-cols-1 gap-4">
             <Field label="City" htmlFor="city">
-              <Input id="city" name="city" type="text" required={pursuingWioa} autoComplete="address-level2" />
+              <Input
+                id="city"
+                name="city"
+                type="text"
+                required={pursuingWioa}
+                autoComplete="address-level2"
+              />
             </Field>
             <Field label="State" htmlFor="state">
               <Input
@@ -106,7 +111,12 @@ export function SignupForm() {
           </div>
 
           <Field label="Preferred language" htmlFor="preferredLanguage">
-            <Input id="preferredLanguage" name="preferredLanguage" type="text" defaultValue="English" />
+            <Input
+              id="preferredLanguage"
+              name="preferredLanguage"
+              type="text"
+              defaultValue="English"
+            />
           </Field>
 
           <Field label="Employment status" htmlFor="employmentStatus">
@@ -126,7 +136,11 @@ export function SignupForm() {
             htmlFor="unemploymentInsuranceStatus"
             hint="Have you filed for, received, or exhausted UI in the last 6 months?"
           >
-            <Select id="unemploymentInsuranceStatus" name="unemploymentInsuranceStatus" defaultValue="">
+            <Select
+              id="unemploymentInsuranceStatus"
+              name="unemploymentInsuranceStatus"
+              defaultValue=""
+            >
               <option value="" disabled>
                 Select one
               </option>
@@ -137,7 +151,10 @@ export function SignupForm() {
             </Select>
           </Field>
 
-          <Field label="Training / apprenticeship interest" htmlFor="trainingApprenticeshipInterest">
+          <Field
+            label="Training / apprenticeship interest"
+            htmlFor="trainingApprenticeshipInterest"
+          >
             <Input
               id="trainingApprenticeshipInterest"
               name="trainingApprenticeshipInterest"
@@ -153,11 +170,17 @@ export function SignupForm() {
 
       <p className="text-xs text-[var(--ink-muted)]">
         By signing up, you agree to the{' '}
-        <Link href="/terms" className="font-medium text-[var(--accent)] hover:text-[var(--accent-hover)]">
+        <Link
+          href="/terms"
+          className="font-medium text-[var(--nfcap-accent)] hover:text-[var(--nfcap-accent-hover)]"
+        >
           Terms of Service
         </Link>{' '}
         and{' '}
-        <Link href="/privacy" className="font-medium text-[var(--accent)] hover:text-[var(--accent-hover)]">
+        <Link
+          href="/privacy"
+          className="font-medium text-[var(--nfcap-accent)] hover:text-[var(--nfcap-accent-hover)]"
+        >
           Privacy Policy
         </Link>
         .

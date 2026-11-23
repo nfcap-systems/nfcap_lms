@@ -29,20 +29,27 @@ export function CertificatesView({
     return progress?.enrolled && !earnedByCourseId.has(course.id);
   });
   const nextUpTotal = nextUp ? courseLessonCount(nextUp) : 0;
-  const nextUpDone = nextUp ? progressMap[nextUp.id]?.completedLessonIds.length ?? 0 : 0;
+  const nextUpDone = nextUp ? (progressMap[nextUp.id]?.completedLessonIds.length ?? 0) : 0;
   const nextUpPercent = nextUpTotal > 0 ? Math.round((nextUpDone / nextUpTotal) * 100) : 0;
 
   if (pathway.length === 0) {
     return (
       <div className="flex flex-col gap-6">
-        <div style={{ fontSize: 26, fontWeight: 700, fontFamily: 'var(--font-display)', color: 'var(--ink)' }}>
+        <div
+          style={{
+            fontSize: 26,
+            fontWeight: 700,
+            fontFamily: 'var(--font-display)',
+            color: 'var(--ink)',
+          }}
+        >
           Certificates
         </div>
         <div
           style={{
-            borderRadius: 'var(--radius-lg)',
+            borderRadius: 'var(--nfcap-radius-lg)',
             background: 'var(--surface-muted)',
-            border: '1px solid var(--border)',
+            border: '1px solid var(--nfcap-border)',
             padding: 28,
           }}
         >
@@ -58,7 +65,14 @@ export function CertificatesView({
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <div style={{ fontSize: 26, fontWeight: 700, fontFamily: 'var(--font-display)', color: 'var(--ink)' }}>
+        <div
+          style={{
+            fontSize: 26,
+            fontWeight: 700,
+            fontFamily: 'var(--font-display)',
+            color: 'var(--ink)',
+          }}
+        >
           Certificates
         </div>
         <div style={{ fontSize: 13.5, color: 'var(--ink-muted)', marginTop: 4 }}>
@@ -80,7 +94,10 @@ export function CertificatesView({
           </div>
         </div>
         <div className="lrn-stat">
-          <span className="lrn-stat-icon" style={{ background: '#eff6ff', color: 'var(--accent)' }}>
+          <span
+            className="lrn-stat-icon"
+            style={{ background: '#eff6ff', color: 'var(--nfcap-accent)' }}
+          >
             <Icon name="bar-chart" className="h-5 w-5" />
           </span>
           <div className="vals">
@@ -99,20 +116,38 @@ export function CertificatesView({
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 300px', gap: 24, alignItems: 'start' }}>
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'minmax(0, 1fr) 300px',
+          gap: 24,
+          alignItems: 'start',
+        }}
+      >
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14, minWidth: 0 }}>
           <div className="lrn-sechead">
             <h2>Your credentials</h2>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 18 }}>
+          <div
+            style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 18 }}
+          >
             {pathway.map((course) => {
               const credential = earnedByCourseId.get(course.id);
               if (credential) {
-                return <CertificateCard key={course.id} credential={credential} learnerName={learnerName} />;
+                return (
+                  <CertificateCard
+                    key={course.id}
+                    credential={credential}
+                    learnerName={learnerName}
+                  />
+                );
               }
 
               const progress = progressMap[course.id];
-              const locked = !progress?.enrolled && course.access === 'restricted' && !unlockedCourseSlugs.includes(course.id);
+              const locked =
+                !progress?.enrolled &&
+                course.access === 'restricted' &&
+                !unlockedCourseSlugs.includes(course.id);
               const total = courseLessonCount(course);
               const done = progress?.completedLessonIds.length ?? 0;
               const percent = total > 0 ? Math.round((done / total) * 100) : 0;
@@ -122,9 +157,9 @@ export function CertificatesView({
                   key={course.id}
                   style={{
                     background: 'var(--surface)',
-                    border: '1px solid var(--border)',
-                    borderRadius: 'var(--radius-lg)',
-                    boxShadow: 'var(--shadow-sm)',
+                    border: '1px solid var(--nfcap-border)',
+                    borderRadius: 'var(--nfcap-radius-lg)',
+                    boxShadow: 'var(--nfcap-shadow-sm)',
                     padding: 22,
                     display: 'flex',
                     flexDirection: 'column',
@@ -137,7 +172,7 @@ export function CertificatesView({
                       style={{
                         width: 52,
                         height: 52,
-                        borderRadius: 'var(--radius-md)',
+                        borderRadius: 'var(--nfcap-radius-md)',
                         background: 'var(--surface-muted)',
                         display: 'flex',
                         alignItems: 'center',
@@ -151,13 +186,30 @@ export function CertificatesView({
                     <div>
                       <b style={{ fontSize: 15, color: 'var(--ink)' }}>{course.title}</b>
                       <div style={{ fontSize: 12.5, color: 'var(--ink-muted)', marginTop: 2 }}>
-                        {locked ? 'Locked' : progress?.enrolled ? `${percent}% complete` : 'Not yet earned'}
+                        {locked
+                          ? 'Locked'
+                          : progress?.enrolled
+                            ? `${percent}% complete`
+                            : 'Not yet earned'}
                       </div>
                     </div>
                   </div>
                   {!locked && progress?.enrolled && (
-                    <div style={{ height: 5, background: 'var(--border)', borderRadius: 'var(--radius-full)', overflow: 'hidden' }}>
-                      <div style={{ height: '100%', width: `${percent}%`, background: 'var(--accent)' }} />
+                    <div
+                      style={{
+                        height: 5,
+                        background: 'var(--nfcap-border)',
+                        borderRadius: 'var(--radius-full)',
+                        overflow: 'hidden',
+                      }}
+                    >
+                      <div
+                        style={{
+                          height: '100%',
+                          width: `${percent}%`,
+                          background: 'var(--nfcap-accent)',
+                        }}
+                      />
                     </div>
                   )}
                 </div>
@@ -167,21 +219,53 @@ export function CertificatesView({
         </div>
 
         <aside style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <div className="lrn-side-panel" style={{ background: 'linear-gradient(135deg, #f0fdf4, #f7fffb)', borderColor: '#bbf7d0' }}>
+          <div
+            className="lrn-side-panel"
+            style={{
+              background: 'linear-gradient(135deg, #f0fdf4, #f7fffb)',
+              borderColor: '#bbf7d0',
+            }}
+          >
             <div className="lrn-side-title">
               <h3 style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
                 <Icon name="check" className="h-3.5 w-3.5" style={{ color: '#166534' }} />
                 How verification works
               </h3>
             </div>
-            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 9, fontSize: 12.5, color: 'var(--ink-muted)', lineHeight: 1.5 }}>
-              <Icon name="check" className="h-3.5 w-3.5" style={{ color: 'var(--accent)', flexShrink: 0, marginTop: 2 }} />
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'flex-start',
+                gap: 9,
+                fontSize: 12.5,
+                color: 'var(--ink-muted)',
+                lineHeight: 1.5,
+              }}
+            >
+              <Icon
+                name="check"
+                className="h-3.5 w-3.5"
+                style={{ color: 'var(--nfcap-accent)', flexShrink: 0, marginTop: 2 }}
+              />
               Certificates are issued once NFCAP staff verify your Practical Evidence.
             </div>
-            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 9, fontSize: 12.5, color: 'var(--ink-muted)', lineHeight: 1.5 }}>
-              <Icon name="check" className="h-3.5 w-3.5" style={{ color: 'var(--accent)', flexShrink: 0, marginTop: 2 }} />
-              A public, no-login verification link for employers and workforce boards is planned
-              for Phase 4 — not available yet.
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'flex-start',
+                gap: 9,
+                fontSize: 12.5,
+                color: 'var(--ink-muted)',
+                lineHeight: 1.5,
+              }}
+            >
+              <Icon
+                name="check"
+                className="h-3.5 w-3.5"
+                style={{ color: 'var(--nfcap-accent)', flexShrink: 0, marginTop: 2 }}
+              />
+              A public, no-login verification link for employers and workforce boards is planned for
+              Phase 4 — not available yet.
             </div>
           </div>
 
@@ -191,10 +275,14 @@ export function CertificatesView({
                 <h3>Next up</h3>
               </div>
               <div style={{ fontSize: 12.5, color: 'var(--ink-muted)', lineHeight: 1.5 }}>
-                Finish <strong style={{ color: 'var(--ink)' }}>{nextUp.title}</strong> to earn your next
-                certificate — you&apos;re {nextUpPercent}% through.
+                Finish <strong style={{ color: 'var(--ink)' }}>{nextUp.title}</strong> to earn your
+                next certificate — you&apos;re {nextUpPercent}% through.
               </div>
-              <Button size="sm" style={{ width: '100%' }} onClick={() => router.push(`/learner/courses/${nextUp.id}`)}>
+              <Button
+                size="sm"
+                style={{ width: '100%' }}
+                onClick={() => router.push(`/learner/courses/${nextUp.id}`)}
+              >
                 Continue course
               </Button>
             </div>
@@ -218,7 +306,9 @@ export function CertificatesView({
                 <Icon name="user" className="h-5 w-5" />
               </div>
               <div style={{ minWidth: 0 }}>
-                <div style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--ink)' }}>Your mentor</div>
+                <div style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--ink)' }}>
+                  Your mentor
+                </div>
                 <div style={{ fontSize: 12, color: 'var(--ink-muted)' }}>Not yet assigned</div>
               </div>
             </div>

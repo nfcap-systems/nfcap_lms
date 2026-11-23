@@ -45,7 +45,10 @@ export function PortfolioView({
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 14 }}>
         <div className="lrn-stat">
-          <span className="lrn-stat-icon" style={{ background: '#eff6ff', color: 'var(--accent)' }}>
+          <span
+            className="lrn-stat-icon"
+            style={{ background: '#eff6ff', color: 'var(--nfcap-accent)' }}
+          >
             <Icon name="clipboard" className="h-5 w-5" />
           </span>
           <div className="vals">
@@ -96,9 +99,9 @@ export function PortfolioView({
           {credentials.length === 0 ? (
             <div
               style={{
-                borderRadius: 'var(--radius-lg)',
+                borderRadius: 'var(--nfcap-radius-lg)',
                 background: 'var(--surface-muted)',
-                border: '1px solid var(--border)',
+                border: '1px solid var(--nfcap-border)',
                 padding: 28,
               }}
             >
@@ -223,7 +226,7 @@ export function PortfolioView({
               <Icon
                 name="check"
                 className="h-3.5 w-3.5"
-                style={{ color: 'var(--accent)', flexShrink: 0, marginTop: 2 }}
+                style={{ color: 'var(--nfcap-accent)', flexShrink: 0, marginTop: 2 }}
               />
               Submit evidence from any practical lesson — it lands here automatically once reviewed.
             </div>
@@ -240,7 +243,7 @@ export function PortfolioView({
               <Icon
                 name="check"
                 className="h-3.5 w-3.5"
-                style={{ color: 'var(--accent)', flexShrink: 0, marginTop: 2 }}
+                style={{ color: 'var(--nfcap-accent)', flexShrink: 0, marginTop: 2 }}
               />
               <span>
                 <strong style={{ color: 'var(--ink)' }}>Met</strong> or{' '}

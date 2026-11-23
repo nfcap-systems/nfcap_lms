@@ -55,7 +55,7 @@ export function AttemptHistoryView({
           description="Once you submit evidence for this criterion, every attempt will be listed here."
         />
       ) : (
-        <div className="overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--surface)] shadow-[var(--shadow-sm)]">
+        <div className="overflow-hidden rounded-xl border border-[var(--nfcap-border)] bg-[var(--surface)] shadow-[var(--nfcap-shadow-sm)]">
           {history.attempts.map((attempt, i) => {
             const badge = outcomeBadge[attempt.outcome];
             return (

@@ -352,7 +352,7 @@ export function PhotoAnnotationDialog({
                   display: 'flex',
                   gap: 10,
                   padding: '10px 0',
-                  borderBottom: '1px solid var(--border)',
+                  borderBottom: '1px solid var(--nfcap-border)',
                 }}
               >
                 <span

@@ -269,7 +269,7 @@ export function ReviewQueueView({
                         display: 'flex',
                         alignItems: 'center',
                         gap: 6,
-                        color: 'var(--accent)',
+                        color: 'var(--nfcap-accent)',
                         fontWeight: 600,
                         fontSize: 12.5,
                       }}

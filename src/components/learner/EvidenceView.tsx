@@ -90,7 +90,7 @@ export function EvidenceView({
         ) : (
           <CriteriaChecklist criteria={criteria} verdicts={criterionVerdicts} />
         )}
-        <div className="flex flex-col items-start gap-3 rounded-xl border border-[var(--border)] bg-[var(--surface-muted)] p-5">
+        <div className="flex flex-col items-start gap-3 rounded-xl border border-[var(--nfcap-border)] bg-[var(--surface-muted)] p-5">
           <Badge tone={status.tone}>{status.label}</Badge>
           <p className="text-sm text-[var(--ink-muted)]">
             Submitted{' '}
@@ -117,9 +117,9 @@ export function EvidenceView({
                   window.open(url, '_blank', 'noopener,noreferrer');
                 });
               }}
-              className="flex items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--ink-muted)] hover:text-[var(--ink)]"
+              className="flex items-center gap-2 rounded-lg border border-[var(--nfcap-border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--ink-muted)] hover:text-[var(--ink)]"
             >
-              <Icon name="paperclip" className="size-4 shrink-0 text-[var(--accent)]" />
+              <Icon name="paperclip" className="size-4 shrink-0 text-[var(--nfcap-accent)]" />
               {evidence.fileName ?? 'View attachment'}
             </button>
           )}
@@ -183,9 +183,9 @@ export function EvidenceView({
 
       <Field label="Attachment (optional)">
         {file ? (
-          <div className="flex items-center justify-between gap-2 rounded-lg border border-[var(--border)] bg-[var(--surface-muted)] px-3 py-2 text-sm text-[var(--ink-muted)]">
+          <div className="flex items-center justify-between gap-2 rounded-lg border border-[var(--nfcap-border)] bg-[var(--surface-muted)] px-3 py-2 text-sm text-[var(--ink-muted)]">
             <span className="flex items-center gap-2 truncate">
-              <Icon name="paperclip" className="size-4 shrink-0 text-[var(--accent)]" />
+              <Icon name="paperclip" className="size-4 shrink-0 text-[var(--nfcap-accent)]" />
               <span className="truncate">{file.name}</span>
             </span>
             <button
@@ -221,7 +221,7 @@ export function EvidenceView({
         />
       </Field>
 
-      <div className="border-t border-[var(--border)] pt-5">
+      <div className="border-t border-[var(--nfcap-border)] pt-5">
         <Button
           disabled={description.trim().length === 0}
           onClick={() => {
@@ -266,8 +266,8 @@ function CriteriaChecklist({
   const verdictByCriterionId = new Map((verdicts ?? []).map((v) => [v.criterionId, v]));
 
   return (
-    <div className="overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--surface)] shadow-[var(--shadow-sm)]">
-      <div className="border-b border-[var(--border)] px-5 py-4 text-sm font-semibold text-[var(--ink)]">
+    <div className="overflow-hidden rounded-xl border border-[var(--nfcap-border)] bg-[var(--surface)] shadow-[var(--nfcap-shadow-sm)]">
+      <div className="border-b border-[var(--nfcap-border)] px-5 py-4 text-sm font-semibold text-[var(--ink)]">
         Criteria for this submission
       </div>
       <div className="px-5">

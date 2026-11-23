@@ -56,17 +56,22 @@ export function HomeView({
       const flat = flattenLessons(course);
       const completedLessonIds = progressMap[course.id]?.completedLessonIds ?? [];
       const nextLesson = flat.find((f) => !completedLessonIds.includes(f.lesson.id));
-      return nextLesson ? { course, nextLesson, remaining: flat.length - completedLessonIds.length } : null;
+      return nextLesson
+        ? { course, nextLesson, remaining: flat.length - completedLessonIds.length }
+        : null;
     })
     .find(Boolean);
 
   const completedModules = pathway.filter((c) => !!progressMap[c.id]?.certificateId).length;
-  const pathwayPercent = pathway.length > 0 ? Math.round((completedModules / pathway.length) * 100) : 0;
+  const pathwayPercent =
+    pathway.length > 0 ? Math.round((completedModules / pathway.length) * 100) : 0;
   const quizScores = enrolledCourses
     .map((c) => progressMap[c.id]?.quizAttempt?.scorePercent)
     .filter((v): v is number => typeof v === 'number');
   const avgQuizScore =
-    quizScores.length > 0 ? Math.round(quizScores.reduce((a, b) => a + b, 0) / quizScores.length) : null;
+    quizScores.length > 0
+      ? Math.round(quizScores.reduce((a, b) => a + b, 0) / quizScores.length)
+      : null;
 
   // "Needs a practical evidence submission": finished every lesson and passed the quiz, but
   // hasn't submitted evidence yet, or a prior submission was rejected.
@@ -88,23 +93,34 @@ export function HomeView({
         <div
           style={{
             height: 150,
-            borderRadius: 'var(--radius-lg)',
+            borderRadius: 'var(--nfcap-radius-lg)',
             overflow: 'hidden',
             position: 'relative',
-            background: 'linear-gradient(105deg, #eff6ff 0%, #f5f8ff 46%, #dbe9ff 72%, var(--surface) 100%)',
+            background:
+              'linear-gradient(105deg, #eff6ff 0%, #f5f8ff 46%, #dbe9ff 72%, var(--surface) 100%)',
             display: 'flex',
             alignItems: 'center',
-            boxShadow: 'var(--shadow-sm)',
-            border: '1px solid var(--border)',
+            boxShadow: 'var(--nfcap-shadow-sm)',
+            border: '1px solid var(--nfcap-border)',
           }}
         >
-          <div style={{ position: 'relative', zIndex: 2, padding: '0 36px', maxWidth: '56%', display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <div
+            style={{
+              position: 'relative',
+              zIndex: 2,
+              padding: '0 36px',
+              maxWidth: '56%',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 10,
+            }}
+          >
             <span
               style={{
                 width: 'fit-content',
                 fontSize: 11.5,
                 fontWeight: 700,
-                color: 'var(--accent)',
+                color: 'var(--nfcap-accent)',
                 background: '#dbeafe',
                 padding: '5px 12px',
                 borderRadius: 'var(--radius-full)',
@@ -113,10 +129,19 @@ export function HomeView({
               {timeOfDayGreeting()}!
             </span>
             <div>
-              <div style={{ fontSize: 24, fontWeight: 700, fontFamily: 'var(--font-display)', color: 'var(--ink)' }}>
+              <div
+                style={{
+                  fontSize: 24,
+                  fontWeight: 700,
+                  fontFamily: 'var(--font-display)',
+                  color: 'var(--ink)',
+                }}
+              >
                 Welcome back, {firstName}
               </div>
-              <div style={{ fontSize: 13.5, color: 'var(--ink-muted)', marginTop: 5, maxWidth: 420 }}>
+              <div
+                style={{ fontSize: 13.5, color: 'var(--ink-muted)', marginTop: 5, maxWidth: 420 }}
+              >
                 Here&apos;s what&apos;s next in your training.
               </div>
             </div>
@@ -139,9 +164,21 @@ export function HomeView({
           />
         </div>
 
-        <div style={{ position: 'relative', margin: '10px 16px 0', display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 14, zIndex: 3 }}>
+        <div
+          style={{
+            position: 'relative',
+            margin: '10px 16px 0',
+            display: 'grid',
+            gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
+            gap: 14,
+            zIndex: 3,
+          }}
+        >
           <div className="lrn-stat">
-            <span className="lrn-stat-icon" style={{ background: '#eff6ff', color: 'var(--accent)' }}>
+            <span
+              className="lrn-stat-icon"
+              style={{ background: '#eff6ff', color: 'var(--nfcap-accent)' }}
+            >
               <Icon name="book" className="h-5 w-5" />
             </span>
             <div className="vals">
@@ -161,7 +198,10 @@ export function HomeView({
             </div>
           </div>
           <div className="lrn-stat">
-            <span className="lrn-stat-icon" style={{ background: '#eff6ff', color: 'var(--accent)' }}>
+            <span
+              className="lrn-stat-icon"
+              style={{ background: '#eff6ff', color: 'var(--nfcap-accent)' }}
+            >
               <Icon name="bar-chart" className="h-5 w-5" />
             </span>
             <div className="vals">
@@ -182,7 +222,14 @@ export function HomeView({
       </div>
 
       {/* Two-column body */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 300px', gap: 24, alignItems: 'start' }}>
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'minmax(0, 1fr) 300px',
+          gap: 24,
+          alignItems: 'start',
+        }}
+      >
         <div style={{ display: 'flex', flexDirection: 'column', gap: 28, minWidth: 0 }}>
           {nextUp ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -199,15 +246,22 @@ export function HomeView({
                 style={{
                   background: 'linear-gradient(120deg, #eff6ff, var(--surface-muted) 75%)',
                   border: '1px solid #bfdbfe',
-                  borderRadius: 'var(--radius-lg)',
-                  boxShadow: 'var(--shadow-sm)',
+                  borderRadius: 'var(--nfcap-radius-lg)',
+                  boxShadow: 'var(--nfcap-shadow-sm)',
                   padding: 20,
                   display: 'grid',
                   gridTemplateColumns: 'minmax(220px, .95fr) minmax(260px, 1fr)',
                   gap: 20,
                 }}
               >
-                <div style={{ position: 'relative', minHeight: 160, borderRadius: 'var(--radius-md)', overflow: 'hidden' }}>
+                <div
+                  style={{
+                    position: 'relative',
+                    minHeight: 160,
+                    borderRadius: 'var(--nfcap-radius-md)',
+                    overflow: 'hidden',
+                  }}
+                >
                   <Image
                     src="/images/learner/tile-installation.jpg"
                     alt=""
@@ -215,31 +269,62 @@ export function HomeView({
                     style={{ objectFit: 'cover' }}
                   />
                 </div>
-                <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 10 }}>
+                <div
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'center',
+                    gap: 10,
+                  }}
+                >
                   <Badge tone="info">In Progress</Badge>
-                  <div style={{ fontSize: 18, fontWeight: 700, fontFamily: 'var(--font-display)', lineHeight: 1.25, color: 'var(--ink)' }}>
+                  <div
+                    style={{
+                      fontSize: 18,
+                      fontWeight: 700,
+                      fontFamily: 'var(--font-display)',
+                      lineHeight: 1.25,
+                      color: 'var(--ink)',
+                    }}
+                  >
                     {nextUp.course.title}
                   </div>
                   <div style={{ fontSize: 13, color: 'var(--ink-muted)', lineHeight: 1.45 }}>
                     Next up: {nextUp.nextLesson.lesson.title}
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <div style={{ height: 6, background: 'var(--border)', borderRadius: 'var(--radius-full)', overflow: 'hidden', flex: 1 }}>
+                    <div
+                      style={{
+                        height: 6,
+                        background: 'var(--nfcap-border)',
+                        borderRadius: 'var(--radius-full)',
+                        overflow: 'hidden',
+                        flex: 1,
+                      }}
+                    >
                       <div
                         style={{
                           height: '100%',
                           borderRadius: 'var(--radius-full)',
-                          background: 'var(--accent)',
+                          background: 'var(--nfcap-accent)',
                           width: `${Math.round(((progressMap[nextUp.course.id]?.completedLessonIds.length ?? 0) / courseLessonCount(nextUp.course)) * 100)}%`,
                         }}
                       />
                     </div>
                     <b style={{ fontSize: 12, color: 'var(--ink)' }}>
-                      {Math.round(((progressMap[nextUp.course.id]?.completedLessonIds.length ?? 0) / courseLessonCount(nextUp.course)) * 100)}%
+                      {Math.round(
+                        ((progressMap[nextUp.course.id]?.completedLessonIds.length ?? 0) /
+                          courseLessonCount(nextUp.course)) *
+                          100,
+                      )}
+                      %
                     </b>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 4 }}>
-                    <Button size="lg" onClick={() => router.push(`/learner/courses/${nextUp.course.id}`)}>
+                    <Button
+                      size="lg"
+                      onClick={() => router.push(`/learner/courses/${nextUp.course.id}`)}
+                    >
                       Continue Lesson
                       <Icon name="arrow-right" className="h-4 w-4" />
                     </Button>
@@ -250,22 +335,34 @@ export function HomeView({
           ) : (
             <div
               style={{
-                borderRadius: 'var(--radius-lg)',
+                borderRadius: 'var(--nfcap-radius-lg)',
                 background: 'var(--surface-muted)',
-                border: '1px solid var(--border)',
+                border: '1px solid var(--nfcap-border)',
                 padding: 28,
                 display: 'flex',
                 flexDirection: 'column',
                 gap: 10,
               }}
             >
-              <h2 style={{ margin: 0, fontSize: 19, fontFamily: 'var(--font-display)', color: 'var(--ink)' }}>
-                {enrolledCourses.length > 0 ? "You've completed every enrolled course." : "You're not enrolled in any training yet."}
+              <h2
+                style={{
+                  margin: 0,
+                  fontSize: 19,
+                  fontFamily: 'var(--font-display)',
+                  color: 'var(--ink)',
+                }}
+              >
+                {enrolledCourses.length > 0
+                  ? "You've completed every enrolled course."
+                  : "You're not enrolled in any training yet."}
               </h2>
               <p style={{ margin: 0, fontSize: 13.5, color: 'var(--ink-muted)' }}>
                 Browse the Course Catalog to keep going.
               </p>
-              <Button onClick={() => router.push('/learner/explore')} style={{ width: 'fit-content' }}>
+              <Button
+                onClick={() => router.push('/learner/explore')}
+                style={{ width: 'fit-content' }}
+              >
                 Browse Course Catalog
               </Button>
             </div>
@@ -278,13 +375,36 @@ export function HomeView({
                 {completedModules} of {pathway.length} complete
               </span>
             </div>
-            <div style={{ height: 5, background: 'var(--border)', borderRadius: 'var(--radius-full)', overflow: 'hidden', margin: '-4px 2px 2px' }}>
-              <div style={{ height: '100%', width: `${pathwayPercent}%`, background: 'var(--accent)' }} />
+            <div
+              style={{
+                height: 5,
+                background: 'var(--nfcap-border)',
+                borderRadius: 'var(--radius-full)',
+                overflow: 'hidden',
+                margin: '-4px 2px 2px',
+              }}
+            >
+              <div
+                style={{
+                  height: '100%',
+                  width: `${pathwayPercent}%`,
+                  background: 'var(--nfcap-accent)',
+                }}
+              />
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr)) 92px', gap: 16 }}>
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(3, minmax(0, 1fr)) 92px',
+                gap: 16,
+              }}
+            >
               {pathway.slice(0, 3).map((course, index) => {
                 const progress = progressMap[course.id];
-                const locked = !progress?.enrolled && course.access === 'restricted' && !unlockedCourseSlugs.includes(course.id);
+                const locked =
+                  !progress?.enrolled &&
+                  course.access === 'restricted' &&
+                  !unlockedCourseSlugs.includes(course.id);
                 const status = getCourseStatus(course, progress);
                 return (
                   <button
@@ -335,7 +455,7 @@ export function HomeView({
                       style={{
                         width: 44,
                         height: 44,
-                        borderRadius: 'var(--radius-md)',
+                        borderRadius: 'var(--nfcap-radius-md)',
                         background: 'var(--status-complete-bg)',
                         display: 'flex',
                         alignItems: 'center',
@@ -375,7 +495,10 @@ export function HomeView({
                 <h3>Upcoming</h3>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                <div className="lrn-icon-tile" style={{ background: '#eff6ff', color: 'var(--accent)' }}>
+                <div
+                  className="lrn-icon-tile"
+                  style={{ background: '#eff6ff', color: 'var(--nfcap-accent)' }}
+                >
                   <Icon name="book" className="h-4 w-4" />
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
@@ -411,7 +534,9 @@ export function HomeView({
                 <Icon name="user" className="h-5 w-5" />
               </div>
               <div style={{ minWidth: 0 }}>
-                <div style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--ink)' }}>Not yet assigned</div>
+                <div style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--ink)' }}>
+                  Not yet assigned
+                </div>
                 <div style={{ fontSize: 12, color: 'var(--ink-muted)' }}>
                   A mentor will be assigned as you progress.
                 </div>
@@ -425,7 +550,7 @@ export function HomeView({
               background: latestWioaCase
                 ? 'linear-gradient(135deg, #f0fdf4, #f7fffb)'
                 : 'var(--surface-muted)',
-              borderColor: latestWioaCase ? '#bbf7d0' : 'var(--border)',
+              borderColor: latestWioaCase ? '#bbf7d0' : 'var(--nfcap-border)',
             }}
           >
             <div className="lrn-side-title">
@@ -433,25 +558,49 @@ export function HomeView({
                 <Icon name="briefcase" className="h-3.5 w-3.5" />
                 Funding status
               </h3>
-              {latestWioaCase && <Badge tone="success">{WIOA_STATUS_LABEL[latestWioaCase.status]}</Badge>}
+              {latestWioaCase && (
+                <Badge tone="success">{WIOA_STATUS_LABEL[latestWioaCase.status]}</Badge>
+              )}
             </div>
             <div style={{ fontSize: 12.5, color: 'var(--ink-muted)', lineHeight: 1.5 }}>
               {latestWioaCase
                 ? `WIOA funding status for ${latestWioaCase.courseTitle}.`
                 : 'No WIOA funding case on file for your account.'}
             </div>
-            <Link href="/learner/funding" style={{ fontSize: 12.5, color: 'var(--accent)', fontWeight: 600, textDecoration: 'underline' }}>
+            <Link
+              href="/learner/funding"
+              style={{
+                fontSize: 12.5,
+                color: 'var(--nfcap-accent)',
+                fontWeight: 600,
+                textDecoration: 'underline',
+              }}
+            >
               View funding details
             </Link>
           </div>
 
           {evidenceTaskCourse && (
-            <div className="lrn-side-panel" style={{ background: 'linear-gradient(135deg, #fffbeb, #fffdf5)', borderColor: '#fde68a' }}>
+            <div
+              className="lrn-side-panel"
+              style={{
+                background: 'linear-gradient(135deg, #fffbeb, #fffdf5)',
+                borderColor: '#fde68a',
+              }}
+            >
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <div className="lrn-icon-tile" style={{ background: '#fef3c7', color: '#b45309' }}>
                   <Icon name="award" className="h-4 w-4" />
                 </div>
-                <h3 style={{ margin: 0, fontSize: 14, fontWeight: 700, fontFamily: 'var(--font-display)', color: 'var(--ink)' }}>
+                <h3
+                  style={{
+                    margin: 0,
+                    fontSize: 14,
+                    fontWeight: 700,
+                    fontFamily: 'var(--font-display)',
+                    color: 'var(--ink)',
+                  }}
+                >
                   Upcoming task
                 </h3>
               </div>
@@ -463,7 +612,13 @@ export function HomeView({
               </div>
               <Link
                 href={`/learner/courses/${evidenceTaskCourse.id}`}
-                style={{ fontSize: 12.5, color: 'var(--accent)', fontWeight: 600, textDecoration: 'underline', alignSelf: 'flex-start' }}
+                style={{
+                  fontSize: 12.5,
+                  color: 'var(--nfcap-accent)',
+                  fontWeight: 600,
+                  textDecoration: 'underline',
+                  alignSelf: 'flex-start',
+                }}
               >
                 Start submission
               </Link>
@@ -472,13 +627,18 @@ export function HomeView({
 
           <div
             style={{
-              borderRadius: 'var(--radius-lg)',
+              borderRadius: 'var(--nfcap-radius-lg)',
               overflow: 'hidden',
               position: 'relative',
               height: 180,
             }}
           >
-            <Image src="/images/learner/flooring-fundamentals.jpg" alt="" fill style={{ objectFit: 'cover' }} />
+            <Image
+              src="/images/learner/flooring-fundamentals.jpg"
+              alt=""
+              fill
+              style={{ objectFit: 'cover' }}
+            />
             <div
               style={{
                 position: 'absolute',
@@ -490,7 +650,16 @@ export function HomeView({
                 background: 'linear-gradient(180deg, rgba(9,28,65,0.1), rgba(9,28,65,0.88))',
               }}
             >
-              <div style={{ color: '#fff', fontSize: 15, fontWeight: 700, fontFamily: 'var(--font-display)', lineHeight: 1.3, marginBottom: 10 }}>
+              <div
+                style={{
+                  color: '#fff',
+                  fontSize: 15,
+                  fontWeight: 700,
+                  fontFamily: 'var(--font-display)',
+                  lineHeight: 1.3,
+                  marginBottom: 10,
+                }}
+              >
                 Build your skills.
                 <br />
                 Grow your career.
@@ -501,7 +670,7 @@ export function HomeView({
                   background: '#fff',
                   color: '#102047',
                   padding: '8px 14px',
-                  borderRadius: 'var(--radius-md)',
+                  borderRadius: 'var(--nfcap-radius-md)',
                   fontSize: 12,
                   fontWeight: 700,
                   alignSelf: 'flex-start',

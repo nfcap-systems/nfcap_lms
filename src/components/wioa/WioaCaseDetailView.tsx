@@ -75,7 +75,11 @@ const APPOINTMENT_STATUS_TYPE: Partial<Record<WioaCaseStatus, AppointmentType>> 
 
 function formatDate(value: Date | string | null | undefined): string {
   if (!value) return '—';
-  return new Date(value).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+  return new Date(value).toLocaleDateString('en-US', {
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric',
+  });
 }
 
 function initials(name: string): string {
@@ -148,7 +152,10 @@ export function WioaCaseDetailView({
       <ProfileTabs
         tabs={[
           { key: 'overview', label: 'Overview' },
-          { key: 'documents', label: `Documents${wioaCase.documents.length > 0 ? ` (${wioaCase.documents.length})` : ''}` },
+          {
+            key: 'documents',
+            label: `Documents${wioaCase.documents.length > 0 ? ` (${wioaCase.documents.length})` : ''}`,
+          },
           { key: 'history', label: 'Status history' },
         ]}
         active={tab}
@@ -159,13 +166,21 @@ export function WioaCaseDetailView({
         <div className="ov-grid" style={{ paddingTop: 4 }}>
           <div>
             <div className="ov-h">Case summary</div>
-            <p style={{ fontSize: 13, color: 'var(--ink-muted)', lineHeight: 1.6, margin: '0 0 20px' }}>
+            <p
+              style={{
+                fontSize: 13,
+                color: 'var(--ink-muted)',
+                lineHeight: 1.6,
+                margin: '0 0 20px',
+              }}
+            >
               {wioaCase.learnerName.split(' ')[0]}&apos;s case is in the{' '}
               <strong style={{ color: 'var(--ink)' }}>{phase}</strong> phase (
-              {WIOA_STATUS_LABEL[wioaCase.status]}); last status change was {formatDate(lastStatusChange)}.
+              {WIOA_STATUS_LABEL[wioaCase.status]}); last status change was{' '}
+              {formatDate(lastStatusChange)}.
             </p>
 
-            <div style={{ height: 1, background: 'var(--border)', margin: '0 0 20px' }} />
+            <div style={{ height: 1, background: 'var(--nfcap-border)', margin: '0 0 20px' }} />
 
             <div className="ov-h">Case details</div>
             <div className="ov-detgrid" style={{ marginBottom: 20 }}>
@@ -182,7 +197,9 @@ export function WioaCaseDetailView({
               <div className="ov-detcol">
                 <div className="ov-field">
                   <span className="ov-sub">Workforce board</span>
-                  <span className="ov-val">{wioaCase.boardName ?? 'No workforce board matched'}</span>
+                  <span className="ov-val">
+                    {wioaCase.boardName ?? 'No workforce board matched'}
+                  </span>
                 </div>
                 <div className="ov-field">
                   <span className="ov-sub">AJCC center</span>
@@ -201,7 +218,7 @@ export function WioaCaseDetailView({
               </div>
             </div>
 
-            <div style={{ height: 1, background: 'var(--border)', margin: '0 0 20px' }} />
+            <div style={{ height: 1, background: 'var(--nfcap-border)', margin: '0 0 20px' }} />
 
             <StatusCard wioaCase={wioaCase} />
 
@@ -255,17 +272,21 @@ export function WioaCaseDetailView({
                   {initials(wioaCase.contactName)}
                 </div>
                 <div>
-                  <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--ink)' }}>{wioaCase.contactName}</div>
+                  <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--ink)' }}>
+                    {wioaCase.contactName}
+                  </div>
                   <div style={{ fontSize: 11.5, color: 'var(--ink-muted)' }}>
                     {wioaCase.boardName ?? 'Primary contact'}
                   </div>
                 </div>
               </div>
             ) : (
-              <p style={{ fontSize: 12.5, color: 'var(--ink-muted)', margin: '0 0 0' }}>No contact matched.</p>
+              <p style={{ fontSize: 12.5, color: 'var(--ink-muted)', margin: '0 0 0' }}>
+                No contact matched.
+              </p>
             )}
 
-            <div style={{ height: 1, background: 'var(--border)', margin: '14px 0' }} />
+            <div style={{ height: 1, background: 'var(--nfcap-border)', margin: '14px 0' }} />
 
             <div className="ov-h" style={{ fontSize: 13.5 }}>
               Upcoming appointment
@@ -279,15 +300,19 @@ export function WioaCaseDetailView({
                     {APPOINTMENT_TYPE_LABEL[nextAppointment.type] ?? nextAppointment.type}
                   </div>
                   {nextAppointment.notes && (
-                    <div style={{ fontSize: 11.5, color: 'var(--ink-muted)' }}>{nextAppointment.notes}</div>
+                    <div style={{ fontSize: 11.5, color: 'var(--ink-muted)' }}>
+                      {nextAppointment.notes}
+                    </div>
                   )}
                 </div>
               </div>
             ) : (
-              <p style={{ fontSize: 12.5, color: 'var(--ink-muted)' }}>No upcoming appointment scheduled.</p>
+              <p style={{ fontSize: 12.5, color: 'var(--ink-muted)' }}>
+                No upcoming appointment scheduled.
+              </p>
             )}
 
-            <div style={{ height: 1, background: 'var(--border)', margin: '14px 0' }} />
+            <div style={{ height: 1, background: 'var(--nfcap-border)', margin: '14px 0' }} />
 
             <div className="ov-h" style={{ fontSize: 13.5 }}>
               Recent communications
@@ -296,14 +321,20 @@ export function WioaCaseDetailView({
               <p style={{ fontSize: 12.5, color: 'var(--ink-muted)' }}>No outreach logged yet.</p>
             ) : (
               wioaCase.communications.slice(0, 2).map((c, i) => (
-                <div className="side-row" key={c.id} style={i === 0 ? { paddingTop: 0 } : undefined}>
+                <div
+                  className="side-row"
+                  key={c.id}
+                  style={i === 0 ? { paddingTop: 0 } : undefined}
+                >
                   <Icon name={COMMUNICATION_ICON[c.channel]} className="side-ic" />
                   <div>
                     <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--ink)' }}>
                       {formatDate(c.sentAt)} — {COMMUNICATION_LABEL[c.channel]}
                       {c.channel !== 'NOTE' && <> to {c.recipient}</>}
                     </div>
-                    {c.subject && <div style={{ fontSize: 11.5, color: 'var(--ink-muted)' }}>{c.subject}</div>}
+                    {c.subject && (
+                      <div style={{ fontSize: 11.5, color: 'var(--ink-muted)' }}>{c.subject}</div>
+                    )}
                   </div>
                 </div>
               ))
@@ -316,7 +347,9 @@ export function WioaCaseDetailView({
         <Card>
           <CardContent className="flex flex-col gap-3">
             {wioaCase.documents.length === 0 ? (
-              <p className="text-sm text-[var(--ink-muted)]">No documents required for this case.</p>
+              <p className="text-sm text-[var(--ink-muted)]">
+                No documents required for this case.
+              </p>
             ) : (
               wioaCase.documents.map((doc) => (
                 <DocumentReviewRow key={doc.id} doc={doc} startTransition={startTransition} />
@@ -349,7 +382,7 @@ export function WioaCaseDetailView({
               </div>
             </div>
             {wioaCase.communications.length > 0 && (
-              <div className="border-t border-[var(--border)] pt-4">
+              <div className="border-t border-[var(--nfcap-border)] pt-4">
                 <p className="mb-2 text-sm font-medium text-[var(--ink)]">Outreach log</p>
                 <div className="flex flex-col gap-2">
                   {wioaCase.communications.map((c) => (
@@ -414,7 +447,7 @@ function DocumentReviewRow({
   }
 
   return (
-    <div className="flex flex-col gap-2 rounded-lg border border-[var(--border)] p-3">
+    <div className="flex flex-col gap-2 rounded-lg border border-[var(--nfcap-border)] p-3">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
           <p className="text-sm font-medium text-[var(--ink)]">{doc.requirementName}</p>
@@ -422,7 +455,7 @@ function DocumentReviewRow({
             <button
               type="button"
               onClick={viewFile}
-              className="mt-1 flex items-center gap-1.5 text-xs text-[var(--accent)] hover:underline"
+              className="mt-1 flex items-center gap-1.5 text-xs text-[var(--nfcap-accent)] hover:underline"
             >
               <Icon name="paperclip" className="size-3.5" />
               {doc.fileName}
@@ -470,32 +503,48 @@ function DocumentReviewRow({
 
       {doc.status !== 'MISSING' && doc.status !== 'NOT_APPLICABLE' && (
         <div>
-          <button type="button" onClick={toggleHistory} className="text-xs text-[var(--ink-muted)] hover:underline">
-            {loadingHistory ? 'Loading history…' : history === null ? 'View past versions' : 'Hide past versions'}
+          <button
+            type="button"
+            onClick={toggleHistory}
+            className="text-xs text-[var(--ink-muted)] hover:underline"
+          >
+            {loadingHistory
+              ? 'Loading history…'
+              : history === null
+                ? 'View past versions'
+                : 'Hide past versions'}
           </button>
           {history !== null && (
             <ul className="mt-2 flex flex-col gap-1.5">
-              {history.length === 0 && <li className="text-xs text-[var(--ink-muted)]">No earlier versions.</li>}
+              {history.length === 0 && (
+                <li className="text-xs text-[var(--ink-muted)]">No earlier versions.</li>
+              )}
               {history.map((v) => (
                 <li
                   key={v.id}
-                  className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-[var(--border)] bg-[var(--surface-muted)] p-2"
+                  className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-[var(--nfcap-border)] bg-[var(--surface-muted)] p-2"
                 >
                   <div className="flex flex-col gap-0.5">
                     <button
                       type="button"
                       onClick={() => viewVersion(v.id)}
-                      className="flex items-center gap-1.5 text-xs text-[var(--accent)] hover:underline"
+                      className="flex items-center gap-1.5 text-xs text-[var(--nfcap-accent)] hover:underline"
                     >
                       <Icon name="paperclip" className="size-3.5" />
                       {v.fileName}
                     </button>
                     <span className="text-[11px] text-[var(--ink-muted)]">
                       Uploaded{' '}
-                      {v.uploadedAt.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                      {v.uploadedAt.toLocaleDateString('en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                        year: 'numeric',
+                      })}
                     </span>
                     {v.status === 'REJECTED' && v.rejectionReason && (
-                      <span className="text-[11px] text-[var(--status-problem)]">{v.rejectionReason}</span>
+                      <span className="text-[11px] text-[var(--status-problem)]">
+                        {v.rejectionReason}
+                      </span>
                     )}
                   </div>
                   <Badge tone={docStatusTone[v.status]}>{v.status.replace('_', ' ')}</Badge>
@@ -575,7 +624,9 @@ function FundingCard({ wioaCase }: { wioaCase: WioaCaseDetail }) {
   const [caseManagerNotifiedAt, setCaseManagerNotifiedAt] = useState(
     toDatetimeLocal(funding?.caseManagerNotifiedAt),
   );
-  const [fundingReviewStatus, setFundingReviewStatus] = useState(funding?.fundingReviewStatus ?? '');
+  const [fundingReviewStatus, setFundingReviewStatus] = useState(
+    funding?.fundingReviewStatus ?? '',
+  );
   const [requestStatus, setRequestStatus] = useState(funding?.status ?? '');
   const [itaIssuedAt, setItaIssuedAt] = useState(toDatetimeLocal(auth?.itaIssuedAt));
   const [approvedAmount, setApprovedAmount] = useState(
@@ -612,7 +663,11 @@ function FundingCard({ wioaCase }: { wioaCase: WioaCaseDetail }) {
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
         <Field label="Training program" htmlFor="trainingProgram">
-          <Input id="trainingProgram" value={trainingProgram} onChange={(e) => setTrainingProgram(e.target.value)} />
+          <Input
+            id="trainingProgram"
+            value={trainingProgram}
+            onChange={(e) => setTrainingProgram(e.target.value)}
+          />
         </Field>
 
         <label className="flex items-center gap-2 text-sm text-[var(--ink)]">
@@ -649,10 +704,14 @@ function FundingCard({ wioaCase }: { wioaCase: WioaCaseDetail }) {
           />
         </Field>
         <Field label="Request status" htmlFor="requestStatus">
-          <Input id="requestStatus" value={requestStatus} onChange={(e) => setRequestStatus(e.target.value)} />
+          <Input
+            id="requestStatus"
+            value={requestStatus}
+            onChange={(e) => setRequestStatus(e.target.value)}
+          />
         </Field>
 
-        <div className="border-t border-[var(--border)] pt-4">
+        <div className="border-t border-[var(--nfcap-border)] pt-4">
           <p className="mb-3 text-sm font-medium text-[var(--ink)]">Authorization</p>
           <div className="flex flex-col gap-4">
             <Field label="ITA issued at" htmlFor="itaIssuedAt">
@@ -728,7 +787,9 @@ function StatusCard({ wioaCase }: { wioaCase: WioaCaseDetail }) {
         await advanceWioaCaseStatus(
           wioaCase.id,
           nextStatus,
-          appointmentType && scheduledAt ? { type: appointmentType, scheduledAt, notes: notes || undefined } : undefined,
+          appointmentType && scheduledAt
+            ? { type: appointmentType, scheduledAt, notes: notes || undefined }
+            : undefined,
         );
         setNextStatus('');
         setScheduledAt('');
@@ -773,7 +834,12 @@ function StatusCard({ wioaCase }: { wioaCase: WioaCaseDetail }) {
               />
             </Field>
             <Field label="Notes (optional)" htmlFor="apptNotes">
-              <Textarea id="apptNotes" value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} />
+              <Textarea
+                id="apptNotes"
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                rows={2}
+              />
             </Field>
           </>
         )}

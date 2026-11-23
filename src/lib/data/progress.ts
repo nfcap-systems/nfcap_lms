@@ -26,6 +26,7 @@ export type EvidenceSubmission = {
 };
 export type CourseProgress = {
   enrolled: boolean;
+  enrolledAt: string;
   completedLessonIds: string[];
   quizAttempt?: QuizAttempt;
   evidence?: EvidenceSubmission;
@@ -60,6 +61,7 @@ function mapEnrollment(enrollment: DbEnrollment): CourseProgress {
   const evidence = enrollment.evidenceSubmissions[0];
   return {
     enrolled: true,
+    enrolledAt: enrollment.enrolledAt.toISOString(),
     completedLessonIds: enrollment.completedLessons.map((c) => c.lessonId),
     quizAttempt: quiz
       ? {

@@ -39,8 +39,14 @@ export function WioaReportsView({
    * no case-detail route (case detail lives only under /coordinator and /partner). */
   basePath?: '/coordinator' | '/partner';
 }) {
-  const { totalCases, phaseCounts, documentReadiness, followUpQueue, boardPerformance, fundingImpact } =
-    summary;
+  const {
+    totalCases,
+    phaseCounts,
+    documentReadiness,
+    followUpQueue,
+    boardPerformance,
+    fundingImpact,
+  } = summary;
 
   return (
     <div className="flex flex-col gap-6">
@@ -48,9 +54,8 @@ export function WioaReportsView({
         <div>
           <h1>Reports</h1>
           <p>
-            Pipeline, document readiness{boardPerformance ? ', funding impact,' : ''} and
-            follow-up queue across {basePath === '/partner' ? 'your assigned cases' : 'every WIOA case'}
-            .
+            Pipeline, document readiness{boardPerformance ? ', funding impact,' : ''} and follow-up
+            queue across {basePath === '/partner' ? 'your assigned cases' : 'every WIOA case'}.
           </p>
         </div>
       </div>
@@ -65,7 +70,9 @@ export function WioaReportsView({
         <>
           <section>
             <div className="ov-h">Cohort Pipeline</div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))', gap: 12 }}>
+            <div
+              style={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))', gap: 12 }}
+            >
               {Object.entries(phaseCounts).map(([phase, count]) => (
                 <div className="mcard" key={phase}>
                   <span className="n">{count}</span>
@@ -77,16 +84,27 @@ export function WioaReportsView({
 
           <section>
             <div className="ov-h">Document Readiness</div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 14 }}>
+            <div
+              style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 14 }}
+            >
               <div className="mcard">
-                <div className="ic" style={{ background: 'var(--status-complete-bg)', color: 'var(--status-complete)' }}>
+                <div
+                  className="ic"
+                  style={{
+                    background: 'var(--status-complete-bg)',
+                    color: 'var(--status-complete)',
+                  }}
+                >
                   <Icon name="check" className="h-4 w-4" />
                 </div>
                 <span className="n">{documentReadiness.accepted}</span>
                 <span className="l">Accepted</span>
               </div>
               <div className="mcard">
-                <div className="ic" style={{ background: 'var(--status-pending-bg)', color: 'var(--status-pending)' }}>
+                <div
+                  className="ic"
+                  style={{ background: 'var(--status-pending-bg)', color: 'var(--status-pending)' }}
+                >
                   <Icon name="clock" className="h-4 w-4" />
                 </div>
                 <span className="n">{documentReadiness.underReview}</span>
@@ -100,7 +118,10 @@ export function WioaReportsView({
                 <span className="l">Missing</span>
               </div>
               <div className="mcard">
-                <div className="ic" style={{ background: 'var(--status-problem-bg)', color: 'var(--status-problem)' }}>
+                <div
+                  className="ic"
+                  style={{ background: 'var(--status-problem-bg)', color: 'var(--status-problem)' }}
+                >
                   <Icon name="paperclip" className="h-4 w-4" />
                 </div>
                 <span className="n">{documentReadiness.rejected}</span>
@@ -112,7 +133,14 @@ export function WioaReportsView({
           {fundingImpact && boardPerformance && (
             <section>
               <div className="ov-h">Funding Impact</div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 14, marginBottom: 16 }}>
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
+                  gap: 14,
+                  marginBottom: 16,
+                }}
+              >
                 <div className="mcard">
                   <div className="ic">
                     <Icon name="award" className="h-4 w-4" />
@@ -145,7 +173,14 @@ export function WioaReportsView({
 
               {fundingImpact.totalApprovedAmount > 0 && (
                 <div className="panel" style={{ marginBottom: 16 }}>
-                  <div style={{ fontWeight: 600, fontSize: 14.5, marginBottom: 12, color: 'var(--ink)' }}>
+                  <div
+                    style={{
+                      fontWeight: 600,
+                      fontSize: 14.5,
+                      marginBottom: 12,
+                      color: 'var(--ink)',
+                    }}
+                  >
                     Approved funding by workforce board
                   </div>
                   {boardPerformance
@@ -159,10 +194,18 @@ export function WioaReportsView({
                           <div className="barlist-track">
                             <div
                               className="barlist-fill"
-                              style={{ width: `${max > 0 ? (b.totalApprovedAmount / max) * 100 : 0}%` }}
+                              style={{
+                                width: `${max > 0 ? (b.totalApprovedAmount / max) * 100 : 0}%`,
+                              }}
                             />
                           </div>
-                          <span style={{ fontSize: 12.5, color: 'var(--ink-muted)', fontVariantNumeric: 'tabular-nums' }}>
+                          <span
+                            style={{
+                              fontSize: 12.5,
+                              color: 'var(--ink-muted)',
+                              fontVariantNumeric: 'tabular-nums',
+                            }}
+                          >
                             {formatCurrency(b.totalApprovedAmount)}
                           </span>
                         </div>
@@ -204,7 +247,10 @@ export function WioaReportsView({
           <section>
             <div className="ov-h">Follow-Up Queue ({followUpQueue.length})</div>
             {followUpQueue.length === 0 ? (
-              <div className="panel" style={{ textAlign: 'center', color: 'var(--ink-muted)', fontSize: 13.5 }}>
+              <div
+                className="panel"
+                style={{ textAlign: 'center', color: 'var(--ink-muted)', fontSize: 13.5 }}
+              >
                 No cases need follow-up right now.
               </div>
             ) : (
@@ -214,7 +260,14 @@ export function WioaReportsView({
                     const content = (
                       <>
                         <div style={{ minWidth: 0 }}>
-                          <p style={{ fontSize: 13.5, fontWeight: 500, color: 'var(--ink)', margin: 0 }}>
+                          <p
+                            style={{
+                              fontSize: 13.5,
+                              fontWeight: 500,
+                              color: 'var(--ink)',
+                              margin: 0,
+                            }}
+                          >
                             {item.learnerName}
                           </p>
                           <p style={{ fontSize: 12, color: 'var(--ink-muted)', margin: '2px 0 0' }}>
@@ -223,7 +276,13 @@ export function WioaReportsView({
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                           <Badge tone="pending">{WIOA_STATUS_LABEL[item.status]}</Badge>
-                          {basePath && <Icon name="chevron-right" className="h-4 w-4" style={{ color: 'var(--ink-muted)' }} />}
+                          {basePath && (
+                            <Icon
+                              name="chevron-right"
+                              className="h-4 w-4"
+                              style={{ color: 'var(--ink-muted)' }}
+                            />
+                          )}
                         </div>
                       </>
                     );
@@ -233,7 +292,8 @@ export function WioaReportsView({
                       justifyContent: 'space-between',
                       gap: 16,
                       padding: '14px 20px',
-                      borderBottom: i < followUpQueue.length - 1 ? '1px solid var(--border)' : 'none',
+                      borderBottom:
+                        i < followUpQueue.length - 1 ? '1px solid var(--nfcap-border)' : 'none',
                       textDecoration: 'none',
                     } as const;
                     return basePath ? (

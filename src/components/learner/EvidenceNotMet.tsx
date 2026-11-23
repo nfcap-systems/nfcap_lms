@@ -34,7 +34,7 @@ export function EvidenceNotMet({
 
   return (
     <div className="flex flex-col gap-5">
-      <div className="flex items-start gap-4 rounded-xl border border-[var(--status-problem-border)] bg-[var(--surface)] p-6 shadow-[var(--shadow-sm)]">
+      <div className="flex items-start gap-4 rounded-xl border border-[var(--status-problem-border)] bg-[var(--surface)] p-6 shadow-[var(--nfcap-shadow-sm)]">
         <div className="flex size-11 shrink-0 items-center justify-center rounded-full bg-[var(--status-problem-bg)] text-[var(--status-problem)]">
           <Icon name="x" className="size-5" />
         </div>
@@ -47,7 +47,7 @@ export function EvidenceNotMet({
       {context.notMet.map((criterion) => (
         <div
           key={criterion.criterionId}
-          className="flex gap-4 rounded-xl border border-[var(--border)] bg-[var(--surface)] p-5 shadow-[var(--shadow-sm)]"
+          className="flex gap-4 rounded-xl border border-[var(--nfcap-border)] bg-[var(--surface)] p-5 shadow-[var(--nfcap-shadow-sm)]"
         >
           {criterion.thumbUrl ? (
             // eslint-disable-next-line @next/next/no-img-element -- short-lived signed Supabase URL
@@ -70,7 +70,7 @@ export function EvidenceNotMet({
             {criterion.hasHistory && (
               <Link
                 href={`/learner/courses/${course.id}/attempts/${criterion.criterionId}`}
-                className="mt-2 inline-block text-sm font-medium text-[var(--accent)] hover:underline"
+                className="mt-2 inline-block text-sm font-medium text-[var(--nfcap-accent)] hover:underline"
               >
                 View attempt history
               </Link>
@@ -80,7 +80,7 @@ export function EvidenceNotMet({
       ))}
 
       {context.overallNote && (
-        <div className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-5 shadow-[var(--shadow-sm)]">
+        <div className="rounded-xl border border-[var(--nfcap-border)] bg-[var(--surface)] p-5 shadow-[var(--nfcap-shadow-sm)]">
           <div className="mb-1.5 text-sm font-semibold text-[var(--ink)]">
             Note from your reviewer
           </div>
@@ -88,7 +88,7 @@ export function EvidenceNotMet({
         </div>
       )}
 
-      <div className="rounded-xl border border-[var(--border)] bg-[var(--surface)] px-5 py-4 shadow-[var(--shadow-sm)]">
+      <div className="rounded-xl border border-[var(--nfcap-border)] bg-[var(--surface)] px-5 py-4 shadow-[var(--nfcap-shadow-sm)]">
         <div className="mb-2.5 text-sm font-semibold text-[var(--ink)]">Criteria checked</div>
         <div className="flex flex-col gap-2 text-sm text-[var(--ink)]">
           {criterionVerdicts.map((v) => (
@@ -98,7 +98,7 @@ export function EvidenceNotMet({
               ) : v.met === false ? (
                 <Icon name="x" className="size-4 text-[var(--status-problem)]" />
               ) : (
-                <span className="size-4 rounded-full border border-[var(--border)]" />
+                <span className="size-4 rounded-full border border-[var(--nfcap-border)]" />
               )}
               {v.title}
             </div>

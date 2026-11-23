@@ -45,7 +45,7 @@ export function AuthShell({ active, heading, subheading, children, footer }: Aut
           <ul className="mt-12 grid grid-cols-4 gap-6">
             {FEATURES.map(({ icon: Icon, label }) => (
               <li key={label} className="flex flex-col gap-3">
-                <Icon className="h-6 w-6 text-[var(--accent)]" />
+                <Icon className="h-6 w-6 text-[var(--nfcap-accent)]" />
                 <span className="text-[13px] font-medium leading-snug text-[var(--ink)]">
                   {label}
                 </span>
@@ -55,7 +55,7 @@ export function AuthShell({ active, heading, subheading, children, footer }: Aut
         </div>
 
         <div
-          className="relative mt-14 h-[38%] shrink-0 overflow-hidden bg-[color-mix(in_srgb,var(--accent)_70%,black)]"
+          className="relative mt-14 h-[38%] shrink-0 overflow-hidden bg-[color-mix(in_srgb,var(--nfcap-accent)_70%,black)]"
           style={{ clipPath: 'polygon(0 14%, 100% 0, 100% 100%, 0% 100%)' }}
         >
           <div
@@ -67,11 +67,11 @@ export function AuthShell({ active, heading, subheading, children, footer }: Aut
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
           <div
-            className="absolute -top-16 right-[22%] h-56 w-28 -rotate-[18deg] bg-[var(--accent)]"
+            className="absolute -top-16 right-[22%] h-56 w-28 -rotate-[18deg] bg-[var(--nfcap-accent)]"
             aria-hidden
           />
           <div
-            className="absolute -top-16 right-[16%] h-56 w-8 -rotate-[18deg] bg-[var(--accent)]"
+            className="absolute -top-16 right-[16%] h-56 w-8 -rotate-[18deg] bg-[var(--nfcap-accent)]"
             aria-hidden
           />
         </div>
@@ -84,13 +84,13 @@ export function AuthShell({ active, heading, subheading, children, footer }: Aut
 
         <div className="flex min-w-0 flex-1 items-center">
           <div className="mx-auto w-full min-w-0 max-w-sm">
-            <div className="flex gap-6 border-b border-[var(--border)]">
+            <div className="flex gap-6 border-b border-[var(--nfcap-border)]">
               {TABS.map((tab) =>
                 tab.key === active ? (
                   <span
                     key={tab.key}
                     aria-current="page"
-                    className="border-b-2 border-[var(--accent)] pb-3 text-sm font-semibold text-[var(--ink)]"
+                    className="border-b-2 border-[var(--nfcap-accent)] pb-3 text-sm font-semibold text-[var(--ink)]"
                   >
                     {tab.label}
                   </span>
@@ -98,7 +98,7 @@ export function AuthShell({ active, heading, subheading, children, footer }: Aut
                   <Link
                     key={tab.key}
                     href={tab.href}
-                    className="pb-3 text-sm font-medium text-[var(--ink-muted)] transition-colors hover:text-[var(--accent)]"
+                    className="pb-3 text-sm font-medium text-[var(--ink-muted)] transition-colors hover:text-[var(--nfcap-accent)]"
                   >
                     {tab.label}
                   </Link>
@@ -111,7 +111,9 @@ export function AuthShell({ active, heading, subheading, children, footer }: Aut
 
             {children}
 
-            {footer && <div className="mt-8 text-center text-sm text-[var(--ink-muted)]">{footer}</div>}
+            {footer && (
+              <div className="mt-8 text-center text-sm text-[var(--ink-muted)]">{footer}</div>
+            )}
           </div>
         </div>
       </main>

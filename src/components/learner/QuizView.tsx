@@ -52,7 +52,7 @@ export function QuizView({
     return (
       <div className="flex flex-col gap-5">
         <Header title="Knowledge Assessment" />
-        <div className="flex flex-col items-start gap-3 rounded-xl border border-[var(--border)] bg-[var(--surface-muted)] p-5">
+        <div className="flex flex-col items-start gap-3 rounded-xl border border-[var(--nfcap-border)] bg-[var(--surface-muted)] p-5">
           <Badge tone={attempt.passed ? 'success' : 'danger'}>
             {attempt.passed ? 'Passed' : 'Not passed yet'}
           </Badge>
@@ -90,7 +90,7 @@ export function QuizView({
     return (
       <div className="flex flex-col gap-5">
         <Header title="Knowledge Assessment Results" />
-        <div className="flex flex-col items-start gap-2 rounded-xl border border-[var(--border)] bg-[var(--surface-muted)] p-5">
+        <div className="flex flex-col items-start gap-2 rounded-xl border border-[var(--nfcap-border)] bg-[var(--surface-muted)] p-5">
           <Badge tone={passed ? 'success' : 'danger'}>{passed ? 'Passed' : 'Not passed'}</Badge>
           <p className="text-sm text-[var(--ink-muted)]">
             You scored <span className="font-medium text-[var(--ink)]">{lastScorePercent}%</span> (
@@ -104,7 +104,7 @@ export function QuizView({
             const selected = answers[q.id];
             const isCorrect = selected === q.correctIndex;
             return (
-              <div key={q.id} className="rounded-xl border border-[var(--border)] p-4">
+              <div key={q.id} className="rounded-xl border border-[var(--nfcap-border)] p-4">
                 <p className="text-sm font-medium text-[var(--ink)]">
                   {i + 1}. {q.prompt}
                 </p>
@@ -114,7 +114,8 @@ export function QuizView({
                       key={oi}
                       className={cn(
                         'flex items-center gap-2 rounded-md px-2.5 py-1.5 text-sm',
-                        oi === q.correctIndex && 'bg-[var(--status-complete-bg)] text-[var(--status-complete)]',
+                        oi === q.correctIndex &&
+                          'bg-[var(--status-complete-bg)] text-[var(--status-complete)]',
                         oi === selected &&
                           oi !== q.correctIndex &&
                           'bg-[var(--status-problem-bg)] text-[var(--status-problem)]',
@@ -129,14 +130,16 @@ export function QuizView({
                   ))}
                 </div>
                 {!isCorrect && (
-                  <p className="mt-1 text-xs text-[var(--ink-muted)]">Your answer wasn&apos;t correct.</p>
+                  <p className="mt-1 text-xs text-[var(--ink-muted)]">
+                    Your answer wasn&apos;t correct.
+                  </p>
                 )}
               </div>
             );
           })}
         </div>
 
-        <div className="flex gap-2 border-t border-[var(--border)] pt-5">
+        <div className="flex gap-2 border-t border-[var(--nfcap-border)] pt-5">
           {passed ? (
             <Button size="sm" onClick={onContinue}>
               Continue to Practical Evidence
@@ -162,7 +165,7 @@ export function QuizView({
 
       <div className="flex flex-col gap-4">
         {assessment.questions.map((q, i) => (
-          <fieldset key={q.id} className="rounded-xl border border-[var(--border)] p-4">
+          <fieldset key={q.id} className="rounded-xl border border-[var(--nfcap-border)] p-4">
             <legend className="px-1 text-sm font-medium text-[var(--ink)]">
               {i + 1}. {q.prompt}
             </legend>
@@ -173,7 +176,7 @@ export function QuizView({
                   className={cn(
                     'flex cursor-pointer items-center gap-2.5 rounded-md px-2.5 py-2 text-sm transition-colors',
                     answers[q.id] === oi
-                      ? 'bg-[var(--accent)]/10 text-[var(--ink)]'
+                      ? 'bg-[var(--nfcap-accent)]/10 text-[var(--ink)]'
                       : 'text-[var(--ink-muted)] hover:bg-[var(--surface-muted)]',
                   )}
                 >
@@ -182,7 +185,7 @@ export function QuizView({
                     name={q.id}
                     checked={answers[q.id] === oi}
                     onChange={() => setAnswers((prev) => ({ ...prev, [q.id]: oi }))}
-                    className="size-4 text-[var(--accent)] focus:ring-2 focus:ring-brand-primary/20"
+                    className="size-4 text-[var(--nfcap-accent)] focus:ring-2 focus:ring-brand-primary/20"
                   />
                   {option}
                 </label>
@@ -192,7 +195,7 @@ export function QuizView({
         ))}
       </div>
 
-      <div className="border-t border-[var(--border)] pt-5">
+      <div className="border-t border-[var(--nfcap-border)] pt-5">
         <Button disabled={!allAnswered} onClick={submit}>
           Submit Assessment
         </Button>

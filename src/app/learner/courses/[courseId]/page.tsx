@@ -24,7 +24,7 @@ export default async function CourseLearningPage({
         <p className="text-sm text-[var(--ink-muted)]">Course not found.</p>
         <Link
           href="/learner/explore"
-          className="text-sm font-medium text-[var(--accent)] hover:underline"
+          className="text-sm font-medium text-[var(--nfcap-accent)] hover:underline"
         >
           Back to Course Catalog
         </Link>

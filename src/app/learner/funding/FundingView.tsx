@@ -274,7 +274,7 @@ function MatchedOfficeView({
             )}
           </div>
           {match.contact && (
-            <div className="rounded-lg border border-[var(--border)] bg-[var(--surface-muted)] p-3">
+            <div className="rounded-lg border border-[var(--nfcap-border)] bg-[var(--surface-muted)] p-3">
               <p className="text-sm font-medium text-[var(--ink)]">{match.contact.name}</p>
               {match.contact.title && (
                 <p className="text-xs text-[var(--ink-muted)]">{match.contact.title}</p>
@@ -301,7 +301,7 @@ function MatchedOfficeView({
             </Button>
             <a
               href={`tel:${match.contact?.phone ?? match.board.phone}`}
-              className="inline-flex h-10 items-center justify-center gap-1.5 rounded-md border border-[var(--border)] bg-transparent px-4 text-sm font-medium text-[var(--ink)] transition-colors hover:bg-[var(--surface-muted)]"
+              className="inline-flex h-10 items-center justify-center gap-1.5 rounded-md border border-[var(--nfcap-border)] bg-transparent px-4 text-sm font-medium text-[var(--ink)] transition-colors hover:bg-[var(--surface-muted)]"
             >
               <Icon name="phone" className="size-4" />
               Call
@@ -323,7 +323,7 @@ function MatchedOfficeView({
           </CardHeader>
           <CardContent className="flex flex-col gap-3">
             {communications.map((c) => (
-              <div key={c.id} className="rounded-lg border border-[var(--border)] p-3">
+              <div key={c.id} className="rounded-lg border border-[var(--nfcap-border)] p-3">
                 <div className="flex items-center justify-between gap-3">
                   <p className="text-sm font-medium text-[var(--ink)]">
                     {c.channel === 'EMAIL' ? 'Email sent' : 'Call logged'} to {c.recipient}

@@ -29,9 +29,12 @@ export function ExploreView({
   }
   const categories = Array.from(categoryByKey.values());
   const filtered =
-    category === 'all' ? courses : courses.filter((c) => c.category.trim().toLowerCase() === category.trim().toLowerCase());
+    category === 'all'
+      ? courses
+      : courses.filter((c) => c.category.trim().toLowerCase() === category.trim().toLowerCase());
   const totalLessons = courses.reduce((sum, c) => sum + courseLessonCount(c), 0);
-  const totalHours = Math.round((courses.reduce((sum, c) => sum + courseDurationMinutes(c), 0) / 60) * 10) / 10;
+  const totalHours =
+    Math.round((courses.reduce((sum, c) => sum + courseDurationMinutes(c), 0) / 60) * 10) / 10;
   const openCourseCount = courses.filter((c) => c.access === 'open').length;
 
   return (
@@ -40,21 +43,41 @@ export function ExploreView({
         <div
           style={{
             height: 150,
-            borderRadius: 'var(--radius-lg)',
+            borderRadius: 'var(--nfcap-radius-lg)',
             overflow: 'hidden',
             position: 'relative',
-            background: 'linear-gradient(105deg, #eff6ff 0%, #f5f8ff 46%, #dbe9ff 72%, var(--surface) 100%)',
+            background:
+              'linear-gradient(105deg, #eff6ff 0%, #f5f8ff 46%, #dbe9ff 72%, var(--surface) 100%)',
             display: 'flex',
             alignItems: 'center',
-            boxShadow: 'var(--shadow-sm)',
-            border: '1px solid var(--border)',
+            boxShadow: 'var(--nfcap-shadow-sm)',
+            border: '1px solid var(--nfcap-border)',
           }}
         >
-          <div style={{ position: 'relative', zIndex: 2, padding: '0 36px', maxWidth: '56%', display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <div style={{ fontSize: 22, fontWeight: 700, fontFamily: 'var(--font-display)', color: 'var(--ink)' }}>
+          <div
+            style={{
+              position: 'relative',
+              zIndex: 2,
+              padding: '0 36px',
+              maxWidth: '56%',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 8,
+            }}
+          >
+            <div
+              style={{
+                fontSize: 22,
+                fontWeight: 700,
+                fontFamily: 'var(--font-display)',
+                color: 'var(--ink)',
+              }}
+            >
               Explore flooring courses
             </div>
-            <div style={{ fontSize: 13, color: 'var(--ink-muted)', maxWidth: 400, lineHeight: 1.5 }}>
+            <div
+              style={{ fontSize: 13, color: 'var(--ink-muted)', maxWidth: 400, lineHeight: 1.5 }}
+            >
               NFCAP&apos;s full apprenticeship pathway. Courses marked Restricted are assigned by
               NFCAP staff based on your progress and program placement.
             </div>
@@ -77,9 +100,21 @@ export function ExploreView({
           />
         </div>
 
-        <div style={{ position: 'relative', margin: '10px 16px 0', display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 14, zIndex: 3 }}>
+        <div
+          style={{
+            position: 'relative',
+            margin: '10px 16px 0',
+            display: 'grid',
+            gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+            gap: 14,
+            zIndex: 3,
+          }}
+        >
           <div className="lrn-stat">
-            <span className="lrn-stat-icon" style={{ background: '#eff6ff', color: 'var(--accent)' }}>
+            <span
+              className="lrn-stat-icon"
+              style={{ background: '#eff6ff', color: 'var(--nfcap-accent)' }}
+            >
               <Icon name="book" className="h-5 w-5" />
             </span>
             <div className="vals">
@@ -108,7 +143,14 @@ export function ExploreView({
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 300px', gap: 24, alignItems: 'start' }}>
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'minmax(0, 1fr) 300px',
+          gap: 24,
+          alignItems: 'start',
+        }}
+      >
         <div style={{ display: 'flex', flexDirection: 'column', gap: 18, minWidth: 0 }}>
           <div className="lrn-sechead">
             <h2>All courses</h2>
@@ -117,7 +159,15 @@ export function ExploreView({
                 <button
                   type="button"
                   className="dtbtn"
-                  style={category === 'all' ? { background: 'var(--accent)', color: 'var(--accent-contrast)', borderColor: 'var(--accent)' } : undefined}
+                  style={
+                    category === 'all'
+                      ? {
+                          background: 'var(--nfcap-accent)',
+                          color: 'var(--nfcap-accent-contrast)',
+                          borderColor: 'var(--nfcap-accent)',
+                        }
+                      : undefined
+                  }
                   onClick={() => setCategory('all')}
                 >
                   All
@@ -127,7 +177,15 @@ export function ExploreView({
                     key={c}
                     type="button"
                     className="dtbtn"
-                    style={category === c ? { background: 'var(--accent)', color: 'var(--accent-contrast)', borderColor: 'var(--accent)' } : undefined}
+                    style={
+                      category === c
+                        ? {
+                            background: 'var(--nfcap-accent)',
+                            color: 'var(--nfcap-accent-contrast)',
+                            borderColor: 'var(--nfcap-accent)',
+                          }
+                        : undefined
+                    }
                     onClick={() => setCategory(c)}
                   >
                     {c}
@@ -137,7 +195,9 @@ export function ExploreView({
             )}
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 18 }}>
+          <div
+            style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 18 }}
+          >
             {filtered.map((course, index) => (
               <ExploreCourseCard
                 key={course.id}
@@ -151,7 +211,13 @@ export function ExploreView({
         </div>
 
         <aside style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <div className="lrn-side-panel" style={{ background: 'linear-gradient(135deg, #f0fdf4, #f7fffb)', borderColor: '#bbf7d0' }}>
+          <div
+            className="lrn-side-panel"
+            style={{
+              background: 'linear-gradient(135deg, #f0fdf4, #f7fffb)',
+              borderColor: '#bbf7d0',
+            }}
+          >
             <div className="lrn-side-title">
               <h3 style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
                 <Icon name="award" className="h-3.5 w-3.5" style={{ color: '#166534' }} />
@@ -162,7 +228,15 @@ export function ExploreView({
               If you qualify for WIOA funding, your tuition for the full apprenticeship pathway can
               be fully covered.
             </div>
-            <Link href="/learner/funding" style={{ fontSize: 12.5, color: 'var(--accent)', fontWeight: 600, textDecoration: 'underline' }}>
+            <Link
+              href="/learner/funding"
+              style={{
+                fontSize: 12.5,
+                color: 'var(--nfcap-accent)',
+                fontWeight: 600,
+                textDecoration: 'underline',
+              }}
+            >
               Check your eligibility →
             </Link>
           </div>
@@ -171,8 +245,26 @@ export function ExploreView({
             <div className="lrn-side-title">
               <h3>How enrollment works</h3>
             </div>
-            <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start', fontSize: 12.5, lineHeight: 1.5 }}>
-              <span className="lrn-icon-tile" style={{ background: '#eff6ff', color: 'var(--accent)', width: 24, height: 24, fontSize: 11, fontWeight: 700 }}>
+            <div
+              style={{
+                display: 'flex',
+                gap: 10,
+                alignItems: 'flex-start',
+                fontSize: 12.5,
+                lineHeight: 1.5,
+              }}
+            >
+              <span
+                className="lrn-icon-tile"
+                style={{
+                  background: '#eff6ff',
+                  color: 'var(--nfcap-accent)',
+                  width: 24,
+                  height: 24,
+                  fontSize: 11,
+                  fontWeight: 700,
+                }}
+              >
                 1
               </span>
               <div>
@@ -180,21 +272,61 @@ export function ExploreView({
                 No prerequisites beyond Safety &amp; Tools for hands-on modules.
               </div>
             </div>
-            <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start', fontSize: 12.5, lineHeight: 1.5 }}>
-              <span className="lrn-icon-tile" style={{ background: '#eff6ff', color: 'var(--accent)', width: 24, height: 24, fontSize: 11, fontWeight: 700 }}>
+            <div
+              style={{
+                display: 'flex',
+                gap: 10,
+                alignItems: 'flex-start',
+                fontSize: 12.5,
+                lineHeight: 1.5,
+              }}
+            >
+              <span
+                className="lrn-icon-tile"
+                style={{
+                  background: '#eff6ff',
+                  color: 'var(--nfcap-accent)',
+                  width: 24,
+                  height: 24,
+                  fontSize: 11,
+                  fontWeight: 700,
+                }}
+              >
                 2
               </span>
               <div>
-                <b style={{ display: 'block', color: 'var(--ink)', fontSize: 13 }}>Start right away</b>
+                <b style={{ display: 'block', color: 'var(--ink)', fontSize: 13 }}>
+                  Start right away
+                </b>
                 No application review for open courses.
               </div>
             </div>
-            <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start', fontSize: 12.5, lineHeight: 1.5 }}>
-              <span className="lrn-icon-tile" style={{ background: '#eff6ff', color: 'var(--accent)', width: 24, height: 24, fontSize: 11, fontWeight: 700 }}>
+            <div
+              style={{
+                display: 'flex',
+                gap: 10,
+                alignItems: 'flex-start',
+                fontSize: 12.5,
+                lineHeight: 1.5,
+              }}
+            >
+              <span
+                className="lrn-icon-tile"
+                style={{
+                  background: '#eff6ff',
+                  color: 'var(--nfcap-accent)',
+                  width: 24,
+                  height: 24,
+                  fontSize: 11,
+                  fontWeight: 700,
+                }}
+              >
                 3
               </span>
               <div>
-                <b style={{ display: 'block', color: 'var(--ink)', fontSize: 13 }}>Track it on My Learning</b>
+                <b style={{ display: 'block', color: 'var(--ink)', fontSize: 13 }}>
+                  Track it on My Learning
+                </b>
                 The course appears there as soon as you start it.
               </div>
             </div>

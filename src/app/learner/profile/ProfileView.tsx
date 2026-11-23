@@ -46,7 +46,7 @@ export function ProfileView({
     <div className="flex flex-col gap-6">
       <Card>
         <CardContent className="flex flex-col items-start gap-4 sm:flex-row sm:items-center">
-          <div className="flex size-14 shrink-0 items-center justify-center rounded-full bg-[var(--accent)] text-lg font-semibold text-[var(--accent-contrast)]">
+          <div className="flex size-14 shrink-0 items-center justify-center rounded-full bg-[var(--nfcap-accent)] text-lg font-semibold text-[var(--nfcap-accent-contrast)]">
             {initials}
           </div>
           <div className="flex flex-1 flex-col gap-1">
@@ -64,7 +64,7 @@ export function ProfileView({
         {stats.map((stat) => (
           <Card key={stat.label}>
             <CardContent className="flex items-center gap-4">
-              <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-[var(--accent)]/10 text-[var(--accent)]">
+              <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-[var(--nfcap-accent)]/10 text-[var(--nfcap-accent)]">
                 <Icon name={stat.icon} className="size-5" />
               </div>
               <div>
@@ -88,7 +88,7 @@ export function ProfileView({
               </p>
               <Link
                 href="/learner/explore"
-                className="text-sm font-medium text-[var(--accent)] hover:underline"
+                className="text-sm font-medium text-[var(--nfcap-accent)] hover:underline"
               >
                 Browse Course Catalog
               </Link>
@@ -96,7 +96,7 @@ export function ProfileView({
           </Card>
         ) : (
           <Card>
-            <div className="divide-y divide-[var(--border)]">
+            <div className="divide-y divide-[var(--nfcap-border)]">
               {enrolledCourses.map((course) => {
                 const progress = progressMap[course.id];
                 const status = getCourseStatus(course, progress);
@@ -129,22 +129,24 @@ export function ProfileView({
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <Link
           href="/learner/portfolio"
-          className="flex items-center gap-3 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-5 shadow-card transition-colors hover:bg-[var(--surface-muted)]"
+          className="flex items-center gap-3 rounded-2xl border border-[var(--nfcap-border)] bg-[var(--surface)] p-5 shadow-card transition-colors hover:bg-[var(--surface-muted)]"
         >
-          <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-[var(--accent)]/10 text-[var(--accent)]">
+          <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-[var(--nfcap-accent)]/10 text-[var(--nfcap-accent)]">
             <Icon name="briefcase" className="size-5" />
           </div>
           <div className="flex-1">
             <p className="text-sm font-medium text-[var(--ink)]">View Portfolio</p>
-            <p className="text-xs text-[var(--ink-muted)]">Verified evidence of your demonstrated skills</p>
+            <p className="text-xs text-[var(--ink-muted)]">
+              Verified evidence of your demonstrated skills
+            </p>
           </div>
           <Icon name="chevron-right" className="size-4 shrink-0 text-[var(--ink-muted)]" />
         </Link>
         <Link
           href="/learner/certificates"
-          className="flex items-center gap-3 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-5 shadow-card transition-colors hover:bg-[var(--surface-muted)]"
+          className="flex items-center gap-3 rounded-2xl border border-[var(--nfcap-border)] bg-[var(--surface)] p-5 shadow-card transition-colors hover:bg-[var(--surface-muted)]"
         >
-          <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-[var(--accent)]/10 text-[var(--accent)]">
+          <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-[var(--nfcap-accent)]/10 text-[var(--nfcap-accent)]">
             <Icon name="award" className="size-5" />
           </div>
           <div className="flex-1">
