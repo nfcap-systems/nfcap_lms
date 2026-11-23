@@ -25,7 +25,7 @@ Read `docs/HANDOFF.md` first — it is the onboarding entry point. Then, by ques
 
 Do not reopen decisions already closed in `PRODUCT_CONTEXT.md` or the client scope doc.
 
-## Current state (as of 2026-11-18)
+## Current state (as of 2026-11-23)
 
 - **The client scope plan is approved.** 65 features, 9 phases, ~1,431h. **Phase 0 is in progress,
   not complete** — 3 of its 6 scoped features are done (Automated Test Suite, Automated Checks/CI,
@@ -66,9 +66,36 @@ Do not reopen decisions already closed in `PRODUCT_CONTEXT.md` or the client sco
   in Resend yet (no DNS access available to any candidate domain), so real email delivery is
   restricted to one test address until that's resolved — not a blocker for continued dev, but must
   be fixed before any real trainee/staff email can go out, and is specifically why Account
-  Settings' email-change confirmation couldn't be delivery-tested end-to-end. **Phase 3 (Evidence
-  & Competency) has not started** — see `docs/build/PHASE_3_PROGRESS.md`. Nothing in Phases 4–8
-  has started either.
+  Settings' email-change confirmation couldn't be delivery-tested end-to-end.
+- **Phase 3 (Evidence & Competency) is built and on `stage`** as of 2026-11-23 — 11 of its 12
+  features merged (PRs #13–#22), see `docs/build/PHASE_3_PROGRESS.md` for the per-feature table
+  and `docs/plans/phase-3-and-design-migration-kickoff.md`'s progress log for branch/PR/merge-commit
+  detail per feature. Evidence is now a per-criterion model end-to-end: real file storage in a
+  private bucket, `AssessmentCriterion` per course with an Admin authoring UI, a Reviewer Queue,
+  per-criterion Met/Not-Met review with photo annotation, guided per-criterion capture for the
+  learner, targeted resubmission that carries already-Met criteria forward, and attempt history.
+  **Certification is gated centrally** in `applyEvidenceStatus` (`src/lib/actions/progress.ts`):
+  approval is refused unless every `mandatoryForCertification` criterion is Met, for every caller
+  — a course with no criteria behaves exactly as it did before.
+
+  Three things to know before building on this:
+  1. **Feature #5 (Criteria Authoring Support) is the one open item**, and it isn't engineering —
+     it's working sessions with NFCAP's trade experts. Every course currently carries two
+     `[PLACEHOLDER]` criteria from `prisma/seed.ts`, so the gating mechanism is real but the
+     content it gates on is not.
+  2. **Two evidence shapes coexist and both must keep working.** A submission made before feature
+     #9 carries its evidence on `EvidenceSubmission` itself (`description`/`fileName`/`filePath`);
+     a guided one carries it per criterion on `CriterionAssessment` and leaves the submission's own
+     fields empty. `EvidenceSubmission.isPerCriterion` distinguishes them and
+     `hasFile`/`hasSubmissionFile` are deliberately different questions — `getEvidenceFileUrl`
+     serves only the course-level file, `getCriterionFileUrl` only a criterion's. Feature #12 fixed
+     four separate consumers that assumed the legacy shape had gone away; don't reintroduce that
+     assumption. Regression coverage lives in `tests/unit/legacy-evidence-regression.test.ts`.
+  3. **Nothing is in production.** These are On Stage, not Done; `stage` has not been promoted to
+     `main`, and a planned verification pass over features #8–#12 — including any visual compare
+     against `LRN06d`/`LRN06e`/`LRN06f` — has not been done.
+
+  Nothing in Phases 4–8 has started.
 - **Deployment: self-hosted, VPS + Docker.** Supabase is retained for database and object storage.
   Deploy target was decided 2026-11-01 (VPS + Docker). Replica count is still undecided but isn't a
   blocker — **build for 2+ instances** is already the working assumption everything is built

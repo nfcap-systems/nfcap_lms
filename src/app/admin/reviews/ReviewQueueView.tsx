@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { StateCard } from '@/components/ui';
 import { Icon } from '@/components/icons';
 import { bulkApproveEvidence } from '@/lib/actions/progress';
+import { timeAgo } from '@/lib/time-ago';
 
 export type ReviewQueueRow = {
   evidenceId: string;
@@ -21,16 +22,6 @@ export type ReviewQueueRow = {
 
 type SortOrder = 'oldest' | 'newest';
 
-function timeAgo(isoDate: string): string {
-  const ms = Date.now() - new Date(isoDate).getTime();
-  const minutes = Math.round(ms / 60_000);
-  if (minutes < 60) return minutes <= 1 ? '1 minute ago' : `${minutes} minutes ago`;
-  const hours = Math.round(minutes / 60);
-  if (hours < 24) return hours === 1 ? '1 hour ago' : `${hours} hours ago`;
-  const days = Math.round(hours / 24);
-  return days === 1 ? '1 day ago' : `${days} days ago`;
-}
-
 export function ReviewQueueView({
   rows,
   approvedToday,
@@ -45,6 +36,9 @@ export function ReviewQueueView({
   const [courseFilter, setCourseFilter] = useState<string>('all');
   const [sort, setSort] = useState<SortOrder>('oldest');
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  /** Outcome of the last bulk approve — feature #7's gated certification means some rows can be
+   * refused, and that has to be shown here rather than thrown (feature #12). */
+  const [notice, setNotice] = useState<{ tone: 'ok' | 'warn'; text: string } | null>(null);
 
   const courseOptions = useMemo(() => {
     const seen = new Map<string, string>();
@@ -80,14 +74,42 @@ export function ReviewQueueView({
   }
 
   function bulkApprove() {
-    const items = filtered
-      .filter((r) => selected.has(r.evidenceId))
-      .map((r) => ({ learnerId: r.learnerId, courseSlug: r.courseId }));
+    const selectedRows = filtered.filter((r) => selected.has(r.evidenceId));
+    const items = selectedRows.map((r) => ({ learnerId: r.learnerId, courseSlug: r.courseId }));
     if (items.length === 0) return;
+    setNotice(null);
     startTransition(async () => {
-      await bulkApproveEvidence(items);
-      setSelected(new Set());
-      router.refresh();
+      try {
+        const result = await bulkApproveEvidence(items);
+        setSelected(new Set());
+        if (result.skipped.length === 0) {
+          setNotice({
+            tone: 'ok',
+            text: `Approved ${result.approved} submission${result.approved === 1 ? '' : 's'}.`,
+          });
+        } else {
+          const names = result.skipped
+            .map((s) => {
+              const row = selectedRows.find(
+                (r) => r.learnerId === s.learnerId && r.courseId === s.courseSlug,
+              );
+              return row ? `${row.learnerName} — ${row.courseTitle}` : s.courseSlug;
+            })
+            .join('; ');
+          setNotice({
+            tone: 'warn',
+            text:
+              `Approved ${result.approved} of ${items.length}. ` +
+              `Needs per-criterion review before it can be certified: ${names}.`,
+          });
+        }
+        router.refresh();
+      } catch (e) {
+        setNotice({
+          tone: 'warn',
+          text: e instanceof Error ? e.message : 'Bulk approve failed.',
+        });
+      }
     });
   }
 
@@ -100,6 +122,9 @@ export function ReviewQueueView({
             <p>Every submission awaiting assessment, oldest first.</p>
           </div>
         </div>
+        {/* A bulk approve that clears the whole queue lands here, so the outcome has to render on
+            this branch too or it is never seen. */}
+        {notice && <div className="callout">{notice.text}</div>}
         <StateCard
           icon={<Icon name="check" className="h-5 w-5" />}
           title="Nothing waiting for review"
@@ -129,6 +154,19 @@ export function ReviewQueueView({
           </button>
         </div>
       </div>
+
+      {notice && (
+        <div
+          className="callout"
+          style={
+            notice.tone === 'warn'
+              ? { borderColor: 'var(--status-problem-border)', color: 'var(--status-problem)' }
+              : undefined
+          }
+        >
+          {notice.text}
+        </div>
+      )}
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 16 }}>
         <div className="mcard">

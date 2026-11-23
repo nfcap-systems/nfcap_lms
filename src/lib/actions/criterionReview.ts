@@ -5,6 +5,7 @@ import { prisma } from '@/lib/prisma';
 import { requireAdmin } from './guard';
 import { applyEvidenceStatus } from './progress';
 import { logAuditEvent } from './audit';
+import type { AnnotationMark } from '@/lib/types/annotation';
 
 function revalidateReviewViews(learnerId: string, courseSlug: string) {
   revalidatePath(`/admin/learners/${learnerId}/review/${courseSlug}`);
@@ -59,6 +60,50 @@ export async function setCriterionVerdict(
   });
 
   revalidateReviewViews(evidence.enrollment.learnerId, evidence.enrollment.course.slug);
+}
+
+/** Feature #8 — ADM12-PhotoAnnotation's "Save annotation". Reviewer-only marks on the learner's
+ * submitted criterion photo; never surfaced to the learner (no learner-facing board shows it). */
+export async function saveCriterionAnnotation(
+  criterionAssessmentId: string,
+  annotationData: AnnotationMark[],
+  reviewerNote?: string,
+): Promise<void> {
+  const admin = await requireAdmin();
+
+  const assessment = await prisma.criterionAssessment.findUniqueOrThrow({
+    where: { id: criterionAssessmentId },
+    include: {
+      evidenceSubmission: {
+        include: {
+          enrollment: { select: { learnerId: true, course: { select: { slug: true } } } },
+        },
+      },
+    },
+  });
+  if (!assessment.learnerFilePath) {
+    throw new Error('This criterion has no submitted photo to annotate.');
+  }
+
+  await prisma.criterionAssessment.update({
+    where: { id: criterionAssessmentId },
+    data: {
+      annotationData: annotationData as unknown as object,
+      ...(reviewerNote !== undefined ? { reviewerNote } : {}),
+    },
+  });
+
+  await logAuditEvent({
+    actor: admin,
+    action: 'ANNOTATE_CRITERION_EVIDENCE',
+    targetType: 'CriterionAssessment',
+    targetId: criterionAssessmentId,
+  });
+
+  revalidateReviewViews(
+    assessment.evidenceSubmission.enrollment.learnerId,
+    assessment.evidenceSubmission.enrollment.course.slug,
+  );
 }
 
 /** ADM11-PerCriterionReview's "Mark complete" / "Request resubmission" actions. "Mark complete"

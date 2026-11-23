@@ -6,7 +6,20 @@ export type EvidenceSubmission = {
   id: string;
   description: string;
   fileName?: string;
+  /** Any attachment exists on this submission — either the legacy course-level file or at least
+   * one per-criterion capture (feature #9). Use it for "has an attachment" indicators only; it is
+   * NOT a signal that `getEvidenceFileUrl(id)` will resolve. */
   hasFile: boolean;
+  /** The legacy course-level file specifically — the only thing `getEvidenceFileUrl(id)` can
+   * serve. False for every guided submission, whose files hang off CriterionAssessment instead
+   * and are fetched with `getCriterionFileUrl` (docs/plans/phase-3-and-design-migration-kickoff.md
+   * Step 2, feature #12). */
+  hasSubmissionFile: boolean;
+  /** True when this submission was made through the per-criterion guided capture flow (feature
+   * #9) — i.e. it has CriterionAssessment rows of its own. False for submissions made before that
+   * flow existed, even on a course that has assessment criteria now: those still carry their
+   * evidence in `description`/`fileName` and must keep rendering the legacy way. */
+  isPerCriterion: boolean;
   status: EvidenceStatus;
   submittedAt: string;
   statusUpdatedAt?: string;
@@ -23,7 +36,14 @@ export type CourseProgress = {
 const progressInclude = {
   completedLessons: true,
   quizAttempts: { orderBy: { submittedAt: 'desc' as const }, take: 1 },
-  evidenceSubmissions: { orderBy: { submittedAt: 'desc' as const }, take: 1 },
+  evidenceSubmissions: {
+    orderBy: { submittedAt: 'desc' as const },
+    take: 1,
+    // Narrow select, not the full relation: `hasFile` below needs to know only whether ANY
+    // criterion has a learner-submitted photo (feature #9 — guided capture stores files here,
+    // not on EvidenceSubmission.filePath, which stays null for every guided submission).
+    include: { criterionAssessments: { select: { learnerFilePath: true } } },
+  },
   certificate: true,
 };
 
@@ -55,7 +75,11 @@ function mapEnrollment(enrollment: DbEnrollment): CourseProgress {
           id: evidence.id,
           description: evidence.description,
           fileName: evidence.fileName ?? undefined,
-          hasFile: Boolean(evidence.filePath),
+          hasFile:
+            Boolean(evidence.filePath) ||
+            evidence.criterionAssessments.some((ca) => Boolean(ca.learnerFilePath)),
+          hasSubmissionFile: Boolean(evidence.filePath),
+          isPerCriterion: evidence.criterionAssessments.length > 0,
           status: evidence.status.toLowerCase() as EvidenceStatus,
           submittedAt: evidence.submittedAt.toISOString(),
           statusUpdatedAt: evidence.statusUpdatedAt?.toISOString(),

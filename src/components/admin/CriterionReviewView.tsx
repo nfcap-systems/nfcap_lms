@@ -3,11 +3,12 @@
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { Icon } from '@/components/icons';
-import { getEvidenceFileUrl } from '@/lib/actions/progress';
+import { getEvidenceFileUrl, getCriterionFileUrl } from '@/lib/actions/progress';
 import { setCriterionVerdict, finalizeCriterionReview } from '@/lib/actions/criterionReview';
 import type { CriterionReviewData } from '@/lib/data/criterionReview';
 import type { LearnerRecord } from '@/lib/data/learners';
 import type { AdminCourse } from '@/lib/data/courses';
+import { PhotoAnnotationDialog } from './PhotoAnnotationDialog';
 
 /** ADM11-PerCriterionReview — feature #7's real per-criterion evidence review and gated
  * certification screen. Replaces LearnerProfileView's inline Approve/Reject for any course that
@@ -28,6 +29,7 @@ export function CriterionReviewView({
     Object.fromEntries(review.criteria.map((c) => [c.criterionId, c.reviewerNote ?? ''])),
   );
   const [error, setError] = useState<string | null>(null);
+  const [annotatingCriterionId, setAnnotatingCriterionId] = useState<string | null>(null);
 
   const mandatoryUnmetCount = review.criteria.filter(
     (c) => c.mandatoryForCertification && c.met !== true,
@@ -73,6 +75,16 @@ export function CriterionReviewView({
       window.open(url, '_blank', 'noopener,noreferrer');
     });
   }
+
+  function viewCriterionFile(criterionAssessmentId: string | undefined) {
+    if (!criterionAssessmentId) return;
+    startTransition(async () => {
+      const url = await getCriterionFileUrl(criterionAssessmentId);
+      window.open(url, '_blank', 'noopener,noreferrer');
+    });
+  }
+
+  const annotatingCriterion = review.criteria.find((c) => c.criterionId === annotatingCriterionId);
 
   return (
     <div className="flex flex-col gap-4">
@@ -137,8 +149,16 @@ export function CriterionReviewView({
               No attachment submitted.
             </p>
           )}
+          {/* Guided submissions (feature #9) carry no course-level description — this used to
+              render as a bare pair of quote marks (feature #12). */}
           <div style={{ fontSize: 13, color: 'var(--ink-muted)', lineHeight: 1.5 }}>
-            &ldquo;{review.description}&rdquo;
+            {review.description.trim().length > 0 ? (
+              <>&ldquo;{review.description}&rdquo;</>
+            ) : (
+              <span style={{ color: 'var(--ink-faint)' }}>
+                No overall description — this evidence was submitted criterion by criterion.
+              </span>
+            )}
           </div>
         </div>
 
@@ -163,6 +183,33 @@ export function CriterionReviewView({
                       </span>
                     )}
                   </div>
+                  {criterion.hasLearnerFile && (
+                    <div style={{ display: 'flex', gap: 10, marginTop: 6 }}>
+                      <button
+                        type="button"
+                        onClick={() => viewCriterionFile(criterion.criterionAssessmentId)}
+                        className="flex items-center gap-1.5 text-xs text-[var(--accent)] hover:underline"
+                      >
+                        <Icon name="paperclip" className="size-3.5" />
+                        {criterion.learnerFileName ?? 'View photo'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setAnnotatingCriterionId(criterion.criterionId)}
+                        className="flex items-center gap-1.5 text-xs text-[var(--accent)] hover:underline"
+                      >
+                        <Icon name="edit" className="size-3.5" />
+                        {criterion.annotationData && criterion.annotationData.length > 0
+                          ? 'Edit annotation'
+                          : 'Annotate'}
+                      </button>
+                    </div>
+                  )}
+                  {criterion.learnerDescription && (
+                    <div style={{ marginTop: 4, fontSize: 12.5, color: 'var(--ink-muted)' }}>
+                      &ldquo;{criterion.learnerDescription}&rdquo;
+                    </div>
+                  )}
                   {criterion.met === false && (
                     <textarea
                       className="field-textarea"
@@ -211,6 +258,21 @@ export function CriterionReviewView({
           </div>
         </div>
       </div>
+
+      {annotatingCriterion?.criterionAssessmentId && (
+        <PhotoAnnotationDialog
+          key={annotatingCriterion.criterionAssessmentId}
+          open={Boolean(annotatingCriterionId)}
+          onClose={() => {
+            setAnnotatingCriterionId(null);
+            router.refresh();
+          }}
+          criterionAssessmentId={annotatingCriterion.criterionAssessmentId}
+          criterionTitle={annotatingCriterion.title}
+          initialMarks={annotatingCriterion.annotationData ?? []}
+          initialNote={annotatingCriterion.reviewerNote ?? ''}
+        />
+      )}
     </div>
   );
 }

@@ -42,11 +42,18 @@ export type IconName =
   | 'chevron-down'
   | 'numbered-list'
   | 'header'
-  | 'download';
+  | 'download'
+  | 'alert-circle';
 
 type IconProps = SVGProps<SVGSVGElement>;
 
 const paths: Record<IconName, React.ReactNode> = {
+  'alert-circle': (
+    <>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 7.5v5.5M12 16.5v.01" />
+    </>
+  ),
   home: (
     <>
       <path d="M3 10.5 12 3l9 7.5" />

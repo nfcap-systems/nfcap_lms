@@ -262,17 +262,41 @@ model EvidenceSubmission {
 /// (ADM11-PerCriterionReview); `met` stays null until a reviewer records a verdict. Scoped to the
 /// submission rather than the enrollment so a resubmission (a new EvidenceSubmission row, per the
 /// "new row per attempt, never overwrite" pattern this model follows) starts every criterion
-/// unreviewed again instead of carrying over a stale verdict from a prior attempt.
+/// unreviewed again instead of carrying over a stale verdict from a prior attempt — with one
+/// exception, feature #10's targeted resubmission: a criterion already Met on the rejected
+/// submission is copied forward into the new one (`carriedForward: true`) so the learner only
+/// redoes what wasn't met. Carried-forward rows are NOT attempts; feature #11's attempt history
+/// filters them out (`src/lib/data/criterionAttempts.ts`).
 model CriterionAssessment {
   id                   String              @id @default(cuid())
   evidenceSubmissionId String
   evidenceSubmission   EvidenceSubmission  @relation(fields: [evidenceSubmissionId], references: [id], onDelete: Cascade)
   criterionId          String
   criterion            AssessmentCriterion @relation(fields: [criterionId], references: [id], onDelete: Cascade)
+  /// Learner's own capture for this criterion (feature #9 — LRN06b/c-EvidenceCapture). Storage
+  /// object key in the same private evidence-files bucket as EvidenceSubmission.filePath, keyed by
+  /// criterion (`src/lib/supabase/evidence-storage.ts`). Null until the learner captures this
+  /// criterion, or for pre-#9 submissions that only ever filled EvidenceSubmission's own
+  /// description/filePath fields.
+  learnerFilePath      String?
+  /// Display filename only, same convention as EvidenceSubmission.fileName.
+  learnerFileName      String?
+  /// Learner's optional note for this specific criterion (LRN06b's "Notes (optional)").
+  learnerDescription   String?
+  /// When the learner captured/submitted this criterion's evidence.
+  submittedAt          DateTime?
+  /// Reviewer's photo annotation overlay on `learnerFilePath` (feature #8 — ADM12-PhotoAnnotation).
+  /// Shape: array of marks, normalized 0-1 coordinates against the image so they stay correct at
+  /// any render size — see `src/lib/types/annotation.ts`. Reviewer-only; never surfaced to the
+  /// learner (ADM12 is staff review tooling, no learner-facing board shows it).
+  annotationData       Json?
   met                  Boolean?
   reviewerNote         String?
   reviewedBy           String?
   reviewedAt           DateTime?
+  /// True when this row is a copy of a Met verdict from the previous (rejected) submission rather
+  /// than a fresh learner capture (feature #10). Excluded from attempt history (feature #11).
+  carriedForward       Boolean             @default(false)
 
   @@unique([evidenceSubmissionId, criterionId])
   @@index([criterionId])

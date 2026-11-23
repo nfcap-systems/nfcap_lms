@@ -41,7 +41,11 @@ export function Dialog({
       onClick={(event) => {
         if (event.target === ref.current) onClose();
       }}
-      className={cn('modal w-full max-w-md p-0', className)}
+      // `className`'s own max-w-* and `max-w-md` below are equal-specificity Tailwind utilities,
+      // so plain string concatenation (this project's `cn` has no tailwind-merge dedup) lets
+      // either one win depending on generated CSS order, not source order — so the default only
+      // appears when the caller doesn't supply its own width.
+      className={cn('modal w-full p-0', className ?? 'max-w-md')}
     >
       <div className="flex items-start justify-between gap-4 p-7 pb-0">
         <div>
@@ -54,7 +58,10 @@ export function Dialog({
       </div>
       {children && <div className="p-7 pt-0">{children}</div>}
       {footer && (
-        <div className="flex items-center justify-end gap-3 border-t p-7" style={{ borderColor: 'var(--border)' }}>
+        <div
+          className="flex items-center justify-end gap-3 border-t p-7"
+          style={{ borderColor: 'var(--border)' }}
+        >
           {footer}
         </div>
       )}

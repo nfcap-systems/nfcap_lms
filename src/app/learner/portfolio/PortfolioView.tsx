@@ -16,7 +16,10 @@ export function PortfolioView({
     if (group) {
       group.items.push(credential);
     } else {
-      courseGroups.set(credential.course.id, { title: credential.course.title, items: [credential] });
+      courseGroups.set(credential.course.id, {
+        title: credential.course.title,
+        items: [credential],
+      });
     }
   }
   const coursesCovered = courseGroups.size;
@@ -24,7 +27,14 @@ export function PortfolioView({
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <div style={{ fontSize: 26, fontWeight: 700, fontFamily: 'var(--font-display)', color: 'var(--ink)' }}>
+        <div
+          style={{
+            fontSize: 26,
+            fontWeight: 700,
+            fontFamily: 'var(--font-display)',
+            color: 'var(--ink)',
+          }}
+        >
           Portfolio
         </div>
         <div style={{ fontSize: 13.5, color: 'var(--ink-muted)', marginTop: 4 }}>
@@ -74,7 +84,14 @@ export function PortfolioView({
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 300px', gap: 24, alignItems: 'start' }}>
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'minmax(0, 1fr) 300px',
+          gap: 24,
+          alignItems: 'start',
+        }}
+      >
         <div style={{ display: 'flex', flexDirection: 'column', gap: 28, minWidth: 0 }}>
           {credentials.length === 0 ? (
             <div
@@ -111,21 +128,68 @@ export function PortfolioView({
           ) : (
             Array.from(courseGroups.values()).map((group) => (
               <div key={group.title} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--ink)' }}>{group.title}</div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 16 }}>
+                <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--ink)' }}>
+                  {group.title}
+                </div>
+                <div
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+                    gap: 16,
+                  }}
+                >
                   {group.items.map((credential) => {
                     const verifiedDate = new Date(
                       credential.evidence.statusUpdatedAt ?? credential.evidence.submittedAt,
-                    ).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+                    ).toLocaleDateString(undefined, {
+                      month: 'short',
+                      day: 'numeric',
+                      year: 'numeric',
+                    });
                     return (
-                      <div key={credential.certificateId} className="lrn-mcard" style={{ cursor: 'default' }}>
+                      <div
+                        key={credential.certificateId}
+                        className="lrn-mcard"
+                        style={{ cursor: 'default' }}
+                      >
                         <div className="lrn-mcard-body">
-                          <div className="t">{credential.evidence.description}</div>
-                          {credential.evidence.hasFile && (
-                            <EvidenceAttachmentLink
-                              evidenceSubmissionId={credential.evidence.id}
-                              fileName={credential.evidence.fileName}
-                            />
+                          {/* A guided submission (feature #9) carries its evidence per criterion,
+                              not on the submission — rendering `description`/`fileName` alone
+                              leaves an empty card. Legacy submissions still render exactly as
+                              before. See docs/plans/phase-3-and-design-migration-kickoff.md
+                              Step 2, feature #12. */}
+                          {credential.criteria.length > 0 ? (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                              {credential.criteria.map((criterion) => (
+                                <div
+                                  key={criterion.criterionAssessmentId}
+                                  style={{ display: 'flex', flexDirection: 'column', gap: 4 }}
+                                >
+                                  <div className="t">{criterion.title}</div>
+                                  {criterion.description && (
+                                    <div style={{ fontSize: 12.5, color: 'var(--ink-muted)' }}>
+                                      {criterion.description}
+                                    </div>
+                                  )}
+                                  {criterion.hasFile && (
+                                    <EvidenceAttachmentLink
+                                      criterionAssessmentId={criterion.criterionAssessmentId}
+                                      fileName={criterion.fileName}
+                                    />
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <>
+                              <div className="t">{credential.evidence.description}</div>
+                              {credential.evidence.hasSubmissionFile && (
+                                <EvidenceAttachmentLink
+                                  evidenceSubmissionId={credential.evidence.id}
+                                  fileName={credential.evidence.fileName}
+                                />
+                              )}
+                            </>
                           )}
                           <Badge tone="success" style={{ width: 'fit-content' }}>
                             <Icon name="check" className="h-3 w-3" />
@@ -146,16 +210,42 @@ export function PortfolioView({
             <div className="lrn-side-title">
               <h3>How review works</h3>
             </div>
-            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 9, fontSize: 12.5, color: 'var(--ink-muted)', lineHeight: 1.5 }}>
-              <Icon name="check" className="h-3.5 w-3.5" style={{ color: 'var(--accent)', flexShrink: 0, marginTop: 2 }} />
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'flex-start',
+                gap: 9,
+                fontSize: 12.5,
+                color: 'var(--ink-muted)',
+                lineHeight: 1.5,
+              }}
+            >
+              <Icon
+                name="check"
+                className="h-3.5 w-3.5"
+                style={{ color: 'var(--accent)', flexShrink: 0, marginTop: 2 }}
+              />
               Submit evidence from any practical lesson — it lands here automatically once reviewed.
             </div>
-            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 9, fontSize: 12.5, color: 'var(--ink-muted)', lineHeight: 1.5 }}>
-              <Icon name="check" className="h-3.5 w-3.5" style={{ color: 'var(--accent)', flexShrink: 0, marginTop: 2 }} />
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'flex-start',
+                gap: 9,
+                fontSize: 12.5,
+                color: 'var(--ink-muted)',
+                lineHeight: 1.5,
+              }}
+            >
+              <Icon
+                name="check"
+                className="h-3.5 w-3.5"
+                style={{ color: 'var(--accent)', flexShrink: 0, marginTop: 2 }}
+              />
               <span>
                 <strong style={{ color: 'var(--ink)' }}>Met</strong> or{' '}
-                <strong style={{ color: 'var(--ink)' }}>Not Met</strong>, with a reviewer note either
-                way — never left pending silently.
+                <strong style={{ color: 'var(--ink)' }}>Not Met</strong>, with a reviewer note
+                either way — never left pending silently.
               </span>
             </div>
           </div>
@@ -178,7 +268,9 @@ export function PortfolioView({
                 <Icon name="user" className="h-5 w-5" />
               </div>
               <div style={{ minWidth: 0 }}>
-                <div style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--ink)' }}>Your mentor</div>
+                <div style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--ink)' }}>
+                  Your mentor
+                </div>
                 <div style={{ fontSize: 12, color: 'var(--ink-muted)' }}>Not yet assigned</div>
               </div>
             </div>

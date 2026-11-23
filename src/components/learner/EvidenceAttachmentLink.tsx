@@ -2,15 +2,20 @@
 
 import { useTransition } from 'react';
 import { Icon } from '@/components/icons';
-import { getEvidenceFileUrl } from '@/lib/actions/progress';
+import { getCriterionFileUrl, getEvidenceFileUrl } from '@/lib/actions/progress';
 
 /** Small client leaf so pages that list evidence (e.g. Portfolio) can stay server components —
  * the signed URL is fetched on click, not embedded in page data (it expires in 5 minutes). */
 export function EvidenceAttachmentLink({
   evidenceSubmissionId,
+  criterionAssessmentId,
   fileName,
 }: {
-  evidenceSubmissionId: string;
+  /** The legacy course-level attachment (`EvidenceSubmission.filePath`). */
+  evidenceSubmissionId?: string;
+  /** A single criterion's own capture (feature #9) — guided submissions store their files here,
+   * not on the submission, so the course-level action can't serve them. */
+  criterionAssessmentId?: string;
   fileName?: string;
 }) {
   const [, startTransition] = useTransition();
@@ -20,7 +25,9 @@ export function EvidenceAttachmentLink({
       type="button"
       onClick={() => {
         startTransition(async () => {
-          const url = await getEvidenceFileUrl(evidenceSubmissionId);
+          const url = criterionAssessmentId
+            ? await getCriterionFileUrl(criterionAssessmentId)
+            : await getEvidenceFileUrl(evidenceSubmissionId!);
           window.open(url, '_blank', 'noopener,noreferrer');
         });
       }}

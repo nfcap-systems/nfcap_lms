@@ -8,6 +8,9 @@ import { submitEvidence, getEvidenceFileUrl } from '@/lib/actions/progress';
 import type { EvidenceSubmission } from '@/lib/data/progress';
 import type { CriterionVerdict } from '@/lib/data/criterionReview';
 import type { AssessmentCriterion, Course } from '@/lib/types';
+import type { ResubmissionContext } from '@/lib/data/criterionAttempts';
+import { GuidedEvidenceCapture } from './GuidedEvidenceCapture';
+import { EvidenceNotMet } from './EvidenceNotMet';
 
 const statusCopy: Record<
   'pending' | 'approved' | 'rejected',
@@ -23,6 +26,7 @@ export function EvidenceView({
   evidence,
   criteria = [],
   criterionVerdicts,
+  resubmission,
 }: {
   course: Course;
   evidence: EvidenceSubmission | undefined;
@@ -32,6 +36,9 @@ export function EvidenceView({
   /** Per-criterion verdicts on the current `evidence` submission, once Admin has reviewed any of
    * them (feature #7, src/lib/data/criterionReview.ts) — undefined before a verdict exists. */
   criterionVerdicts?: CriterionVerdict[];
+  /** Feedback + carry-forward info when the latest submission was sent back (feature #10,
+   * src/lib/data/criterionAttempts.ts) — undefined otherwise. */
+  resubmission?: ResubmissionContext;
 }) {
   const router = useRouter();
   const [, startTransition] = useTransition();
@@ -41,12 +48,48 @@ export function EvidenceView({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [resubmitting, setResubmitting] = useState(false);
 
+  // Whether a NEW submission goes through the guided per-criterion flow — a property of the
+  // course, since that is what decides the form the learner is given.
+  const guided = criteria.length > 0;
+  // Whether the EXISTING submission was made that way. Not the same question: a submission made
+  // before feature #9 (or before this course had criteria) keeps its evidence in
+  // `description`/`fileName`, and rendering it through the guided summary hides it entirely —
+  // the legacy-data regression this split fixes
+  // (docs/plans/phase-3-and-design-migration-kickoff.md Step 2, feature #12).
+  const submissionIsGuided = Boolean(evidence?.isPerCriterion);
+
+  if (
+    evidence &&
+    !resubmitting &&
+    submissionIsGuided &&
+    evidence.status === 'rejected' &&
+    resubmission
+  ) {
+    return (
+      <EvidenceNotMet
+        course={course}
+        criterionVerdicts={criterionVerdicts ?? []}
+        context={resubmission}
+        onResubmit={() => setResubmitting(true)}
+      />
+    );
+  }
+
   if (evidence && !resubmitting) {
     const status = statusCopy[evidence.status];
     return (
       <div className="flex flex-col gap-5">
         <Header />
-        <CriteriaChecklist criteria={criteria} verdicts={criterionVerdicts} />
+        {submissionIsGuided ? (
+          <GuidedEvidenceCapture
+            course={course}
+            criteria={criteria}
+            criterionVerdicts={criterionVerdicts ?? []}
+            mode="summary"
+          />
+        ) : (
+          <CriteriaChecklist criteria={criteria} verdicts={criterionVerdicts} />
+        )}
         <div className="flex flex-col items-start gap-3 rounded-xl border border-[var(--border)] bg-[var(--surface-muted)] p-5">
           <Badge tone={status.tone}>{status.label}</Badge>
           <p className="text-sm text-[var(--ink-muted)]">
@@ -62,8 +105,10 @@ export function EvidenceView({
                 ? '. Your course is complete and your certificate has been issued.'
                 : '. Update your submission below and resubmit for another review.'}
           </p>
-          <p className="text-sm text-[var(--ink)]">{evidence.description}</p>
-          {evidence.hasFile && (
+          {!submissionIsGuided && (
+            <p className="text-sm text-[var(--ink)]">{evidence.description}</p>
+          )}
+          {!submissionIsGuided && evidence.hasSubmissionFile && (
             <button
               type="button"
               onClick={() => {
@@ -97,6 +142,22 @@ export function EvidenceView({
             </Button>
           )}
         </div>
+      </div>
+    );
+  }
+
+  if (guided) {
+    return (
+      <div className="flex flex-col gap-5">
+        <Header />
+        <GuidedEvidenceCapture
+          course={course}
+          criteria={criteria}
+          criterionVerdicts={criterionVerdicts ?? []}
+          resubmission={evidence?.status === 'rejected' ? resubmission : undefined}
+          mode="capture"
+          onSubmitted={() => setResubmitting(false)}
+        />
       </div>
     );
   }
