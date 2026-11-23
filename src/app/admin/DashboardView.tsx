@@ -157,7 +157,7 @@ function NeedsReviewCard({
         <CardTitle className="text-sm">Needs Review</CardTitle>
         <CardAction>
           <Link
-            href="/admin/learners"
+            href="/admin/reviews"
             className="text-xs text-muted-foreground hover:text-foreground"
           >
             View all →
