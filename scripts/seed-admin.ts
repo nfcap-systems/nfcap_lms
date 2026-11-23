@@ -23,12 +23,18 @@ async function main() {
 
   const existing = list.users.find((u) => u.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase());
   if (existing) {
+    // Also resets the password: without this, re-running this script after a prior session
+    // changed the password via Account Settings (or just forgot it) silently leaves the login
+    // broken while still printing a password that no longer works — happened twice already
+    // (docs/plans/phase-3-and-design-migration-kickoff.md's Feature #1/#2 progress rows).
     const { error } = await supabaseAdmin.auth.admin.updateUserById(existing.id, {
+      password: DEMO_PASSWORD,
       app_metadata: { role: 'ADMIN' },
       user_metadata: { name: ADMIN_NAME },
+      email_confirm: true,
     });
     if (error) throw error;
-    console.log(`Re-roled existing account ${ADMIN_EMAIL} -> ADMIN`);
+    console.log(`Re-roled existing account ${ADMIN_EMAIL} -> ADMIN, password reset`);
   } else {
     const { error } = await supabaseAdmin.auth.admin.createUser({
       email: ADMIN_EMAIL,

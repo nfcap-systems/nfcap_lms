@@ -8,6 +8,7 @@ import { submitEvidence, getEvidenceFileUrl } from '@/lib/actions/progress';
 import type { EvidenceSubmission } from '@/lib/data/progress';
 import type { CriterionVerdict } from '@/lib/data/criterionReview';
 import type { AssessmentCriterion, Course } from '@/lib/types';
+import { GuidedEvidenceCapture } from './GuidedEvidenceCapture';
 
 const statusCopy: Record<
   'pending' | 'approved' | 'rejected',
@@ -41,12 +42,23 @@ export function EvidenceView({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [resubmitting, setResubmitting] = useState(false);
 
+  const guided = criteria.length > 0;
+
   if (evidence && !resubmitting) {
     const status = statusCopy[evidence.status];
     return (
       <div className="flex flex-col gap-5">
         <Header />
-        <CriteriaChecklist criteria={criteria} verdicts={criterionVerdicts} />
+        {guided ? (
+          <GuidedEvidenceCapture
+            course={course}
+            criteria={criteria}
+            criterionVerdicts={criterionVerdicts ?? []}
+            mode="summary"
+          />
+        ) : (
+          <CriteriaChecklist criteria={criteria} verdicts={criterionVerdicts} />
+        )}
         <div className="flex flex-col items-start gap-3 rounded-xl border border-[var(--border)] bg-[var(--surface-muted)] p-5">
           <Badge tone={status.tone}>{status.label}</Badge>
           <p className="text-sm text-[var(--ink-muted)]">
@@ -62,8 +74,8 @@ export function EvidenceView({
                 ? '. Your course is complete and your certificate has been issued.'
                 : '. Update your submission below and resubmit for another review.'}
           </p>
-          <p className="text-sm text-[var(--ink)]">{evidence.description}</p>
-          {evidence.hasFile && (
+          {!guided && <p className="text-sm text-[var(--ink)]">{evidence.description}</p>}
+          {!guided && evidence.hasFile && (
             <button
               type="button"
               onClick={() => {
@@ -97,6 +109,21 @@ export function EvidenceView({
             </Button>
           )}
         </div>
+      </div>
+    );
+  }
+
+  if (guided) {
+    return (
+      <div className="flex flex-col gap-5">
+        <Header />
+        <GuidedEvidenceCapture
+          course={course}
+          criteria={criteria}
+          criterionVerdicts={criterionVerdicts ?? []}
+          mode="capture"
+          onSubmitted={() => setResubmitting(false)}
+        />
       </div>
     );
   }

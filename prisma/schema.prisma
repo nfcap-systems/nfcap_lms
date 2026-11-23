@@ -269,6 +269,23 @@ model CriterionAssessment {
   evidenceSubmission   EvidenceSubmission  @relation(fields: [evidenceSubmissionId], references: [id], onDelete: Cascade)
   criterionId          String
   criterion            AssessmentCriterion @relation(fields: [criterionId], references: [id], onDelete: Cascade)
+  /// Learner's own capture for this criterion (feature #9 — LRN06b/c-EvidenceCapture). Storage
+  /// object key in the same private evidence-files bucket as EvidenceSubmission.filePath, keyed by
+  /// criterion (`src/lib/supabase/evidence-storage.ts`). Null until the learner captures this
+  /// criterion, or for pre-#9 submissions that only ever filled EvidenceSubmission's own
+  /// description/filePath fields.
+  learnerFilePath      String?
+  /// Display filename only, same convention as EvidenceSubmission.fileName.
+  learnerFileName      String?
+  /// Learner's optional note for this specific criterion (LRN06b's "Notes (optional)").
+  learnerDescription   String?
+  /// When the learner captured/submitted this criterion's evidence.
+  submittedAt          DateTime?
+  /// Reviewer's photo annotation overlay on `learnerFilePath` (feature #8 — ADM12-PhotoAnnotation).
+  /// Shape: array of marks, normalized 0-1 coordinates against the image so they stay correct at
+  /// any render size — see `src/lib/types/annotation.ts`. Reviewer-only; never surfaced to the
+  /// learner (ADM12 is staff review tooling, no learner-facing board shows it).
+  annotationData       Json?
   met                  Boolean?
   reviewerNote         String?
   reviewedBy           String?
