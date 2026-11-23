@@ -33,8 +33,10 @@ export async function getCredentialsForLearner(
       return {
         course,
         evidence: {
+          id: evidence.id,
           description: evidence.description,
           fileName: evidence.fileName ?? undefined,
+          hasFile: Boolean(evidence.filePath),
           status: evidence.status.toLowerCase() as EvidenceSubmission['status'],
           submittedAt: evidence.submittedAt.toISOString(),
           statusUpdatedAt: evidence.statusUpdatedAt?.toISOString(),

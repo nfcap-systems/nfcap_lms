@@ -4,9 +4,11 @@ import { revalidatePath } from 'next/cache';
 import { prisma } from '@/lib/prisma';
 import { EvidenceStatus as PrismaEvidenceStatus } from '@/generated/prisma/enums';
 import { requireAdmin, requireUser } from './guard';
+import { getRole } from '@/lib/supabase/server';
 import { logAuditEvent } from './audit';
 import { containsSsnPattern } from '@/lib/pii';
 import { enforceRateLimit } from '@/lib/rate-limit';
+import { uploadEvidenceFile, getEvidenceFileSignedUrl } from '@/lib/supabase/evidence-storage';
 
 function buildCertificateCode(courseSlug: string): string {
   return `NFCAP-${courseSlug.toUpperCase().replace(/[^A-Z0-9]/g, '-')}`;
@@ -108,7 +110,7 @@ export async function recordQuizAttempt(
 export async function submitEvidence(
   courseSlug: string,
   description: string,
-  fileName?: string,
+  file: File | null,
 ): Promise<void> {
   const user = await requireUser();
   await enforceRateLimit(user.id, 'submit-evidence', 20, 15 * 60 * 1000);
@@ -116,15 +118,45 @@ export async function submitEvidence(
     throw new Error('Evidence description cannot contain a Social Security Number.');
   }
   const enrollment = await getOrCreateEnrollment(user.id, courseSlug);
+
+  // Uploaded before the DB write (CLAUDE.md performance conventions — never hold a pooler slot
+  // across a Storage call). Each submission gets its own storage object, same as WIOA documents —
+  // a rejected-then-resubmitted EvidenceSubmission is a new row with a new file, not an overwrite.
+  let filePath: string | undefined;
+  if (file && file.size > 0) {
+    filePath = `${user.id}/${enrollment.id}/${Date.now()}-${file.name}`;
+    await uploadEvidenceFile(filePath, file);
+  }
+
   await prisma.evidenceSubmission.create({
     data: {
       enrollmentId: enrollment.id,
       description,
-      fileName,
+      fileName: file && file.size > 0 ? file.name : undefined,
+      filePath,
       status: PrismaEvidenceStatus.PENDING,
     },
   });
   revalidateLearnerViews(user.id, courseSlug);
+}
+
+/** Short-lived signed URL to view an evidence attachment — the learner who submitted it, or any
+ * Admin reviewing it. Never a public URL, same pattern as `getWioaDocumentUrl`. */
+export async function getEvidenceFileUrl(evidenceSubmissionId: string): Promise<string> {
+  const user = await requireUser();
+  const evidence = await prisma.evidenceSubmission.findUniqueOrThrow({
+    where: { id: evidenceSubmissionId },
+    include: { enrollment: true },
+  });
+  const isOwner = evidence.enrollment.learnerId === user.id;
+  const isAdmin = getRole(user) === 'ADMIN';
+  if (!isOwner && !isAdmin) {
+    throw new Error('Not your evidence submission.');
+  }
+  if (!evidence.filePath) {
+    throw new Error('No file attached to this submission.');
+  }
+  return getEvidenceFileSignedUrl(evidence.filePath);
 }
 
 /** Admin-only evidence review (docs/product/PRODUCT_CONTEXT.md Section 5: a course completes only once

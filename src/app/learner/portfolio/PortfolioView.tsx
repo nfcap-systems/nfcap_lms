@@ -1,5 +1,6 @@
 import { Badge } from '@/components/ui';
 import { Icon } from '@/components/icons';
+import { EvidenceAttachmentLink } from '@/components/learner/EvidenceAttachmentLink';
 import type { Credential } from '@/lib/data/credentials';
 
 export function PortfolioView({
@@ -120,19 +121,11 @@ export function PortfolioView({
                       <div key={credential.certificateId} className="lrn-mcard" style={{ cursor: 'default' }}>
                         <div className="lrn-mcard-body">
                           <div className="t">{credential.evidence.description}</div>
-                          {credential.evidence.fileName && (
-                            <div
-                              style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: 6,
-                                fontSize: 12,
-                                color: 'var(--ink-muted)',
-                              }}
-                            >
-                              <Icon name="paperclip" className="h-3.5 w-3.5" />
-                              {credential.evidence.fileName}
-                            </div>
+                          {credential.evidence.hasFile && (
+                            <EvidenceAttachmentLink
+                              evidenceSubmissionId={credential.evidence.id}
+                              fileName={credential.evidence.fileName}
+                            />
                           )}
                           <Badge tone="success" style={{ width: 'fit-content' }}>
                             <Icon name="check" className="h-3 w-3" />
