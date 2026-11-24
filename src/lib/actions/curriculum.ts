@@ -2,7 +2,10 @@
 
 import { revalidatePath } from 'next/cache';
 import { prisma } from '@/lib/prisma';
-import { LessonType as PrismaLessonType, ContentBlockType as PrismaContentBlockType } from '@/generated/prisma/enums';
+import {
+  LessonType as PrismaLessonType,
+  ContentBlockType as PrismaContentBlockType,
+} from '@/generated/prisma/enums';
 import { requireAdmin } from './guard';
 import type { ContentBlockType, LessonType } from '@/lib/types';
 
@@ -170,10 +173,7 @@ export type UpdateBlockInput = {
   url?: string;
 };
 
-export async function updateContentBlock(
-  blockId: string,
-  block: UpdateBlockInput,
-): Promise<void> {
+export async function updateContentBlock(blockId: string, block: UpdateBlockInput): Promise<void> {
   await requireAdmin();
   const courseSlug = await courseSlugForBlock(blockId);
   await prisma.contentBlock.update({
@@ -220,12 +220,30 @@ export async function moveContentBlock(
   revalidateCourse(await courseSlugForLesson(lessonId));
 }
 
+// Quiz questions are shared bank items (docs/build/LAYER1_DATA_MODEL_DESIGN.md's Quiz Bank
+// cross-course sharing decision, 2026-11-24) — AssessmentQuestion is the join recording which
+// questions are attached to which course's Assessment, and in what order for that course. The
+// three functions below keep their original (courseSlug, ...) signatures so CurriculumBuilderView
+// needed no changes, but their behavior now accounts for sharing: deleting detaches rather than
+// destroying a question still used elsewhere, and editing revalidates every course that uses it,
+// not just the one the call came from.
+
+async function attachedCourseSlugs(questionId: string): Promise<string[]> {
+  const links = await prisma.assessmentQuestion.findMany({
+    where: { questionId },
+    select: { assessment: { select: { course: { select: { slug: true } } } } },
+  });
+  return links.map((l) => l.assessment.course.slug);
+}
+
 export type NewQuestionInput = {
   prompt: string;
   options: string[];
   correctIndex: number;
 };
 
+/** Creates a brand-new bank question and attaches it to this course — today's "add" behavior,
+ * just via the join now. Use attachExistingQuestion to reuse a question that already exists. */
 export async function addQuestion(courseSlug: string, question: NewQuestionInput): Promise<void> {
   await requireAdmin();
   const course = await prisma.course.findUniqueOrThrow({
@@ -234,19 +252,50 @@ export async function addQuestion(courseSlug: string, question: NewQuestionInput
   });
   if (!course.assessment)
     throw new Error(`Course "${courseSlug}" has no assessment to add a question to.`);
+  const assessmentId = course.assessment.id;
 
-  const maxOrder = await prisma.quizQuestion.aggregate({
-    where: { assessmentId: course.assessment.id },
+  const maxOrder = await prisma.assessmentQuestion.aggregate({
+    where: { assessmentId },
     _max: { order: true },
   });
-  await prisma.quizQuestion.create({
-    data: {
-      assessmentId: course.assessment.id,
-      prompt: question.prompt,
-      options: question.options,
-      correctIndex: question.correctIndex,
-      order: (maxOrder._max.order ?? -1) + 1,
-    },
+  await prisma.$transaction(async (tx) => {
+    const created = await tx.quizQuestion.create({
+      data: {
+        prompt: question.prompt,
+        options: question.options,
+        correctIndex: question.correctIndex,
+      },
+    });
+    await tx.assessmentQuestion.create({
+      data: { assessmentId, questionId: created.id, order: (maxOrder._max.order ?? -1) + 1 },
+    });
+  });
+  revalidateCourse(courseSlug);
+}
+
+/** Attaches a question that already exists in the bank to another course — the actual "reuse
+ * across courses" action. Idempotent: attaching twice is a no-op, not a duplicate-key error. */
+export async function attachExistingQuestion(
+  courseSlug: string,
+  questionId: string,
+): Promise<void> {
+  await requireAdmin();
+  const course = await prisma.course.findUniqueOrThrow({
+    where: { slug: courseSlug },
+    select: { assessment: { select: { id: true } } },
+  });
+  if (!course.assessment)
+    throw new Error(`Course "${courseSlug}" has no assessment to attach a question to.`);
+  const assessmentId = course.assessment.id;
+
+  const maxOrder = await prisma.assessmentQuestion.aggregate({
+    where: { assessmentId },
+    _max: { order: true },
+  });
+  await prisma.assessmentQuestion.upsert({
+    where: { assessmentId_questionId: { assessmentId, questionId } },
+    update: {},
+    create: { assessmentId, questionId, order: (maxOrder._max.order ?? -1) + 1 },
   });
   revalidateCourse(courseSlug);
 }
@@ -257,8 +306,10 @@ export type UpdateQuestionInput = {
   correctIndex: number;
 };
 
+/** Edits the shared question itself — no course context needed (a draft with zero attachments is
+ * editable too), every course using it gets revalidated regardless of which screen the edit came
+ * from. */
 export async function updateQuestion(
-  courseSlug: string,
   questionId: string,
   question: UpdateQuestionInput,
 ): Promise<void> {
@@ -271,13 +322,49 @@ export async function updateQuestion(
       correctIndex: question.correctIndex,
     },
   });
+  for (const slug of await attachedCourseSlugs(questionId)) revalidateCourse(slug);
+}
+
+/** Creates a question in the bank attached to nothing — a draft, visible in Quiz Bank's Drafts
+ * view, attachable to any course later via attachExistingQuestion. */
+export async function createDraftQuestion(question: NewQuestionInput): Promise<void> {
+  await requireAdmin();
+  await prisma.quizQuestion.create({
+    data: {
+      prompt: question.prompt,
+      options: question.options,
+      correctIndex: question.correctIndex,
+    },
+  });
+  revalidatePath('/admin/quiz-bank');
+}
+
+/** Detaches a question from this one course only. The question always survives as an unattached
+ * bank item afterward — Quiz Bank's unified list shows unattached questions as a normal, visible
+ * state ("Unattached" filter), not an orphan to silently clean up. Use deleteQuestionEverywhere to
+ * actually destroy a question. */
+export async function deleteQuestion(courseSlug: string, questionId: string): Promise<void> {
+  await requireAdmin();
+  const course = await prisma.course.findUniqueOrThrow({
+    where: { slug: courseSlug },
+    select: { assessment: { select: { id: true } } },
+  });
+  if (!course.assessment) return;
+
+  await prisma.assessmentQuestion.deleteMany({
+    where: { assessmentId: course.assessment.id, questionId },
+  });
   revalidateCourse(courseSlug);
 }
 
-export async function deleteQuestion(courseSlug: string, questionId: string): Promise<void> {
+/** Deletes a question from the bank entirely, regardless of how many courses use it — Quiz Bank's
+ * explicit "Delete everywhere", distinct from the per-course detach above. Cascades every
+ * AssessmentQuestion row via the schema's onDelete: Cascade. */
+export async function deleteQuestionEverywhere(questionId: string): Promise<void> {
   await requireAdmin();
+  const slugs = await attachedCourseSlugs(questionId);
   await prisma.quizQuestion.delete({ where: { id: questionId } });
-  revalidateCourse(courseSlug);
+  for (const slug of slugs) revalidateCourse(slug);
 }
 
 export type NewCriterionInput = {
@@ -368,8 +455,14 @@ export async function moveCriterion(
   const current = criteria[index];
   const neighbor = criteria[neighborIndex];
   await prisma.$transaction([
-    prisma.assessmentCriterion.update({ where: { id: current.id }, data: { order: neighbor.order } }),
-    prisma.assessmentCriterion.update({ where: { id: neighbor.id }, data: { order: current.order } }),
+    prisma.assessmentCriterion.update({
+      where: { id: current.id },
+      data: { order: neighbor.order },
+    }),
+    prisma.assessmentCriterion.update({
+      where: { id: neighbor.id },
+      data: { order: current.order },
+    }),
   ]);
   revalidateCourse(courseSlug);
 }

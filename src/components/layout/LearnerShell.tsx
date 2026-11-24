@@ -1,7 +1,5 @@
-'use client';
-
-import { useState } from 'react';
 import type { ReactNode } from 'react';
+import { LearnerFooter } from './LearnerFooter';
 import { LearnerHeader } from './LearnerHeader';
 import { learnerNav, wioaNavItem, type NavItem } from '@/lib/nav';
 
@@ -18,10 +16,7 @@ export function LearnerShell({
   learnerInitial: string;
   showWioaNav?: boolean;
 }) {
-  const [mobileOpen, setMobileOpen] = useState(false);
-  const navItems: NavItem[] = showWioaNav
-    ? [...learnerNav.slice(0, 4), wioaNavItem, ...learnerNav.slice(4)]
-    : learnerNav;
+  const navItems: NavItem[] = showWioaNav ? [...learnerNav, wioaNavItem] : learnerNav;
 
   return (
     <div className="lshell-page" data-system="learner">
@@ -30,11 +25,10 @@ export function LearnerShell({
         learnerName={learnerName}
         learnerEmail={learnerEmail}
         learnerInitial={learnerInitial}
-        mobileOpen={mobileOpen}
-        onToggleMobile={() => setMobileOpen((open) => !open)}
       />
       <main className="lshell-main">
-        <div className="lshell-card">{children}</div>
+        {children}
+        <LearnerFooter nested />
       </main>
     </div>
   );

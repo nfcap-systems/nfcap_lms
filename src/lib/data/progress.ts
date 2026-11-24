@@ -15,6 +15,9 @@ export type EvidenceSubmission = {
    * and are fetched with `getCriterionFileUrl` (docs/plans/phase-3-and-design-migration-kickoff.md
    * Step 2, feature #12). */
   hasSubmissionFile: boolean;
+  /** Total photo count across the legacy course-level file (0 or 1) and every per-criterion
+   * capture — the Review Queue's real "N photos" preview (ADM10), not a hardcoded "1". */
+  fileCount: number;
   /** True when this submission was made through the per-criterion guided capture flow (feature
    * #9) — i.e. it has CriterionAssessment rows of its own. False for submissions made before that
    * flow existed, even on a course that has assessment criteria now: those still carry their
@@ -79,6 +82,9 @@ function mapEnrollment(enrollment: DbEnrollment): CourseProgress {
             Boolean(evidence.filePath) ||
             evidence.criterionAssessments.some((ca) => Boolean(ca.learnerFilePath)),
           hasSubmissionFile: Boolean(evidence.filePath),
+          fileCount:
+            (evidence.filePath ? 1 : 0) +
+            evidence.criterionAssessments.filter((ca) => Boolean(ca.learnerFilePath)).length,
           isPerCriterion: evidence.criterionAssessments.length > 0,
           status: evidence.status.toLowerCase() as EvidenceStatus,
           submittedAt: evidence.submittedAt.toISOString(),
@@ -132,6 +138,18 @@ export async function getProgressByLearner(
     result[enrollment.learnerId][enrollment.course.slug] = mapEnrollment(enrollment);
   }
   return result;
+}
+
+/** Count of enrollments whose most recent evidence submission is still pending — Admin's sidebar
+ * promo banner. Narrow select (just the latest status per enrollment), not the full roster+
+ * progress scan /admin/reviews' page.tsx does to build the actual queue rows. */
+export async function getPendingReviewCount(): Promise<number> {
+  const enrollments = await prisma.enrollment.findMany({
+    select: {
+      evidenceSubmissions: { orderBy: { submittedAt: 'desc' }, take: 1, select: { status: true } },
+    },
+  });
+  return enrollments.filter((e) => e.evidenceSubmissions[0]?.status === 'PENDING').length;
 }
 
 export type CourseUnlockRecord = { source: 'WIOA_FUNDING' | 'ADMIN_ASSIGNMENT'; grantedAt: Date };

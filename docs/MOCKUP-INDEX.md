@@ -49,6 +49,43 @@ future session:** call the Artifact tool's `list` action with `scope: "files"` o
   type on every publish); the board table and counts below should match it exactly. If they don't,
   this file is stale, full stop.
 
+## ⏪ Learner shell reversed to two-row top bar (variant B) — 2026-11-23
+
+**Reverses the "left sidebar wins" direction recorded earlier the same day.** `LearnerHeader.dc.html`
+and every LRN board importing it now use `temp_ss/mockups/learner-nav-comparison.html`'s variant B —
+a two-row top bar (114px total: 68px brand/search/account row + 46px underline-active nav row), not
+the sidebar. Logged here and in `docs/plans/phase-3-and-design-migration-kickoff.md`.
+
+Evidence, not re-argued here:
+- The real learner nav is 5 items today (6 with Funding) per `src/lib/nav.ts` — Messages is Phase 6
+  and isn't in that file at all. The "7 items don't fit a top bar" stress test behind the sidebar
+  recommendation was hypothetical, not the real item count.
+- Both the live code (`src/components/layout/LearnerHeader.tsx`) and the canvas
+  (`LearnerHeader.dc.html`) were already a top bar before this session — the sidebar was the proposed
+  change, not the status quo. B is the status quo refined, not a new pattern.
+- The "Ask AI (Soon)" pill and the "Avg. quiz score" stat tile drawn on variant B (and now on
+  `LRN01-Home`) are by explicit user decision 2026-11-23 and are **not** in the 65-feature scope: no
+  AI feature exists in `NFCAP_LMS_Production_Scope_Summary_Client.md`, and no quiz-average metric is
+  computed anywhere in the codebase. Flagged here so a future reader doesn't mistake either for a
+  committed feature.
+
+Mechanically: `LearnerHeader.dc.html` dropped its `fundingContext`/`messagesContext` context-swap
+props — all six nav items render always now, no `<sc-if>` hiding. All 26 importing boards had their
+`hint-size`, wrapper `min-height` and `$preview` height bumped +50px for the taller header (confirmed
+non-importers: `LRN02b-PathwayLocked`, `LRN04b-PlayerPhone`, `LRN05b-QuizQuestion`,
+`LRN06c-EvidenceCapturePhone`, `LRN09-PublicVerify`, `LRN10b-EligibilitySelfCheck`, `LRN12-SignUp`,
+`LRN15-MessagingConversation` have no header at all; `LRN10e-FundingIntakeForm` and
+`LRN10f-NoOfficeMatched` hand-copy the *old* one-row header markup inline rather than importing the
+component — **not fixed in this pass**, flagged as a known drift since the brief scoped the sweep to
+real importers only). `LRN01-Home` rebuilt to variant B's body (greeting + 3 stat tiles, announcement
+banner, Continue/Catalog/Pathway/Portfolio, right rail). `FND13-Shells` and `SITE05-NavPerRole`
+updated to match; `Main.dc.html`'s cover page carries the same note.
+
+Also fixed: `temp_ss/mockups/learner-nav-comparison.html`'s own verdict paragraph claimed "both fit
+all 7 items" — false. B fits six as text links and demotes Messages to a utility icon with
+`overflow-x: auto` masking anything that still doesn't fit; only the sidebar (A) fit all 7. Corrected
+so the comparison file doesn't carry a wrong fact now that it's the record of why B was chosen.
+
 ## ⚠️ Routing gaps — not real routes yet, flag for Plane tickets after gate NFCAP-6
 
 User decision 2026-11-19: this session stays design-canvas only (`docs/DEV-APPROACH.md`'s lead/builder
@@ -702,8 +739,8 @@ status" dropdown only ever offering the real next step or Closed/Ineligible, nev
 | `ADM03-Learners` | 4 Admin | Core | exists | | |
 | `ADM04-LearnerDetail` | 4 Admin | Core | exists | | |
 | `ADM05-Courses` | 4 Admin | Core | exists | | |
-| `ADM06-CurriculumBuilder` | 4 Admin | 1/3/7 | extend | | |
-| `ADM07-CriteriaAuthoring` | 4 Admin | 3 | new | | |
+| `ADM06-CurriculumBuilder` | 4 Admin | 1/3/7 | extend | | **Redrawn 2026-11-24** to match the real shipped `CurriculumBuilderView.tsx`. Previous version showed every section's lessons flat-stacked on one page, with a per-section "quiz" row and an inline "Practical evidence" lesson row — neither is real: `Lesson.type` is only video/text/image/resource, Knowledge Assessment is one course-level quiz (not per-section), and evidence criteria live in their own rail panel (`ADM07`), not an embedded lesson row. Now draws the real left rail (General Information / Sections / Assessment Criteria / Knowledge Assessment) with one selected section's real lesson list on the right, same rail `ADM07` uses. |
+| `ADM07-CriteriaAuthoring` | 4 Admin | 3 | new | | **Redrawn 2026-11-24** — not a standalone page. Shown as one of `ADM06-CurriculumBuilder`'s in-page rail panels (General Information / Sections / **Assessment Criteria** / Knowledge Assessment), reached by clicking "Assessment Criteria" in that rail, same URL as `ADM06` — matches the real shipped `CurriculumBuilderView.tsx`. Both `ADM06` and `ADM07` now draw the same real rail. |
 | `ADM08-Pathway` | 4 Admin | 1/7 | extend | | `/admin/pathway` + `/apprenticeship`; keyboard reorder is Phase 7. ⚠️ Q4. **Renumbered from `ADM11` 2026-11-20** — resequenced into Course/curriculum-setup cluster. |
 | `ADM09-QuizAuthoring` | 4 Admin | 6 | new | | Quiz Engine Depth, admin side (32h). Added 2026-11-18. **Renumbered from `ADM17` 2026-11-20** — resequenced into Course/curriculum-setup cluster. |
 | `ADM10-ReviewQueue` | 4 Admin | 3 | new | | **Renumbered from `ADM08` 2026-11-20** — resequenced into Evidence-review cluster. |
@@ -731,7 +768,7 @@ status" dropdown only ever offering the real next step or Closed/Ineligible, nev
 | `CRD05-StalledCases` | 5 Coordinator | 5 | new | | |
 | `WIOA01-Boards` | 6 WIOA config | 0 | exists | | |
 | `WIOA02-BoardDetail` | 6 WIOA config | 0 | exists | | |
-| `WIOA03-DocumentRequirements` | 6 WIOA config | 0/5 | extend | | ⚠️ Q8 |
+| `WIOA03-DocumentRequirements` | 6 WIOA config | 0/5 | extend | | ⚠️ Q8. **Redrawn 2026-11-24** — was a flat page stacking every board's full requirement list; user picked "board list + detail split" (master-detail) after a 3-option comparison (`temp_ss/wioa03-docreq-variants.html`: board tabs / collapsed accordion / list+detail split). Now a persistent left-hand board list with the selected board's requirements + inline add/edit panel in the right pane. |
 | `WIOA04-EmailTemplate` | 6 WIOA config | 0/5 | extend | | Phase 5 adds delivery + failure visibility |
 | `PTN01-Roster` | 7 Partner staff | 0/5 | extend | | R4: no funding amounts |
 | `PTN02-LearnerDetail` | 7 Partner staff | 0/5 | extend | | |

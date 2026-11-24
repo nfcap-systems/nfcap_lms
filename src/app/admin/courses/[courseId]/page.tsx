@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { Icon } from '@/components/icons';
-import { Badge } from '@/components/admin-ui/badge';
+import { Badge } from '@/components/ui';
 import { CurriculumBuilderView } from '@/components/admin/CurriculumBuilderView';
 import { getAssessmentCriteria, getCourseBySlug } from '@/lib/data/courses';
 
@@ -30,29 +30,23 @@ export default async function CurriculumBuilderPage({
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="flex flex-col gap-2">
-          <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
-            Curriculum Builder
+          <p className="text-xs" style={{ color: 'var(--ink-muted)' }}>
+            Courses / <b style={{ color: 'var(--ink)' }}>{course.title}</b> / Curriculum
           </p>
-          <h1 className="text-xl font-semibold text-foreground">{course.title}</h1>
           <div className="flex flex-wrap items-center gap-1.5">
-            <Badge variant="outline">{course.category}</Badge>
+            <Badge tone="neutral">{course.category}</Badge>
             {course.access === 'restricted' && (
-              <Badge variant="outline">
+              <Badge tone="neutral">
                 <Icon name="lock" className="size-3" />
                 Restricted
               </Badge>
             )}
-            <Badge variant={course.published ? 'success' : 'outline'}>
+            <Badge tone={course.published ? 'success' : 'neutral'}>
               {course.published ? 'Published' : 'Unpublished'}
             </Badge>
           </div>
         </div>
-        <Link
-          href={`/learner/courses/${course.id}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex h-8 items-center justify-center gap-1.5 rounded-md border bg-transparent px-3 text-sm font-medium text-foreground transition-colors hover:bg-muted"
-        >
+        <Link href={`/learner/courses/${course.id}`} target="_blank" rel="noopener noreferrer" className="btn-secondary btn-sm">
           <Icon name="arrow-right" className="size-4" />
           Preview as Learner
         </Link>

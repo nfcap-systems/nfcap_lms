@@ -505,6 +505,10 @@ async function main() {
     await prisma.section.deleteMany({ where: { courseId: course.id } });
     await prisma.assessment.deleteMany({ where: { courseId: course.id } });
     await prisma.assessmentCriterion.deleteMany({ where: { courseId: course.id } });
+    // Deleting the Assessment cascades its AssessmentQuestion join rows, but the shared
+    // QuizQuestion bank rows themselves survive as orphans (zero attachments) unless cleaned up —
+    // seed questions are never shared across courses, so any now-orphaned row is safe to delete.
+    await prisma.quizQuestion.deleteMany({ where: { assessments: { none: {} } } });
 
     for (const [sectionIndex, section] of c.sections.entries()) {
       await prisma.section.create({
@@ -538,10 +542,14 @@ async function main() {
         passThreshold: c.passThreshold,
         questions: {
           create: c.questions.map((q, questionIndex) => ({
-            prompt: q.prompt,
-            options: q.options,
-            correctIndex: q.correctIndex,
             order: questionIndex,
+            question: {
+              create: {
+                prompt: q.prompt,
+                options: q.options,
+                correctIndex: q.correctIndex,
+              },
+            },
           })),
         },
       },
@@ -559,6 +567,30 @@ async function main() {
     });
 
     console.log(`Seeded course: ${c.title} (${c.slug})`);
+  }
+
+  // PLACEHOLDER-by-precedent content, same reasoning as the AssessmentCriterion placeholders
+  // above: real WIOA eligibility-screening questions are a client/NFCAP policy decision, not an
+  // engineering one, and this codebase doesn't invent WIOA compliance language. This one question
+  // is the actual example drawn on the board (LRN10b-EligibilitySelfCheck.dc.html, "Question 2 of
+  // 4") — not fabricated, just not the full 4-question set, since the other three were never
+  // specified beyond that counter. Seeded idempotently (skip if any row already exists) so a real
+  // question set can replace it later without this script fighting that content.
+  const eligibilityQuestionCount = await prisma.eligibilityQuestion.count();
+  if (eligibilityQuestionCount === 0) {
+    await prisma.eligibilityQuestion.create({
+      data: {
+        prompt: 'Are you currently working, or have you worked in the last 12 months?',
+        options: [
+          "Yes, I'm currently working",
+          'No, but I worked within the last 12 months',
+          "No, it's been longer than 12 months",
+        ],
+        disqualifyingIndex: null,
+        order: 0,
+      },
+    });
+    console.log('Seeded 1 eligibility question (board example, LRN10b).');
   }
 }
 

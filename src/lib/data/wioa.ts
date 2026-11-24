@@ -151,6 +151,9 @@ export type WioaCaseSummary = {
   status: WioaCaseStatus;
   boardName: string | null;
   createdAt: Date;
+  /** Most recent WioaStatusHistory row's timestamp, or createdAt if the case has no history yet
+   * (CRD05-StalledCases' "Stalled since" column — getStalledCases below filters on this). */
+  lastStatusChangeAt: Date;
   pendingDocumentCount: number;
   /** MISSING or REJECTED documents — the ones that need Partner Staff follow-up, distinct from
    * `pendingDocumentCount` (UPLOADED/UNDER_REVIEW, awaiting staff review). PTN01-Roster's
@@ -194,6 +197,7 @@ export async function getWioaCases(
           take: 1,
         },
         communications: { orderBy: { sentAt: 'desc' }, take: 1 },
+        statusHistory: { orderBy: { changedAt: 'desc' }, take: 1 },
       },
     }),
   );
@@ -220,6 +224,7 @@ export async function getWioaCases(
       status: c.status,
       boardName: c.workforceBoard?.name ?? null,
       createdAt: c.createdAt,
+      lastStatusChangeAt: c.statusHistory[0]?.changedAt ?? c.createdAt,
       pendingDocumentCount: c.documents.filter(
         (d) => d.status === 'UPLOADED' || d.status === 'UNDER_REVIEW',
       ).length,
@@ -241,6 +246,37 @@ export async function getWioaCases(
     });
   }
   return result;
+}
+
+const STALL_LIKELY_CAUSE: Partial<Record<WioaCaseStatus, string>> = {
+  AWAITING_RESPONSE: 'No reply from board contact to outreach email',
+  DOCUMENTS_PENDING: 'Required documents not yet uploaded by trainee',
+  CLOSED_INELIGIBLE: 'Closed / Ineligible — no action expected',
+  ELIGIBILITY_UNDER_REVIEW: 'Awaiting board eligibility determination',
+  INTAKE_APPOINTMENT_SCHEDULED: 'Awaiting the scheduled intake appointment',
+  TRAINING_AUTHORIZATION_PENDING: 'Awaiting board training authorization',
+};
+
+export type StalledCase = WioaCaseSummary & { daysStalled: number; likelyCause: string };
+
+/** CRD05-StalledCases — a pre-filtered view of getWioaCases, not a separate dataset, matching
+ * the board's own "dtcard-desc" framing. A case counts as stalled at `thresholdDays` with no
+ * status change, open or closed (a closed case can still show up — "no action expected" is
+ * itself a valid likely-cause row, per the board's own third example row). */
+export async function getStalledCases(
+  viewer: SessionContext,
+  thresholdDays = 14,
+): Promise<StalledCase[]> {
+  const cases = await getWioaCases(viewer);
+  const cutoff = Date.now() - thresholdDays * 86_400_000;
+  return cases
+    .filter((c) => c.lastStatusChangeAt.getTime() <= cutoff)
+    .map((c) => ({
+      ...c,
+      daysStalled: Math.floor((Date.now() - c.lastStatusChangeAt.getTime()) / 86_400_000),
+      likelyCause: STALL_LIKELY_CAUSE[c.status] ?? 'No status change recorded',
+    }))
+    .sort((a, b) => b.daysStalled - a.daysStalled);
 }
 
 export type UpcomingAppointment = {
@@ -283,6 +319,54 @@ export async function getUpcomingWioaAppointments(
   }));
 }
 
+export type LearnerFundingStatus = 'funded' | 'pending' | 'self_pay';
+
+const FUNDED_CASE_STATUSES: WioaCaseStatus[] = [
+  'TUITION_APPROVED',
+  'APPRENTICESHIP_ENROLLMENT_COMPLETE',
+];
+
+/** Per-learner funding status for the Admin Dashboard's and Learners roster's "Status" column
+ * (ADM02/ADM03) — batched (one query for every learnerId requested, not a per-row lookup, per
+ * CLAUDE.md's "no per-entity queries in a loop"). A learner's most recent open case decides their
+ * status; a learner with no open case is 'self_pay' (the real default — not every learner has a
+ * WIOA case at all). */
+export async function getFundingStatusForLearners(
+  viewer: SessionContext,
+  learnerIds: string[],
+): Promise<Record<string, LearnerFundingStatus>> {
+  if (learnerIds.length === 0) return {};
+  const cases = await withRlsContext(viewer, (tx) =>
+    tx.wioaCase.findMany({
+      where: { learnerId: { in: learnerIds }, closedAt: null },
+      orderBy: { createdAt: 'desc' },
+      select: { learnerId: true, status: true },
+    }),
+  );
+  const latestByLearner = new Map<string, WioaCaseStatus>();
+  for (const c of cases) {
+    if (!latestByLearner.has(c.learnerId)) latestByLearner.set(c.learnerId, c.status);
+  }
+  const result: Record<string, LearnerFundingStatus> = {};
+  for (const id of learnerIds) {
+    const status = latestByLearner.get(id);
+    result[id] = !status
+      ? 'self_pay'
+      : FUNDED_CASE_STATUSES.includes(status)
+        ? 'funded'
+        : 'pending';
+  }
+  return result;
+}
+
+/** Count of currently-open WIOA cases whose funding is actually approved — the Admin Dashboard's
+ * "Funded Cases (WIOA)" KPI (ADM02). Counts cases, matching the board's own framing, not learners. */
+export async function getFundedCaseCount(viewer: SessionContext): Promise<number> {
+  return withRlsContext(viewer, (tx) =>
+    tx.wioaCase.count({ where: { closedAt: null, status: { in: FUNDED_CASE_STATUSES } } }),
+  );
+}
+
 export type WioaFundingRecord = {
   id: string;
   trainingProgram: string | null;
@@ -307,7 +391,13 @@ export type WioaCaseDetail = WioaCaseRecord & {
   learnerEmail: string;
   assignedPartnerStaffId: string | null;
   assignedPartnerStaffName: string | null;
-  statusHistory: { id: string; status: WioaCaseStatus; changedAt: Date; changedBy: string }[];
+  statusHistory: {
+    id: string;
+    status: WioaCaseStatus;
+    changedAt: Date;
+    changedBy: string;
+    changedByName: string;
+  }[];
   communications: WioaCommunicationRecord[];
   /** Only populated when `includeFunding` is passed (Coordinator dashboard) — Partner Staff's
    * fetch never requests it, so funding data never reaches the client bundle for that role
@@ -346,6 +436,14 @@ export async function getWioaCaseDetail(
     ? await getLearnerById(c.assignedPartnerStaffId)
     : undefined;
 
+  const changedByIds = [...new Set(c.statusHistory.map((h) => h.changedBy))];
+  const changedByNames = new Map(
+    (await Promise.all(changedByIds.map((id) => getLearnerById(id)))).map((user, i) => [
+      changedByIds[i],
+      user?.name ?? 'Unknown',
+    ]),
+  );
+
   return {
     id: c.id,
     courseId: c.course.slug,
@@ -373,7 +471,10 @@ export async function getWioaCaseDetail(
       rejectionReason: d.rejectionReason,
     })),
     appointments: c.appointments,
-    statusHistory: c.statusHistory,
+    statusHistory: c.statusHistory.map((h) => ({
+      ...h,
+      changedByName: changedByNames.get(h.changedBy) ?? 'Unknown',
+    })),
     communications: c.communications.map((comm) => ({
       id: comm.id,
       courseId: comm.courseId,
@@ -670,7 +771,8 @@ export async function getWioaReportingSummary(
           ),
           fundedCases,
           fundingRequestsSubmitted,
-          approvalRate: fundingRequestsSubmitted > 0 ? fundedCases / fundingRequestsSubmitted : null,
+          approvalRate:
+            fundingRequestsSubmitted > 0 ? fundedCases / fundingRequestsSubmitted : null,
           avgDaysToApproval:
             allDaysToApproval.length > 0
               ? allDaysToApproval.reduce((a, x) => a + x, 0) / allDaysToApproval.length

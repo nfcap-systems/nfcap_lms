@@ -146,7 +146,7 @@ export function WioaReportsView({
                     <Icon name="award" className="h-4 w-4" />
                   </div>
                   <span className="n">{formatCurrency(fundingImpact.totalApprovedAmount)}</span>
-                  <span className="l">Total funding approved</span>
+                  <span className="l">Total funding unlocked</span>
                 </div>
                 <div className="mcard">
                   <div className="ic">

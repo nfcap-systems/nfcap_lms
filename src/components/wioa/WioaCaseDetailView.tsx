@@ -218,10 +218,6 @@ export function WioaCaseDetailView({
               </div>
             </div>
 
-            <div style={{ height: 1, background: 'var(--nfcap-border)', margin: '0 0 20px' }} />
-
-            <StatusCard wioaCase={wioaCase} />
-
             {partnerStaffRoster && (
               <div style={{ marginTop: 20 }}>
                 <div className="ov-h">Assignment</div>
@@ -344,45 +340,62 @@ export function WioaCaseDetailView({
       )}
 
       {tab === 'documents' && (
-        <Card>
-          <CardContent className="flex flex-col gap-3">
-            {wioaCase.documents.length === 0 ? (
-              <p className="text-sm text-[var(--ink-muted)]">
-                No documents required for this case.
-              </p>
-            ) : (
-              wioaCase.documents.map((doc) => (
-                <DocumentReviewRow key={doc.id} doc={doc} startTransition={startTransition} />
-              ))
-            )}
-          </CardContent>
-        </Card>
+        <div className="doccard" style={{ marginTop: 18 }}>
+          <div className="doccard-head">
+            <div className="doccard-title">Required documents</div>
+            <div className="doccard-desc">
+              {wioaCase.boardName
+                ? `${wioaCase.boardName}'s standard checklist`
+                : 'Standard checklist'}
+              {wioaCase.documents.length > 0 &&
+                ` — ${wioaCase.documents.length} requirement${wioaCase.documents.length === 1 ? '' : 's'}`}
+            </div>
+          </div>
+          {wioaCase.documents.length === 0 ? (
+            <p className="text-sm text-[var(--ink-muted)]" style={{ padding: '14px 18px' }}>
+              No documents required for this case.
+            </p>
+          ) : (
+            wioaCase.documents.map((doc) => (
+              <DocumentReviewRow key={doc.id} doc={doc} startTransition={startTransition} />
+            ))
+          )}
+        </div>
       )}
 
       {tab === 'history' && (
-        <Card>
-          <CardContent className="flex flex-col gap-4">
-            <div>
-              <p className="mb-2 text-sm font-medium text-[var(--ink)]">Status changes</p>
-              <div className="flex flex-col gap-2">
-                {wioaCase.statusHistory.map((h) => (
-                  <div key={h.id} className="flex items-center justify-between text-sm">
-                    <span className="text-[var(--ink)]">{WIOA_STATUS_LABEL[h.status]}</span>
-                    <span className="text-xs text-[var(--ink-muted)]">
-                      {new Date(h.changedAt).toLocaleString(undefined, {
-                        month: 'short',
-                        day: 'numeric',
-                        year: 'numeric',
-                        hour: 'numeric',
-                        minute: '2-digit',
-                      })}
-                    </span>
+        <div
+          style={{ paddingTop: 18, display: 'grid', gridTemplateColumns: '1fr 1px 320px', gap: 28 }}
+        >
+          <div>
+            <Card style={{ marginBottom: 24 }}>
+              <CardContent>
+                <StatusCard wioaCase={wioaCase} />
+              </CardContent>
+            </Card>
+
+            <p className="panel-h">Status history</p>
+            <p className="panel-sub">
+              Every transition this case has recorded, oldest to most recent.
+            </p>
+            <div className="tl">
+              {[...wioaCase.statusHistory].reverse().map((h, i, arr) => {
+                const isCurrent = i === arr.length - 1;
+                return (
+                  <div key={h.id} className={isCurrent ? 'tlrow current' : 'tlrow'}>
+                    <div className="tldot" />
+                    <div className="tl-status">{WIOA_STATUS_LABEL[h.status]}</div>
+                    <div className="tl-meta">
+                      {formatDate(h.changedAt)} — recorded by {h.changedByName}
+                      {isCurrent && ' · current status'}
+                    </div>
                   </div>
-                ))}
-              </div>
+                );
+              })}
             </div>
+
             {wioaCase.communications.length > 0 && (
-              <div className="border-t border-[var(--nfcap-border)] pt-4">
+              <div className="border-t border-[var(--nfcap-border)] pt-4 mt-5">
                 <p className="mb-2 text-sm font-medium text-[var(--ink)]">Outreach log</p>
                 <div className="flex flex-col gap-2">
                   {wioaCase.communications.map((c) => (
@@ -394,8 +407,22 @@ export function WioaCaseDetailView({
                 </div>
               </div>
             )}
-          </CardContent>
-        </Card>
+          </div>
+
+          <div className="ov-sep" />
+
+          <div>
+            <p className="panel-h" style={{ fontSize: 13.5 }}>
+              Why this matters
+            </p>
+            <p style={{ fontSize: 12.5, color: 'var(--ink-muted)', lineHeight: 1.6 }}>
+              Several of the funding journey&apos;s steps — orientation, CalJOBS, the application,
+              the intake appointment and the eligibility decision — happen with the workforce board,
+              outside this system. Coordinators record each status here as it&apos;s confirmed; the
+              record is never editable after the fact, only appended to.
+            </p>
+          </div>
+        </div>
       )}
     </div>
   );
@@ -450,7 +477,10 @@ function DocumentReviewRow({
     <div className="flex flex-col gap-2 rounded-lg border border-[var(--nfcap-border)] p-3">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
-          <p className="text-sm font-medium text-[var(--ink)]">{doc.requirementName}</p>
+          <p className="flex items-center gap-1.5 text-sm font-medium text-[var(--ink)]">
+            <Icon name="file-text" className="size-3.5 shrink-0 text-[var(--ink-muted)]" />
+            {doc.requirementName}
+          </p>
           {doc.fileName && (
             <button
               type="button"
@@ -803,9 +833,13 @@ function StatusCard({ wioaCase }: { wioaCase: WioaCaseDetail }) {
 
   return (
     <div>
-      <div className="ov-h">Update status</div>
+      <p className="panel-h">Record a status change</p>
+      <p className="panel-sub">
+        Current status: {WIOA_STATUS_LABEL[wioaCase.status]} — set when the real-world step (outside
+        this system) actually happens.
+      </p>
       <div className="flex flex-col gap-3">
-        <Field label="Advance to" htmlFor="nextStatus" error={error || undefined}>
+        <Field label="New status" htmlFor="nextStatus" error={error || undefined}>
           <Select
             id="nextStatus"
             value={nextStatus}
@@ -845,7 +879,7 @@ function StatusCard({ wioaCase }: { wioaCase: WioaCaseDetail }) {
         )}
 
         <Button size="sm" disabled={!nextStatus || pending} onClick={advance} className="w-fit">
-          {pending ? 'Updating…' : 'Confirm status change'}
+          {pending ? 'Saving…' : 'Save status'}
         </Button>
       </div>
     </div>

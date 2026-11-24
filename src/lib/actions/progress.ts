@@ -69,6 +69,9 @@ async function getOrCreateEnrollment(learnerId: string, courseSlug: string) {
  * to demo a self-pay learner reaching a RESTRICTED course without a WioaCase. */
 export async function grantCourseUnlock(learnerId: string, courseSlug: string): Promise<void> {
   const admin = await requireAdmin();
+  // AdminCourse.id IS the DB's slug here (src/lib/data/courses.ts's mapCourse — `id: db.slug`,
+  // deliberately, so routes/lookups stay on the readable slug everywhere), so the one caller
+  // (CourseAccessCard) passing course.id as this param is correct, not a mismatch.
   const course = await prisma.course.findUniqueOrThrow({
     where: { slug: courseSlug },
     select: { id: true },
@@ -112,6 +115,25 @@ export async function recordQuizAttempt(
 ): Promise<void> {
   const user = await requireUser();
   const enrollment = await getOrCreateEnrollment(user.id, courseSlug);
+
+  // Quiz Engine Depth (docs/build/LAYER1_DATA_MODEL_DESIGN.md) — Assessment.maxAttempts null
+  // means unlimited, reproducing today's behavior exactly for every assessment that hasn't
+  // opted into the new field.
+  const assessment = await prisma.assessment.findUnique({
+    where: { courseId: enrollment.courseId },
+    select: { maxAttempts: true },
+  });
+  if (assessment?.maxAttempts != null) {
+    const attemptCount = await prisma.quizAttempt.count({
+      where: { enrollmentId: enrollment.id },
+    });
+    if (attemptCount >= assessment.maxAttempts) {
+      throw new Error(
+        `You have used all ${assessment.maxAttempts} allowed attempts for this quiz.`,
+      );
+    }
+  }
+
   await prisma.quizAttempt.create({ data: { enrollmentId: enrollment.id, scorePercent, passed } });
   revalidateLearnerViews(user.id, courseSlug);
 }

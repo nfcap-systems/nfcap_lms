@@ -6,6 +6,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { Badge, Button } from '@/components/ui';
 import { Icon } from '@/components/icons';
+import { LockedCourseDialog, LOCKED_COURSE_COPY } from '@/components/learner/LockedCourseDialog';
 import { courseLessonCount } from '@/lib/types';
 import { getCourseStatus, courseStatusLabel, courseStatusTone } from '@/lib/course-status';
 import type { AdminCourse } from '@/lib/data/courses';
@@ -35,6 +36,7 @@ export function MyLearningView({
 }) {
   const router = useRouter();
   const [tab, setTab] = useState<Tab>('in-progress');
+  const [lockedCourse, setLockedCourse] = useState<AdminCourse | null>(null);
 
   const completedCourses = pathway.filter((c) => !!progressMap[c.id]?.certificateId);
   const completedModules = completedCourses.length;
@@ -52,20 +54,93 @@ export function MyLearningView({
         >
           My Learning
         </div>
+        <div style={{ display: 'flex', gap: 28, borderBottom: '1px solid var(--nfcap-border)' }}>
+          <span className="lrn-tab on">In Progress</span>
+          <span className="lrn-tab">Completed</span>
+          <span className="lrn-tab">Certificates</span>
+        </div>
         <div
           style={{
-            borderRadius: 'var(--nfcap-radius-lg)',
-            background: 'var(--surface-muted)',
+            background: 'var(--surface)',
             border: '1px solid var(--nfcap-border)',
-            padding: 28,
+            borderRadius: 'var(--nfcap-radius-lg)',
+            boxShadow: 'var(--nfcap-shadow-sm)',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            textAlign: 'center',
+            gap: 18,
+            padding: '88px 24px',
+            marginTop: 8,
           }}
         >
-          <p style={{ fontSize: 13.5, color: 'var(--ink-muted)', marginBottom: 12 }}>
-            You&apos;re not enrolled in any courses yet.
-          </p>
-          <Button size="sm" onClick={() => router.push('/learner/explore')}>
-            Browse Course Catalog
-          </Button>
+          <div
+            style={{
+              width: 64,
+              height: 64,
+              borderRadius: '50%',
+              background: 'var(--surface-muted)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: 'var(--ink-muted)',
+            }}
+          >
+            <Icon name="compass" className="h-7 w-7" />
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxWidth: 430 }}>
+            <b style={{ fontSize: 19, fontFamily: 'var(--font-display)', color: 'var(--ink)' }}>
+              No courses in your pathway yet
+            </b>
+            <div style={{ fontSize: 13.5, color: 'var(--ink-muted)', lineHeight: 1.6 }}>
+              Once your WIOA funding is approved, your assigned pathway unlocks here automatically.
+              You can also browse the open catalog and enroll in a self-paced course today — no
+              funding decision required.
+            </div>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 4 }}>
+            <Button onClick={() => router.push('/learner/explore')}>Browse Course Catalog</Button>
+            <Button variant="secondary" onClick={() => router.push('/learner/funding')}>
+              Check funding status
+            </Button>
+          </div>
+        </div>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 12,
+            background: '#eff6ff',
+            border: '1px solid #dbeafe',
+            borderRadius: 'var(--nfcap-radius-lg)',
+            padding: '16px 20px',
+          }}
+        >
+          <div
+            style={{
+              width: 34,
+              height: 34,
+              borderRadius: 'var(--nfcap-radius-md)',
+              background: '#dbeafe',
+              color: 'var(--nfcap-accent)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0,
+            }}
+          >
+            <Icon name="alert-circle" className="h-4 w-4" />
+          </div>
+          <div style={{ fontSize: 13, color: 'var(--ink)', lineHeight: 1.5 }}>
+            Already submitted funding outreach? Status updates appear on{' '}
+            <Link
+              href="/learner/funding"
+              style={{ color: 'var(--nfcap-accent)', fontWeight: 600, textDecoration: 'underline' }}
+            >
+              Funding Status
+            </Link>{' '}
+            as your coordinator reviews your case.
+          </div>
         </div>
       </div>
     );
@@ -87,21 +162,21 @@ export function MyLearningView({
       <div style={{ display: 'flex', gap: 28, borderBottom: '1px solid var(--nfcap-border)' }}>
         <button
           type="button"
-          className={tab === 'in-progress' ? 'ptab on' : 'ptab'}
+          className={tab === 'in-progress' ? 'lrn-tab on' : 'lrn-tab'}
           onClick={() => setTab('in-progress')}
         >
           In Progress
         </button>
         <button
           type="button"
-          className={tab === 'completed' ? 'ptab on' : 'ptab'}
+          className={tab === 'completed' ? 'lrn-tab on' : 'lrn-tab'}
           onClick={() => setTab('completed')}
         >
           Completed
         </button>
         <button
           type="button"
-          className={tab === 'certificates' ? 'ptab on' : 'ptab'}
+          className={tab === 'certificates' ? 'lrn-tab on' : 'lrn-tab'}
           onClick={() => setTab('certificates')}
         >
           Certificates
@@ -117,20 +192,23 @@ export function MyLearningView({
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 16 }}>
           {pathway.map((course, index) => {
             const progress = progressMap[course.id];
+            // Same rule as CourseOverviewView's gate on `/learner/courses/[courseId]` — a stale
+            // Enrollment row from before this restriction existed must not make a restricted,
+            // not-yet-unlocked course render as a clickable card that dead-ends on that route.
             const locked =
-              !progress?.enrolled &&
-              course.access === 'restricted' &&
-              !unlockedCourseSlugs.includes(course.id);
+              course.access === 'restricted' && !unlockedCourseSlugs.includes(course.id);
             const status = getCourseStatus(course, progress);
             const total = courseLessonCount(course);
             const done = progress?.completedLessonIds.length ?? 0;
 
             if (locked) {
               return (
-                <div
+                <button
                   key={course.id}
+                  type="button"
                   className="lrn-mcard"
-                  style={{ opacity: 0.65, cursor: 'default' }}
+                  style={{ opacity: 0.65 }}
+                  onClick={() => setLockedCourse(course)}
                 >
                   <div
                     className="thumb"
@@ -146,13 +224,15 @@ export function MyLearningView({
                   </div>
                   <div className="lrn-mcard-body">
                     <div className="t">{course.title}</div>
-                    <div style={{ fontSize: 12, color: 'var(--ink-muted)' }}>Locked</div>
+                    <div style={{ fontSize: 12, color: 'var(--ink-muted)' }}>
+                      {LOCKED_COURSE_COPY}
+                    </div>
                     <Badge tone="neutral" style={{ width: 'fit-content' }}>
                       <Icon name="lock" className="h-3 w-3" />
                       Locked
                     </Badge>
                   </div>
-                </div>
+                </button>
               );
             }
 
@@ -207,28 +287,48 @@ export function MyLearningView({
               No courses completed yet.
             </p>
           ) : (
-            completedCourses.map((course, index) => (
-              <button
-                key={course.id}
-                type="button"
-                className="lrn-mcard"
-                onClick={() => router.push(`/learner/courses/${course.id}`)}
-              >
-                <Image
-                  src={MODULE_PHOTOS[index % MODULE_PHOTOS.length]}
-                  alt=""
-                  width={300}
-                  height={112}
-                  className="thumb"
-                />
-                <div className="lrn-mcard-body">
-                  <div className="t">{course.title}</div>
-                  <Badge tone="success" style={{ width: 'fit-content' }}>
-                    Complete
-                  </Badge>
-                </div>
-              </button>
-            ))
+            completedCourses.map((course, index) => {
+              // Same rule as CourseOverviewView's gate on `/learner/courses/[courseId]` — a
+              // completed, certificated course can still be RESTRICTED-and-not-unlocked (unlock
+              // isn't granted by completion), so this card must not promise a route that dead-ends.
+              const locked =
+                course.access === 'restricted' && !unlockedCourseSlugs.includes(course.id);
+
+              return (
+                <button
+                  key={course.id}
+                  type="button"
+                  className="lrn-mcard"
+                  onClick={() =>
+                    locked
+                      ? setLockedCourse(course)
+                      : router.push(`/learner/courses/${course.id}`)
+                  }
+                >
+                  <Image
+                    src={MODULE_PHOTOS[index % MODULE_PHOTOS.length]}
+                    alt=""
+                    width={300}
+                    height={112}
+                    className="thumb"
+                  />
+                  <div className="lrn-mcard-body">
+                    <div className="t">{course.title}</div>
+                    <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                      <Badge tone="success" style={{ width: 'fit-content' }}>
+                        Complete
+                      </Badge>
+                      {locked && (
+                        <Badge tone="neutral" style={{ width: 'fit-content' }}>
+                          <Icon name="lock" className="h-3 w-3" />
+                          Locked
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                </button>
+              );
+            })
           )}
         </div>
       )}
@@ -278,6 +378,8 @@ export function MyLearningView({
           )}
         </div>
       )}
+
+      <LockedCourseDialog course={lockedCourse} onClose={() => setLockedCourse(null)} />
     </div>
   );
 }

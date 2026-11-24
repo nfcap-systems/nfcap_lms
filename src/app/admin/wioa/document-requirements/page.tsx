@@ -7,18 +7,5 @@ export default async function AdminWioaDocumentRequirementsPage() {
     getAllWioaDocumentRequirements(),
     getWorkforceBoards(),
   ]);
-
-  return (
-    <div className="flex flex-col gap-4">
-      <div>
-        <h1 className="text-xl font-semibold text-foreground">WIOA Documents</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Document requirements a case&apos;s checklist is built from, scoped per workforce board.
-          Editing here replaces prisma/seed-wioa.ts&apos;s hardcoded set as the source of truth.
-        </p>
-      </div>
-
-      <DocumentRequirementsAdminView requirements={requirements} boards={boards} />
-    </div>
-  );
+  return <DocumentRequirementsAdminView requirements={requirements} boards={boards} />;
 }

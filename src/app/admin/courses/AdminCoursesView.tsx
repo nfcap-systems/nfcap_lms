@@ -3,102 +3,23 @@
 import * as React from 'react';
 import { useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import {
-  type ColumnDef,
-  type PaginationState,
-  type SortingState,
-  useTable,
-} from '@tanstack/react-table';
-import {
-  ChevronLeft,
-  ChevronRight,
-  ChevronsLeft,
-  ChevronsRight,
-  Lock,
-  Plus,
-  Search,
-} from 'lucide-react';
+import Link from 'next/link';
 
 import { setCoursePublished } from '@/lib/actions/courses';
 import { courseLessonCount } from '@/lib/types';
 import type { AdminCourse } from '@/lib/data/courses';
-import { adminTableFeatures, type AdminTableFeatures } from '@/lib/admin-table-features';
-import { Badge } from '@/components/admin-ui/badge';
-import { Button } from '@/components/admin-ui/button';
-import { Input } from '@/components/admin-ui/input';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/admin-ui/select';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/admin-ui/table';
+import { Icon } from '@/components/icons';
 import { NewCourseDialog } from '@/components/admin-shell/quick-create/NewCourseDialog';
 
-const columns: ColumnDef<AdminTableFeatures, AdminCourse>[] = [
-  {
-    accessorKey: 'title',
-    header: 'Course',
-    sortFn: 'alphanumeric',
-    cell: ({ row }) => (
-      <div className="flex items-center gap-2">
-        <div className="min-w-0">
-          <div className="flex items-center gap-1.5">
-            <span className="truncate text-sm font-medium text-foreground">
-              {row.original.title}
-            </span>
-            {row.original.access === 'restricted' && (
-              <Lock className="size-3 shrink-0 text-muted-foreground" />
-            )}
-          </div>
-          <span className="truncate text-xs text-muted-foreground">{row.original.category}</span>
-        </div>
-      </div>
-    ),
-  },
-  {
-    id: 'status',
-    header: 'Status',
-    cell: ({ row }) => (
-      <Badge variant={row.original.published ? 'success' : 'outline'}>
-        {row.original.published ? 'Published' : 'Unpublished'}
-      </Badge>
-    ),
-  },
-  {
-    id: 'sections',
-    header: 'Sections',
-    cell: ({ row }) => (
-      <span className="text-sm text-muted-foreground">{row.original.sections.length}</span>
-    ),
-  },
-  {
-    id: 'lessons',
-    header: 'Lessons',
-    cell: ({ row }) => (
-      <span className="text-sm text-muted-foreground">{courseLessonCount(row.original)}</span>
-    ),
-  },
-];
+const PAGE_SIZE = 10;
 
 export function AdminCoursesView({ courses }: { courses: AdminCourse[] }) {
   const router = useRouter();
   const [, startTransition] = useTransition();
   const [addOpen, setAddOpen] = React.useState(false);
   const [search, setSearch] = React.useState('');
-  const [sorting, setSorting] = React.useState<SortingState>([]);
-  const [pagination, setPagination] = React.useState<PaginationState>({
-    pageIndex: 0,
-    pageSize: 10,
-  });
+  const [page, setPage] = React.useState(1);
+  const [selected, setSelected] = React.useState<Set<string>>(new Set());
 
   const sorted = React.useMemo(
     () => [...courses].sort((a, b) => a.pathwayOrder - b.pathwayOrder),
@@ -113,6 +34,10 @@ export function AdminCoursesView({ courses }: { courses: AdminCourse[] }) {
     );
   }, [sorted, search]);
 
+  const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const pageRows = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const allOnPageSelected = pageRows.length > 0 && pageRows.every((c) => selected.has(c.id));
+
   function togglePublished(course: AdminCourse) {
     startTransition(async () => {
       await setCoursePublished(course.id, !course.published);
@@ -120,168 +45,193 @@ export function AdminCoursesView({ courses }: { courses: AdminCourse[] }) {
     });
   }
 
-  const table = useTable({
-    features: adminTableFeatures,
-    data: filtered,
-    columns,
-    state: { sorting, pagination },
-    getRowId: (row) => row.id,
-    onSortingChange: setSorting,
-    onPaginationChange: setPagination,
-  });
+  function toggleRow(id: string) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function toggleAllOnPage() {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      for (const c of pageRows) {
+        if (allOnPageSelected) next.delete(c.id);
+        else next.add(c.id);
+      }
+      return next;
+    });
+  }
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex flex-wrap items-start justify-between gap-4">
+      <div className="pagehdr">
         <div>
-          <h1 className="text-xl font-semibold text-foreground">Courses</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            All courses in the apprenticeship program. Open a course to manage its sections,
-            lessons, and knowledge assessment in the Curriculum Builder.
+          <h1>Courses</h1>
+          <p>
+            {courses.length} course{courses.length === 1 ? '' : 's'} across the apprenticeship
+            program. Open a course to manage its sections, lessons, and knowledge assessment in the
+            Curriculum Builder.
           </p>
         </div>
-        <Button onClick={() => setAddOpen(true)}>
-          <Plus className="size-4" />
-          Add course
-        </Button>
+        <div style={{ display: 'flex', gap: 8, flex: 'none' }}>
+          <button type="button" className="btn-primary btn-sm" onClick={() => setAddOpen(true)}>
+            + Add course
+          </button>
+        </div>
       </div>
 
-      <div className="relative w-full sm:w-80">
-        <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
-        <Input
-          className="pl-8"
-          placeholder="Search courses..."
-          value={search}
-          onChange={(e) => {
-            setSearch(e.target.value);
-            table.setPageIndex(0);
-          }}
-        />
+      <div className="toolbar">
+        <div className="dtsearch" style={{ maxWidth: 320 }}>
+          <Icon name="search" className="h-3.5 w-3.5" />
+          <input
+            value={search}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(1);
+            }}
+            placeholder="Search courses..."
+            aria-label="Search courses"
+          />
+        </div>
       </div>
 
-      <div className="overflow-hidden rounded-lg border bg-card">
-        <Table>
-          <TableHeader className="bg-muted/15">
-            {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id}>
-                {headerGroup.headers.map((header) => (
-                  <TableHead key={header.id} className="h-11 p-3 font-medium">
-                    {header.isPlaceholder ? null : <table.FlexRender header={header} />}
-                  </TableHead>
-                ))}
-                <TableHead className="h-11 p-3 font-medium">Actions</TableHead>
-              </TableRow>
-            ))}
-          </TableHeader>
-          <TableBody>
-            {table.getRowModel().rows.length ? (
-              table.getRowModel().rows.map((row) => (
-                <TableRow key={row.id}>
-                  {row.getAllCells().map((cell) => (
-                    <TableCell key={cell.id} className="p-3">
-                      <table.FlexRender cell={cell} />
-                    </TableCell>
-                  ))}
-                  <TableCell className="p-3">
-                    <div className="flex items-center gap-2">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => router.push(`/admin/courses/${row.original.id}`)}
-                      >
-                        Edit curriculum
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => togglePublished(row.original)}
-                      >
-                        {row.original.published ? 'Unpublish' : 'Publish'}
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell
-                  colSpan={columns.length + 1}
-                  className="h-24 text-center text-muted-foreground"
+      <div className="panel" style={{ padding: 0, overflowX: 'auto', overflowY: 'hidden' }}>
+        <table className="data-table">
+          <thead>
+            <tr>
+              <th className="tcol-check">
+                <span
+                  className="tcheck"
+                  aria-label="Select all"
+                  role="checkbox"
+                  aria-checked={allOnPageSelected}
+                  tabIndex={0}
+                  onClick={toggleAllOnPage}
+                  onKeyDown={(e) => e.key === 'Enter' && toggleAllOnPage()}
+                  style={allOnPageSelected ? { background: 'var(--nfcap-accent)' } : undefined}
+                />
+              </th>
+              <th>Course</th>
+              <th>Status</th>
+              <th>Sections</th>
+              <th>Lessons</th>
+              <th />
+            </tr>
+          </thead>
+          <tbody>
+            {pageRows.length === 0 ? (
+              <tr>
+                <td
+                  colSpan={6}
+                  style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--ink-muted)' }}
                 >
                   No courses found.
-                </TableCell>
-              </TableRow>
+                </td>
+              </tr>
+            ) : (
+              pageRows.map((course) => {
+                const isSelected = selected.has(course.id);
+                return (
+                  <tr key={course.id}>
+                    <td className="tcol-check">
+                      <span
+                        className="tcheck"
+                        aria-label="Select row"
+                        role="checkbox"
+                        aria-checked={isSelected}
+                        tabIndex={0}
+                        onClick={() => toggleRow(course.id)}
+                        onKeyDown={(e) => e.key === 'Enter' && toggleRow(course.id)}
+                        style={isSelected ? { background: 'var(--nfcap-accent)' } : undefined}
+                      />
+                    </td>
+                    <td>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        {course.access === 'restricted' && (
+                          <Icon
+                            name="lock"
+                            className="h-4 w-4"
+                            style={{ color: 'var(--ink-muted)', flexShrink: 0 }}
+                          />
+                        )}
+                        <div>
+                          <div style={{ fontWeight: 600 }}>{course.title}</div>
+                          <div style={{ fontSize: 12, color: 'var(--ink-muted)' }}>
+                            {course.access === 'restricted'
+                              ? 'Restricted — requires funding approval or admin grant'
+                              : course.category}
+                          </div>
+                        </div>
+                      </div>
+                    </td>
+                    <td>
+                      <span className={course.published ? 'badge-complete' : 'badge-neutral'}>
+                        {course.published ? 'Published' : 'Unpublished'}
+                      </span>
+                    </td>
+                    <td>{course.sections.length}</td>
+                    <td>{courseLessonCount(course)}</td>
+                    <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
+                      <button
+                        type="button"
+                        onClick={() => togglePublished(course)}
+                        style={{
+                          fontSize: 12.5,
+                          color: 'var(--ink-muted)',
+                          background: 'none',
+                          border: 'none',
+                          cursor: 'pointer',
+                          marginRight: 14,
+                        }}
+                      >
+                        {course.published ? 'Unpublish' : 'Publish'}
+                      </button>
+                      <Link
+                        href={`/admin/courses/${course.id}`}
+                        style={{ fontWeight: 600, fontSize: 13, color: 'var(--nfcap-accent)' }}
+                      >
+                        Edit curriculum →
+                      </Link>
+                    </td>
+                  </tr>
+                );
+              })
             )}
-          </TableBody>
-        </Table>
+          </tbody>
+        </table>
+        <div className="table-footer">
+          <span>
+            Showing {pageRows.length} of {filtered.length}
+          </span>
+          <span>
+            Page {page} of {pageCount}
+          </span>
+        </div>
       </div>
 
-      <div className="flex items-center justify-between px-1">
-        <div className="hidden flex-1 text-sm text-muted-foreground lg:flex">
-          {filtered.length} course{filtered.length === 1 ? '' : 's'}
+      {pageCount > 1 && (
+        <div style={{ display: 'flex', justifyContent: 'center', gap: 6 }}>
+          <button
+            type="button"
+            className="dtbtn"
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+            disabled={page === 1}
+          >
+            Previous
+          </button>
+          <button
+            type="button"
+            className="dtbtn"
+            onClick={() => setPage((p) => Math.min(pageCount, p + 1))}
+            disabled={page === pageCount}
+          >
+            Next
+          </button>
         </div>
-        <div className="flex w-full items-center gap-6 lg:w-fit">
-          <div className="hidden items-center gap-2 lg:flex">
-            <span className="text-sm font-medium">Rows per page</span>
-            <Select
-              value={`${table.state.pagination.pageSize}`}
-              onValueChange={(value) => table.setPageSize(Number(value))}
-            >
-              <SelectTrigger size="sm" className="w-20">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {[10, 20, 30].map((size) => (
-                  <SelectItem key={size} value={`${size}`}>
-                    {size}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="flex items-center text-sm font-medium">
-            Page {table.state.pagination.pageIndex + 1} of {Math.max(1, table.getPageCount())}
-          </div>
-          <div className="ml-auto flex items-center gap-2 lg:ml-0">
-            <Button
-              variant="outline"
-              size="icon"
-              className="hidden size-8 lg:flex"
-              onClick={() => table.setPageIndex(0)}
-              disabled={!table.getCanPreviousPage()}
-            >
-              <ChevronsLeft className="size-4" />
-            </Button>
-            <Button
-              variant="outline"
-              size="icon"
-              className="size-8"
-              onClick={() => table.previousPage()}
-              disabled={!table.getCanPreviousPage()}
-            >
-              <ChevronLeft className="size-4" />
-            </Button>
-            <Button
-              variant="outline"
-              size="icon"
-              className="size-8"
-              onClick={() => table.nextPage()}
-              disabled={!table.getCanNextPage()}
-            >
-              <ChevronRight className="size-4" />
-            </Button>
-            <Button
-              variant="outline"
-              size="icon"
-              className="hidden size-8 lg:flex"
-              onClick={() => table.setPageIndex(table.getPageCount() - 1)}
-              disabled={!table.getCanNextPage()}
-            >
-              <ChevronsRight className="size-4" />
-            </Button>
-          </div>
-        </div>
-      </div>
+      )}
 
       <NewCourseDialog open={addOpen} onOpenChange={setAddOpen} />
     </div>

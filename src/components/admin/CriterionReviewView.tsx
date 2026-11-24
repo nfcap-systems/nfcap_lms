@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useEffect, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { Icon } from '@/components/icons';
 import { getEvidenceFileUrl, getCriterionFileUrl } from '@/lib/actions/progress';
@@ -134,20 +134,17 @@ export function CriterionReviewView({
           <div style={{ fontWeight: 600, fontSize: 14.5, marginBottom: 10 }}>
             Submitted evidence
           </div>
-          {review.hasFile ? (
+          <EvidencePreview review={review} />
+          {review.hasFile && (
             <button
               type="button"
               onClick={viewAttachment}
               className="flex items-center gap-2 rounded-lg border border-[var(--nfcap-border)] bg-[var(--surface-muted)] px-3 py-2 text-sm text-[var(--ink-muted)] hover:text-[var(--ink)]"
-              style={{ marginBottom: 14 }}
+              style={{ marginTop: 10, marginBottom: 14 }}
             >
               <Icon name="paperclip" className="size-4 shrink-0 text-[var(--nfcap-accent)]" />
               {review.fileName ?? 'View attachment'}
             </button>
-          ) : (
-            <p style={{ fontSize: 13, color: 'var(--ink-faint)', marginBottom: 14 }}>
-              No attachment submitted.
-            </p>
           )}
           {/* Guided submissions (feature #9) carry no course-level description — this used to
               render as a bare pair of quote marks (feature #12). */}
@@ -272,6 +269,109 @@ export function CriterionReviewView({
           initialMarks={annotatingCriterion.annotationData ?? []}
           initialNote={annotatingCriterion.reviewerNote ?? ''}
         />
+      )}
+    </div>
+  );
+}
+
+type EvidencePhoto = {
+  key: string;
+  label: string;
+  criterionAssessmentId?: string;
+  isSubmissionFile?: boolean;
+};
+
+/** ADM11's inline evidence preview — a large frame plus a thumbnail strip, replacing the
+ * click-through-only "View attachment" button. Covers both evidence shapes: the legacy
+ * course-level file, and every per-criterion photo on a guided submission. */
+function EvidencePreview({ review }: { review: CriterionReviewData }) {
+  const photos: EvidencePhoto[] = [];
+  if (review.hasFile) {
+    photos.push({
+      key: 'submission',
+      label: review.fileName ?? 'Overall photo',
+      isSubmissionFile: true,
+    });
+  }
+  for (const criterion of review.criteria) {
+    if (criterion.hasLearnerFile && criterion.criterionAssessmentId) {
+      photos.push({
+        key: criterion.criterionAssessmentId,
+        label: criterion.title,
+        criterionAssessmentId: criterion.criterionAssessmentId,
+      });
+    }
+  }
+
+  const [selected, setSelected] = useState(0);
+  const [url, setUrl] = useState<string | null>(null);
+
+  const active = photos[selected];
+
+  useEffect(() => {
+    if (!active) return;
+    let cancelled = false;
+    (active.isSubmissionFile
+      ? getEvidenceFileUrl(review.evidenceSubmissionId)
+      : getCriterionFileUrl(active.criterionAssessmentId!)
+    ).then((resolved) => {
+      if (!cancelled) setUrl(resolved);
+    });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- `active` is derived from `photos`, which is rebuilt every render; keying off its identity fields instead avoids re-fetching on every render
+  }, [active?.key, review.evidenceSubmissionId]);
+
+  return (
+    <div>
+      <div
+        style={{
+          border: '1px solid var(--nfcap-border)',
+          borderRadius: 'var(--nfcap-radius-md)',
+          height: 360,
+          background: 'var(--surface-muted)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          color: 'var(--ink-faint)',
+          fontSize: 13,
+          marginBottom: 10,
+          overflow: 'hidden',
+        }}
+      >
+        {!active ? (
+          <Icon name="image" className="h-12 w-12" />
+        ) : url ? (
+          // eslint-disable-next-line @next/next/no-img-element -- a signed, short-lived Storage URL, not a local/optimizable asset
+          <img src={url} alt="" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+        ) : (
+          <Icon name="image" className="h-12 w-12" />
+        )}
+      </div>
+      {photos.length > 1 && (
+        <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
+          {photos.map((photo, index) => (
+            <button
+              key={photo.key}
+              type="button"
+              onClick={() => setSelected(index)}
+              aria-label={photo.label}
+              style={{
+                width: 64,
+                height: 64,
+                borderRadius: 'var(--nfcap-radius-md)',
+                border:
+                  index === selected
+                    ? '2px solid var(--nfcap-accent)'
+                    : '1px solid var(--nfcap-border)',
+                background: 'var(--surface-muted)',
+                padding: 0,
+                cursor: 'pointer',
+              }}
+            />
+          ))}
+        </div>
       )}
     </div>
   );

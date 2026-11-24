@@ -2,6 +2,7 @@
 
 import { useRef, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import {
   Badge,
   Button,
@@ -101,8 +102,14 @@ export function WioaCaseFeed({ wioaCase }: { wioaCase: WioaCaseRecord }) {
 
       {wioaCase.appointments.length > 0 && (
         <Card>
-          <CardHeader>
+          <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Appointments</CardTitle>
+            <Link
+              href={`/learner/funding/appointments/${wioaCase.id}`}
+              className="text-xs font-medium text-[var(--nfcap-accent)] hover:underline"
+            >
+              View all
+            </Link>
           </CardHeader>
           <CardContent className="flex flex-col gap-3">
             {wioaCase.appointments.map((a) => (

@@ -81,7 +81,7 @@ export function ExploreCourseCard({
           </div>
         )}
 
-        {enrolled ? (
+        {enrolled && canSelfEnroll ? (
           <Button
             size="sm"
             className="w-full"

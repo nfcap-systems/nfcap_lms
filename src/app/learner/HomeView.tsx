@@ -1,16 +1,22 @@
 'use client';
 
+import { useEffect, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Button, Badge } from '@/components/ui';
 import { Icon } from '@/components/icons';
-import { courseLessonCount, flattenLessons } from '@/lib/types';
+import { LockedCourseDialog, LOCKED_COURSE_COPY } from '@/components/learner/LockedCourseDialog';
+import { markAnnouncementRead } from '@/lib/actions/announcements';
+import { getCertificatePdfBase64 } from '@/lib/actions/credentials';
+import { downloadBase64File } from '@/lib/download';
+import { courseLessonCount, courseDurationMinutes, flattenLessons } from '@/lib/types';
 import { getCourseStatus, courseStatusLabel, courseStatusTone } from '@/lib/course-status';
 import type { AdminCourse } from '@/lib/data/courses';
 import type { CourseProgress } from '@/lib/data/progress';
 import type { Credential } from '@/lib/data/credentials';
 import type { WioaCaseRecord } from '@/lib/data/wioa';
+import type { Announcement } from '@/lib/data/announcements';
 import { WIOA_STATUS_LABEL } from '@/lib/wioa/status';
 
 // Only 3 real trade photos exist for this retrofit (pulled from the design canvas); cycle
@@ -35,6 +41,7 @@ export function HomeView({
   unlockedCourseSlugs,
   credentials,
   wioaCases,
+  announcements,
   firstName,
 }: {
   allCourses: AdminCourse[];
@@ -43,15 +50,41 @@ export function HomeView({
   unlockedCourseSlugs: string[];
   credentials: Credential[];
   wioaCases: WioaCaseRecord[];
+  announcements: Announcement[];
   firstName: string;
 }) {
   const router = useRouter();
+  const [lockedCourse, setLockedCourse] = useState<AdminCourse | null>(null);
+  const [downloadingCertId, setDownloadingCertId] = useState<string | null>(null);
+  const [, startDownload] = useTransition();
+
+  function downloadCertificatePdf(rawId: string) {
+    setDownloadingCertId(rawId);
+    startDownload(async () => {
+      try {
+        const { base64, filename } = await getCertificatePdfBase64(rawId);
+        downloadBase64File(base64, filename, 'application/pdf');
+      } finally {
+        setDownloadingCertId(null);
+      }
+    });
+  }
 
   const enrolledCourses = allCourses
     .filter((c) => progressMap[c.id]?.enrolled)
     .sort((a, b) => a.pathwayOrder - b.pathwayOrder);
 
-  const nextUp = enrolledCourses
+  // Same rule as CourseOverviewView's gate on `/learner/courses/[courseId]`: a restricted course
+  // the learner isn't unlocked for must not surface as an actionable card here, even if a stale
+  // Enrollment row makes it pass the `enrolled` filter above — otherwise Home offers a "Continue"
+  // CTA that the course page itself refuses.
+  const accessibleEnrolledCourses = enrolledCourses.filter(
+    (c) => c.access !== 'restricted' || unlockedCourseSlugs.includes(c.id),
+  );
+
+  // Every enrolled course's next incomplete lesson, in pathway order — the first becomes the
+  // Continue-Learning hero, the second (if any) the "Up next" row below it.
+  const upcomingItems = accessibleEnrolledCourses
     .map((course) => {
       const flat = flattenLessons(course);
       const completedLessonIds = progressMap[course.id]?.completedLessonIds ?? [];
@@ -60,7 +93,9 @@ export function HomeView({
         ? { course, nextLesson, remaining: flat.length - completedLessonIds.length }
         : null;
     })
-    .find(Boolean);
+    .filter((item): item is NonNullable<typeof item> => item !== null);
+  const nextUp = upcomingItems[0] ?? null;
+  const upNext = upcomingItems[1] ?? null;
 
   const completedModules = pathway.filter((c) => !!progressMap[c.id]?.certificateId).length;
   const pathwayPercent =
@@ -75,7 +110,7 @@ export function HomeView({
 
   // "Needs a practical evidence submission": finished every lesson and passed the quiz, but
   // hasn't submitted evidence yet, or a prior submission was rejected.
-  const evidenceTaskCourse = enrolledCourses.find((course) => {
+  const evidenceTaskCourse = accessibleEnrolledCourses.find((course) => {
     const progress = progressMap[course.id];
     if (!progress) return false;
     if (progress.evidence?.status === 'rejected') return true;
@@ -84,234 +119,140 @@ export function HomeView({
     return allLessonsDone && progress.quizAttempt?.passed && !progress.evidence;
   });
 
+  // Pending-review queue (board's "To be reviewed" panel) — real pending EvidenceSubmissions
+  // only. There is no "pending quiz review" concept in the schema (quizzes are auto-graded), so
+  // unlike the board's own example row, that item type is left out rather than invented.
+  const reviewItems = accessibleEnrolledCourses.filter(
+    (course) => progressMap[course.id]?.evidence?.status === 'pending',
+  );
+
+  // Course Catalog discovery shelf — published courses this learner isn't enrolled in yet.
+  const discoveryCourses = pathway.filter((c) => !progressMap[c.id]?.enrolled).slice(0, 3);
+
+  // Portfolio-evidence preview (board shows individual Met evidence pieces, not certificates) —
+  // flatten each credential's per-criterion captures; legacy (pre-per-criterion) credentials fall
+  // back to their one description, same pattern PortfolioView already uses.
+  const evidencePieces = credentials
+    .flatMap((credential) =>
+      credential.criteria.length > 0
+        ? credential.criteria.map((criterion) => ({
+            key: criterion.criterionAssessmentId,
+            title: criterion.title,
+            courseTitle: credential.course.title,
+          }))
+        : [
+            {
+              key: credential.certificateId,
+              title: credential.evidence.description,
+              courseTitle: credential.course.title,
+            },
+          ],
+    )
+    .slice(-3)
+    .reverse();
+
+  const sidebarCertificates = credentials.slice(-3).reverse();
+
   const latestWioaCase = wioaCases[0] ?? null;
+  const [banner] = announcements;
+
+  useEffect(() => {
+    if (banner) void markAnnouncementRead(banner.id);
+  }, [banner]);
 
   return (
-    <div className="flex flex-col gap-9">
-      {/* Hero: greeting + stat strip */}
-      <div style={{ position: 'relative' }}>
-        <div
-          style={{
-            height: 150,
-            borderRadius: 'var(--nfcap-radius-lg)',
-            overflow: 'hidden',
-            position: 'relative',
-            background:
-              'linear-gradient(105deg, #eff6ff 0%, #f5f8ff 46%, #dbe9ff 72%, var(--surface) 100%)',
-            display: 'flex',
-            alignItems: 'center',
-            boxShadow: 'var(--nfcap-shadow-sm)',
-            border: '1px solid var(--nfcap-border)',
-          }}
-        >
-          <div
-            style={{
-              position: 'relative',
-              zIndex: 2,
-              padding: '0 36px',
-              maxWidth: '56%',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 10,
-            }}
-          >
-            <span
-              style={{
-                width: 'fit-content',
-                fontSize: 11.5,
-                fontWeight: 700,
-                color: 'var(--nfcap-accent)',
-                background: '#dbeafe',
-                padding: '5px 12px',
-                borderRadius: 'var(--radius-full)',
-              }}
-            >
-              {timeOfDayGreeting()}!
+    <div className="flex flex-col gap-6">
+      <div className="greet-row">
+        <div>
+          <p className="greet-h1">
+            {timeOfDayGreeting()}, {firstName}
+          </p>
+          <p className="greet-sub">
+            Welcome back — keep going on your {pathway[0]?.category ?? 'training'}.
+          </p>
+        </div>
+        <div className="stat-row">
+          <div className="stat-tile">
+            <span className="ic">
+              <Icon name="check" className="h-4 w-4" />
             </span>
             <div>
-              <div
-                style={{
-                  fontSize: 24,
-                  fontWeight: 700,
-                  fontFamily: 'var(--font-display)',
-                  color: 'var(--ink)',
-                }}
-              >
-                Welcome back, {firstName}
+              <div className="n">
+                {completedModules} / {pathway.length}
               </div>
-              <div
-                style={{ fontSize: 13.5, color: 'var(--ink-muted)', marginTop: 5, maxWidth: 420 }}
-              >
-                Here&apos;s what&apos;s next in your training.
-              </div>
+              <div className="l">Modules completed</div>
             </div>
           </div>
-          <Image
-            src="/images/learner/tile-installation.jpg"
-            alt=""
-            width={700}
-            height={150}
-            style={{
-              position: 'absolute',
-              right: 0,
-              top: 0,
-              width: '46%',
-              height: '100%',
-              objectFit: 'cover',
-              objectPosition: 'center 40%',
-              clipPath: 'polygon(18% 0, 100% 0, 100% 100%, 0 100%)',
-            }}
-          />
-        </div>
-
-        <div
-          style={{
-            position: 'relative',
-            margin: '10px 16px 0',
-            display: 'grid',
-            gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
-            gap: 14,
-            zIndex: 3,
-          }}
-        >
-          <div className="lrn-stat">
-            <span
-              className="lrn-stat-icon"
-              style={{ background: '#eff6ff', color: 'var(--nfcap-accent)' }}
-            >
-              <Icon name="book" className="h-5 w-5" />
+          <div className="stat-tile">
+            <span className="ic">
+              <Icon name="award" className="h-4 w-4" />
             </span>
-            <div className="vals">
-              <span className="n">
-                {enrolledCourses.length} / {pathway.length}
-              </span>
-              <span className="l">Courses enrolled</span>
+            <div>
+              <div className="n">{credentials.length}</div>
+              <div className="l">Certificates earned</div>
             </div>
           </div>
-          <div className="lrn-stat">
-            <span className="lrn-stat-icon" style={{ background: '#f0fdf4', color: '#166534' }}>
-              <Icon name="award" className="h-5 w-5" />
+          <div className="stat-tile">
+            <span className="ic">
+              <Icon name="bar-chart" className="h-4 w-4" />
             </span>
-            <div className="vals">
-              <span className="n">{credentials.length}</span>
-              <span className="l">Certificates earned</span>
-            </div>
-          </div>
-          <div className="lrn-stat">
-            <span
-              className="lrn-stat-icon"
-              style={{ background: '#eff6ff', color: 'var(--nfcap-accent)' }}
-            >
-              <Icon name="bar-chart" className="h-5 w-5" />
-            </span>
-            <div className="vals">
-              <span className="n">{avgQuizScore !== null ? `${avgQuizScore}%` : '—'}</span>
-              <span className="l">Avg. quiz score</span>
-            </div>
-          </div>
-          <div className="lrn-stat">
-            <span className="lrn-stat-icon" style={{ background: '#f3eefe', color: '#7c3aed' }}>
-              <Icon name="layers" className="h-5 w-5" />
-            </span>
-            <div className="vals">
-              <span className="n">{pathwayPercent}%</span>
-              <span className="l">Pathway progress</span>
+            <div>
+              <div className="n">{avgQuizScore !== null ? `${avgQuizScore}%` : '—'}</div>
+              <div className="l">Avg. quiz score</div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Two-column body */}
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'minmax(0, 1fr) 300px',
-          gap: 24,
-          alignItems: 'start',
-        }}
-      >
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 28, minWidth: 0 }}>
-          {nextUp ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              <div className="lrn-sechead">
-                <div>
-                  <h2>Continue Learning</h2>
-                  <div style={{ fontSize: 13, color: 'var(--ink-muted)', marginTop: 2 }}>
-                    Pick up where you left off and keep making progress.
-                  </div>
+      {banner && (
+        <div className="announce-banner">
+          <span className="announce-badge">New</span>
+          <span className="announce-title">{banner.title}</span>
+          <p className="announce-desc">{banner.body}</p>
+        </div>
+      )}
+
+      <div className="body-grid">
+        <div>
+          {nextUp && (
+            <>
+              <div className="sec-head">
+                <div className="left">
+                  <Icon name="play" className="h-3.5 w-3.5" />
+                  <span>Continue</span>
                 </div>
-                <Link href="/learner/my-learning">View all →</Link>
+                <Link href="/learner/my-learning">View all</Link>
               </div>
-              <div
-                style={{
-                  background: 'linear-gradient(120deg, #eff6ff, var(--surface-muted) 75%)',
-                  border: '1px solid #bfdbfe',
-                  borderRadius: 'var(--nfcap-radius-lg)',
-                  boxShadow: 'var(--nfcap-shadow-sm)',
-                  padding: 20,
-                  display: 'grid',
-                  gridTemplateColumns: 'minmax(220px, .95fr) minmax(260px, 1fr)',
-                  gap: 20,
-                }}
-              >
-                <div
-                  style={{
-                    position: 'relative',
-                    minHeight: 160,
-                    borderRadius: 'var(--nfcap-radius-md)',
-                    overflow: 'hidden',
-                  }}
-                >
+              <div className="lrn-hero">
+                <div className="lrn-hero-media">
                   <Image
                     src="/images/learner/tile-installation.jpg"
                     alt=""
                     fill
                     style={{ objectFit: 'cover' }}
                   />
+                  <span className="lrn-hero-play">
+                    <Icon name="play" className="h-4 w-4" />
+                  </span>
+                  <span className="lrn-hero-duration">
+                    <Icon name="clock" className="h-3 w-3" />
+                    {nextUp.nextLesson.lesson.durationMinutes} min
+                  </span>
                 </div>
-                <div
-                  style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    justifyContent: 'center',
-                    gap: 10,
-                  }}
-                >
-                  <Badge tone="info">In Progress</Badge>
-                  <div
-                    style={{
-                      fontSize: 18,
-                      fontWeight: 700,
-                      fontFamily: 'var(--font-display)',
-                      lineHeight: 1.25,
-                      color: 'var(--ink)',
-                    }}
-                  >
-                    {nextUp.course.title}
-                  </div>
-                  <div style={{ fontSize: 13, color: 'var(--ink-muted)', lineHeight: 1.45 }}>
-                    Next up: {nextUp.nextLesson.lesson.title}
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <div
-                      style={{
-                        height: 6,
-                        background: 'var(--nfcap-border)',
-                        borderRadius: 'var(--radius-full)',
-                        overflow: 'hidden',
-                        flex: 1,
-                      }}
-                    >
+                <div className="lrn-hero-body">
+                  <span className="lrn-hero-pill">In Progress</span>
+                  <div className="lrn-hero-title">{nextUp.course.title}</div>
+                  <div className="lrn-hero-desc">Next up: {nextUp.nextLesson.lesson.title}</div>
+                  <div className="lrn-hero-progress">
+                    <div className="bar">
                       <div
+                        className="fill"
                         style={{
-                          height: '100%',
-                          borderRadius: 'var(--radius-full)',
-                          background: 'var(--nfcap-accent)',
                           width: `${Math.round(((progressMap[nextUp.course.id]?.completedLessonIds.length ?? 0) / courseLessonCount(nextUp.course)) * 100)}%`,
                         }}
                       />
                     </div>
-                    <b style={{ fontSize: 12, color: 'var(--ink)' }}>
+                    <b>
                       {Math.round(
                         ((progressMap[nextUp.course.id]?.completedLessonIds.length ?? 0) /
                           courseLessonCount(nextUp.course)) *
@@ -320,7 +261,7 @@ export function HomeView({
                       %
                     </b>
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 4 }}>
+                  <div className="lrn-hero-actions">
                     <Button
                       size="lg"
                       onClick={() => router.push(`/learner/courses/${nextUp.course.id}`)}
@@ -328,11 +269,62 @@ export function HomeView({
                       Continue Lesson
                       <Icon name="arrow-right" className="h-4 w-4" />
                     </Button>
+                    <button
+                      type="button"
+                      disabled
+                      className="lrn-hero-bookmark"
+                      aria-label="Bookmark lesson"
+                    >
+                      <Icon name="file-text" className="h-3.5 w-3.5" />
+                    </button>
                   </div>
                 </div>
               </div>
-            </div>
-          ) : (
+
+              {upNext && (
+                <>
+                  <p className="lrn-upnext-label">Up next</p>
+                  <div className="continue-list">
+                    <div className="continue-row">
+                      <Image
+                        src={MODULE_PHOTOS[0]}
+                        alt=""
+                        width={52}
+                        height={38}
+                        className="continue-thumb"
+                      />
+                      <div>
+                        <div className="continue-tag">
+                          <span className="ic">
+                            <Icon name="book" className="h-2.5 w-2.5" />
+                          </span>
+                          Course
+                        </div>
+                        <p className="continue-lesson">{upNext.nextLesson.lesson.title}</p>
+                      </div>
+                      <div className="continue-cell">
+                        <span className="lbl">Content</span>
+                        <span className="val">{upNext.remaining} lessons</span>
+                      </div>
+                      <div className="continue-cell">
+                        <span className="lbl">Completion</span>
+                        <span className="val">not started</span>
+                      </div>
+                      <button
+                        type="button"
+                        className="continue-btn"
+                        onClick={() => router.push(`/learner/courses/${upNext.course.id}`)}
+                      >
+                        Start
+                      </button>
+                    </div>
+                  </div>
+                </>
+              )}
+            </>
+          )}
+
+          {!nextUp && (
             <div
               style={{
                 borderRadius: 'var(--nfcap-radius-lg)',
@@ -342,6 +334,7 @@ export function HomeView({
                 display: 'flex',
                 flexDirection: 'column',
                 gap: 10,
+                marginBottom: 28,
               }}
             >
               <h2
@@ -368,52 +361,157 @@ export function HomeView({
             </div>
           )}
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            <div className="lrn-sechead">
-              <h2>Your pathway — {pathway[0]?.category ?? 'Apprenticeship'}</h2>
-              <span style={{ fontSize: 13, color: 'var(--ink-muted)', fontWeight: 600 }}>
-                {completedModules} of {pathway.length} complete
-              </span>
-            </div>
-            <div
-              style={{
-                height: 5,
-                background: 'var(--nfcap-border)',
-                borderRadius: 'var(--radius-full)',
-                overflow: 'hidden',
-                margin: '-4px 2px 2px',
-              }}
-            >
-              <div
-                style={{
-                  height: '100%',
-                  width: `${pathwayPercent}%`,
-                  background: 'var(--nfcap-accent)',
-                }}
-              />
-            </div>
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(3, minmax(0, 1fr)) 92px',
-                gap: 16,
-              }}
-            >
-              {pathway.slice(0, 3).map((course, index) => {
-                const progress = progressMap[course.id];
-                const locked =
-                  !progress?.enrolled &&
-                  course.access === 'restricted' &&
-                  !unlockedCourseSlugs.includes(course.id);
-                const status = getCourseStatus(course, progress);
+          {discoveryCourses.length > 0 && (
+            <>
+              <div className="sec-head">
+                <div className="left">
+                  <Icon name="compass" className="h-3.5 w-3.5" />
+                  <span>Course Catalog</span>
+                </div>
+                <Link href="/learner/explore">View all</Link>
+              </div>
+              <div className="catalog-grid">
+                {discoveryCourses.map((course, index) => {
+                  const unlocked = unlockedCourseSlugs.includes(course.id);
+                  const canSelfEnroll = course.access === 'open' || unlocked;
+                  const hours = Math.round((courseDurationMinutes(course) / 60) * 10) / 10;
+                  return (
+                    <div className="catalog-card" key={course.id}>
+                      <div className="catalog-thumb-wrap">
+                        <Image
+                          src={MODULE_PHOTOS[index % MODULE_PHOTOS.length]}
+                          alt=""
+                          width={400}
+                          height={128}
+                        />
+                        <span className="catalog-lvl">{courseLessonCount(course)} lessons</span>
+                      </div>
+                      <div className="catalog-body">
+                        <div className="catalog-tag">
+                          <span className="ic">
+                            <Icon name="book" className="h-2.5 w-2.5" />
+                          </span>
+                          Course
+                        </div>
+                        <div className="catalog-title">{course.title}</div>
+                        <div className="catalog-pills">
+                          <span className="catalog-pill">{hours}h</span>
+                        </div>
+                        <div className="catalog-foot">
+                          <span className="catalog-status">Not Started</span>
+                          {canSelfEnroll ? (
+                            <button
+                              type="button"
+                              className="catalog-enroll"
+                              onClick={() => router.push(`/learner/courses/${course.id}`)}
+                            >
+                              Enroll
+                            </button>
+                          ) : (
+                            <button type="button" className="catalog-enroll" disabled>
+                              Assigned by NFCAP
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </>
+          )}
+
+          <div className="lrn-pathway-head">
+            <h2>Your pathway — {pathway[0]?.category ?? 'Apprenticeship'}</h2>
+            <span>
+              {completedModules} of {pathway.length} complete
+            </span>
+          </div>
+          <div className="lrn-pathway-bar">
+            <div className="fill" style={{ width: `${pathwayPercent}%` }} />
+          </div>
+          <div
+            className="pathway-strip"
+            style={{ gridTemplateColumns: 'repeat(3, minmax(0, 1fr)) 92px' }}
+          >
+            {pathway.slice(0, 3).map((course, index) => {
+              const progress = progressMap[course.id];
+              const locked =
+                !progress?.enrolled &&
+                course.access === 'restricted' &&
+                !unlockedCourseSlugs.includes(course.id);
+              const status = getCourseStatus(course, progress);
+
+              if (locked) {
                 return (
                   <button
                     key={course.id}
                     type="button"
                     className="lrn-mcard"
-                    onClick={() => router.push(`/learner/courses/${course.id}`)}
-                    disabled={locked}
+                    style={{ opacity: 0.65 }}
+                    onClick={() => setLockedCourse(course)}
                   >
+                    <div
+                      className="thumb"
+                      style={{
+                        background: 'var(--nfcap-border)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: 'var(--ink-faint)',
+                      }}
+                    >
+                      <Icon name="lock" className="h-6 w-6" />
+                    </div>
+                    <div className="lrn-mcard-body">
+                      <div className="t">{course.title}</div>
+                      <div style={{ fontSize: 12, color: 'var(--ink-muted)' }}>
+                        {LOCKED_COURSE_COPY}
+                      </div>
+                      <Badge tone="neutral" style={{ width: 'fit-content' }}>
+                        <Icon name="lock" className="h-3 w-3" />
+                        Locked
+                      </Badge>
+                    </div>
+                  </button>
+                );
+              }
+
+              const isActive = course.id === nextUp?.course.id;
+              const coursePercent = isActive
+                ? Math.round(
+                    ((progress?.completedLessonIds.length ?? 0) / courseLessonCount(course)) * 100,
+                  )
+                : 0;
+
+              return (
+                <button
+                  key={course.id}
+                  type="button"
+                  className="lrn-mcard"
+                  onClick={() => router.push(`/learner/courses/${course.id}`)}
+                >
+                  {isActive ? (
+                    <div
+                      className="thumb"
+                      style={{
+                        background: 'var(--surface-muted)',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: 8,
+                        padding: 10,
+                      }}
+                    >
+                      <Badge tone="success" style={{ width: 'fit-content' }}>
+                        ● Active
+                      </Badge>
+                      <div className="lrn-pathway-bar" style={{ width: '100%' }}>
+                        <div className="fill" style={{ width: `${coursePercent}%` }} />
+                      </div>
+                    </div>
+                  ) : (
                     <Image
                       src={MODULE_PHOTOS[index % MODULE_PHOTOS.length]}
                       alt=""
@@ -421,74 +519,65 @@ export function HomeView({
                       height={108}
                       className="thumb"
                     />
-                    <div className="lrn-mcard-body">
-                      <div className="t">{course.title}</div>
-                      <div style={{ fontSize: 12, color: 'var(--ink-muted)' }}>
-                        Module {index + 1} · {courseLessonCount(course)} lessons
-                      </div>
-                      <Badge tone={courseStatusTone[status]} style={{ width: 'fit-content' }}>
-                        {courseStatusLabel[status]}
-                      </Badge>
+                  )}
+                  <div className="lrn-mcard-body">
+                    <div className="t">{course.title}</div>
+                    <div style={{ fontSize: 12, color: 'var(--ink-muted)' }}>
+                      Module {index + 1} · {courseLessonCount(course)} lessons
                     </div>
-                  </button>
-                );
-              })}
-              <Link href="/learner/my-learning" className="lrn-allcard">
-                <Icon name="chevron-right" className="h-4.5 w-4.5" />
-                View all
-                <br />
-                modules
-              </Link>
-            </div>
+                    <Badge tone={courseStatusTone[status]} style={{ width: 'fit-content' }}>
+                      {courseStatusLabel[status]}
+                    </Badge>
+                  </div>
+                </button>
+              );
+            })}
+            <Link href="/learner/my-learning" className="lrn-allcard">
+              <Icon name="chevron-right" className="h-4.5 w-4.5" />
+              View all
+              <br />
+              modules
+            </Link>
           </div>
 
-          {credentials.length > 0 && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-              <div className="lrn-sechead">
-                <h2>Certificates</h2>
-                <Link href="/learner/certificates">View all certificates →</Link>
+          {evidencePieces.length > 0 && (
+            <>
+              <div className="sec-head" style={{ marginTop: 20 }}>
+                <div className="left">
+                  <Icon name="briefcase" className="h-3.5 w-3.5" />
+                  <span>Portfolio</span>
+                </div>
+                <Link href="/learner/portfolio">View all</Link>
               </div>
-              <div className="cert-row-list">
-                {credentials.slice(0, 3).map((credential) => (
-                  <div className="cert-row" key={credential.certificateId}>
-                    <div
-                      style={{
-                        width: 44,
-                        height: 44,
-                        borderRadius: 'var(--nfcap-radius-md)',
-                        background: 'var(--status-complete-bg)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        flexShrink: 0,
-                        color: 'var(--status-complete)',
-                      }}
-                    >
-                      <Icon name="award" className="h-5 w-5" />
-                    </div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontWeight: 600, fontSize: 14, color: 'var(--ink)' }}>
-                        {credential.course.title}
-                      </div>
-                      <div style={{ fontSize: 12.5, color: 'var(--ink-muted)' }}>
-                        Certificate ID {credential.certificateId}
+              <div className="lrn-pcard-grid">
+                {evidencePieces.map((piece, index) => (
+                  <div className="lrn-pcard" key={piece.key}>
+                    <Image
+                      src={MODULE_PHOTOS[index % MODULE_PHOTOS.length]}
+                      alt=""
+                      width={44}
+                      height={44}
+                      className="thumb"
+                    />
+                    <div className="pcard-body">
+                      <div className="t">{piece.title}</div>
+                      <div className="chips">
+                        <span className="chip">{piece.courseTitle}</span>
+                        <span className="chip verified">
+                          <Icon name="check" className="h-2.5 w-2.5" />
+                          Met
+                        </span>
                       </div>
                     </div>
-                    <Link href="/learner/certificates">
-                      <Button size="sm" variant="secondary">
-                        <Icon name="file-text" className="h-3 w-3" />
-                        View
-                      </Button>
-                    </Link>
                   </div>
                 ))}
               </div>
-            </div>
+            </>
           )}
         </div>
 
         {/* Sidebar */}
-        <aside style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <aside className="status-col">
           {nextUp && (
             <div className="lrn-side-panel">
               <div className="lrn-side-title">
@@ -509,10 +598,19 @@ export function HomeView({
                     {nextUp.remaining} lesson{nextUp.remaining === 1 ? '' : 's'} left in this course
                   </div>
                 </div>
+                <Icon
+                  name="chevron-right"
+                  className="h-4 w-4"
+                  style={{ color: 'var(--ink-faint)', flexShrink: 0 }}
+                />
               </div>
             </div>
           )}
 
+          {/* "Your mentor" stays "Not yet assigned" with no action — there is no mentor-assignment
+              model anywhere in prisma/schema.prisma yet (docs/build/LRN01_HOME_DRIFT.md point 1).
+              The board's real name + "Message mentor" button is blocked on that schema decision,
+              not a styling gap — don't fabricate either here. */}
           <div className="lrn-side-panel">
             <div className="lrn-side-title">
               <h3>Your mentor</h3>
@@ -625,64 +723,82 @@ export function HomeView({
             </div>
           )}
 
-          <div
-            style={{
-              borderRadius: 'var(--nfcap-radius-lg)',
-              overflow: 'hidden',
-              position: 'relative',
-              height: 180,
-            }}
-          >
-            <Image
-              src="/images/learner/flooring-fundamentals.jpg"
-              alt=""
-              fill
-              style={{ objectFit: 'cover' }}
-            />
-            <div
-              style={{
-                position: 'absolute',
-                inset: 0,
-                padding: 18,
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'flex-end',
-                background: 'linear-gradient(180deg, rgba(9,28,65,0.1), rgba(9,28,65,0.88))',
-              }}
-            >
-              <div
-                style={{
-                  color: '#fff',
-                  fontSize: 15,
-                  fontWeight: 700,
-                  fontFamily: 'var(--font-display)',
-                  lineHeight: 1.3,
-                  marginBottom: 10,
-                }}
-              >
-                Build your skills.
-                <br />
-                Grow your career.
+          {reviewItems.length > 0 && (
+            <div className="lrn-side-panel">
+              <div className="lrn-side-title">
+                <h3>To be reviewed</h3>
               </div>
-              <Link
-                href="/learner/explore"
-                style={{
-                  background: '#fff',
-                  color: '#102047',
-                  padding: '8px 14px',
-                  borderRadius: 'var(--nfcap-radius-md)',
-                  fontSize: 12,
-                  fontWeight: 700,
-                  alignSelf: 'flex-start',
-                  textDecoration: 'none',
-                }}
-              >
-                Explore pathways →
-              </Link>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {reviewItems.map((course) => (
+                  <div className="lrn-review-row" key={course.id}>
+                    <div
+                      className="lrn-review-icon"
+                      style={{ background: '#eff6ff', color: 'var(--nfcap-accent)' }}
+                    >
+                      <Icon name="file-text" className="h-3.5 w-3.5" />
+                    </div>
+                    <div className="lrn-review-body">
+                      <div className="lrn-review-title">{course.title} Evidence</div>
+                      <div className="lrn-review-meta">Assignment · Pending review</div>
+                    </div>
+                    <Icon
+                      name="chevron-right"
+                      className="h-4 w-4"
+                      style={{ color: 'var(--ink-faint)', flexShrink: 0 }}
+                    />
+                  </div>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
+
+          {sidebarCertificates.length > 0 && (
+            <div className="lrn-side-panel">
+              <div className="lrn-side-title">
+                <h3>Certificates</h3>
+                <Link href="/learner/certificates">View all</Link>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {sidebarCertificates.map((credential) => (
+                  <div className="lrn-review-row" key={credential.certificateId}>
+                    <div
+                      className="lrn-review-icon"
+                      style={{
+                        background: 'var(--status-complete-bg)',
+                        color: 'var(--status-complete)',
+                      }}
+                    >
+                      <Icon name="award" className="h-3.5 w-3.5" />
+                    </div>
+                    <div className="lrn-review-body">
+                      <div className="lrn-review-title">{credential.course.title}</div>
+                      <div className="lrn-review-meta">
+                        Earned{' '}
+                        {new Date(credential.issuedAt).toLocaleDateString(undefined, {
+                          year: 'numeric',
+                          month: 'short',
+                          day: 'numeric',
+                        })}
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      className="lrn-dl-btn"
+                      disabled={downloadingCertId === credential.rawId}
+                      aria-label="Download certificate"
+                      onClick={() => downloadCertificatePdf(credential.rawId)}
+                    >
+                      <Icon name="download" className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </aside>
       </div>
+
+      <LockedCourseDialog course={lockedCourse} onClose={() => setLockedCourse(null)} />
     </div>
   );
 }

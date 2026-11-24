@@ -22,7 +22,15 @@ import {
   useSidebar,
 } from '@/components/admin-ui/sidebar';
 
-export function NavUser({ name, email }: { name: string; email: string }) {
+export function NavUser({
+  name,
+  email,
+  accountHref = '/admin/account',
+}: {
+  name: string;
+  email: string;
+  accountHref?: string;
+}) {
   const { isMobile } = useSidebar();
   const displayName = name || email;
 
@@ -65,7 +73,7 @@ export function NavUser({ name, email }: { name: string; email: string }) {
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
               <DropdownMenuItem asChild>
-                <Link href="/admin/account">
+                <Link href={accountHref}>
                   <Icon name="user" className="size-4" />
                   Account
                 </Link>

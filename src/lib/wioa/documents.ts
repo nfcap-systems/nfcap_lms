@@ -24,6 +24,27 @@ export const WIOA_DOCUMENT_REQUIREMENT_TEMPLATES: {
     conditional: false,
     applicableRule: null,
   },
+  /** Split out from Identity Document (docs/client/NFCAP_LMS_Production_Scope_Summary_Client.md
+   * journey step 3 names "right to work" as its own checklist item, distinct from "ID") — matches
+   * the real Tri-Valley Career Center packet's own separate "Proof of Right-to-Work" section. */
+  {
+    name: 'Proof of Right-to-Work',
+    description:
+      'At least one of: California Driver License AND Social Security Card, unexpired U.S. Passport, U.S. Birth Certificate, or Permanent Resident Card.',
+    conditional: false,
+    applicableRule: null,
+  },
+  /** Scope-committed (NFCAP_LMS_Production_Scope_Summary_Client.md journey step 3: "proof of
+   * residency") — was entirely missing from this template set. No profile field encodes "lived in
+   * this county N months," so this follows the same conditional:false precedent as Selective
+   * Service below: always created, staff/learner mark Not Applicable when it doesn't apply. */
+  {
+    name: 'Proof of Residency',
+    description:
+      'Proof of residency or employment in the service area within the last 6 months — a valid CA driver license/ID with your current address, a recent (within 30 days) utility, financial, health, or W-2 form with your current address, or a layoff letter/paystub showing your name and employer address.',
+    conditional: false,
+    applicableRule: null,
+  },
   {
     name: 'Selective Service Verification',
     description: 'Proof of Selective Service registration, where applicable under WIOA rules.',
@@ -36,6 +57,24 @@ export const WIOA_DOCUMENT_REQUIREMENT_TEMPLATES: {
       'Required if you filed for, are receiving, or exhausted Unemployment Insurance within the last 6 months.',
     conditional: true,
     applicableRule: "unemploymentInsuranceStatus is not 'Not applicable'",
+  },
+  /** Scope-committed (same journey-step-3 list: "resume"). No learnerProfile field to condition
+   * on, so non-conditional like Identity/Right-to-Work/Residency above. */
+  {
+    name: 'Resume',
+    description: 'A copy of your current resume.',
+    conditional: false,
+    applicableRule: null,
+  },
+  /** Scope-committed (same journey-step-3 list: "veteran status"). No veteran-status field exists
+   * on LearnerProfile (unlike unemploymentInsuranceStatus for the EDD letter above), so this can't
+   * be conditioned automatically the way EDD is — follows the same conditional:false precedent as
+   * Selective Service: always created, marked Not Applicable by staff/learner when it doesn't apply. */
+  {
+    name: 'Proof of Veteran Status',
+    description: 'DD-214, if you have been discharged from active military duty.',
+    conditional: false,
+    applicableRule: null,
   },
   {
     name: 'CalJOBS Account',

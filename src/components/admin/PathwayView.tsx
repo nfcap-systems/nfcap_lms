@@ -16,8 +16,6 @@ import {
   arrayMove,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { Badge } from '@/components/admin-ui/badge';
-import { Card } from '@/components/admin-ui/card';
 import { Icon } from '@/components/icons';
 import { cn } from '@/lib/utils';
 import { reorderPathway, setCourseAccess } from '@/lib/actions/courses';
@@ -65,28 +63,30 @@ export function PathwayView({ courses }: { courses: AdminCourse[] }) {
   }
 
   return (
-    <div className="flex flex-col gap-4">
-      <p className="text-sm text-muted-foreground">
-        Drag to reorder the apprenticeship pathway. A learner sees a{' '}
-        <span className="font-medium text-foreground">Restricted</span> course as locked until the
-        course before it in this order is completed.
-      </p>
-
+    <div className="panel" style={{ padding: 0, overflow: 'hidden' }}>
+      <div
+        style={{
+          padding: '16px 20px',
+          borderBottom: '1px solid var(--nfcap-border)',
+          fontWeight: 600,
+          fontSize: 14.5,
+        }}
+      >
+        Pathway order — drag to reorder
+      </div>
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
         <SortableContext items={ordered.map((c) => c.id)} strategy={verticalListSortingStrategy}>
-          <Card className="overflow-hidden py-0">
-            <ul className="divide-y divide-border">
-              {ordered.map((course, index) => (
-                <PathwayRow
-                  key={course.id}
-                  course={course}
-                  position={index + 1}
-                  pending={Boolean(pendingAccess[course.id])}
-                  onToggleAccess={() => handleAccessToggle(course)}
-                />
-              ))}
-            </ul>
-          </Card>
+          <div>
+            {ordered.map((course, index) => (
+              <PathwayRow
+                key={course.id}
+                course={course}
+                position={index + 1}
+                pending={Boolean(pendingAccess[course.id])}
+                onToggleAccess={() => handleAccessToggle(course)}
+              />
+            ))}
+          </div>
         </SortableContext>
       </DndContext>
     </div>
@@ -114,55 +114,51 @@ function PathwayRow({
   };
 
   return (
-    <li
+    <div
       ref={setNodeRef}
-      style={style}
-      className={cn(
-        'flex items-center gap-3 bg-card px-4 py-3',
-        isDragging && 'relative z-10 shadow-md',
-      )}
+      style={{
+        ...style,
+        background: course.access === 'restricted' ? 'var(--surface-muted)' : undefined,
+      }}
+      className={cn('step', isDragging && 'relative z-10 shadow-md')}
     >
       <button
         type="button"
         aria-label={`Reorder ${course.title}`}
-        className="flex size-7 shrink-0 cursor-grab items-center justify-center rounded-md text-muted-foreground hover:bg-muted active:cursor-grabbing"
+        className="handle"
+        style={{ background: 'none', border: 'none', padding: 0, display: 'flex' }}
         {...attributes}
         {...listeners}
       >
-        <Icon name="grip-vertical" className="size-4" />
+        <Icon name="grip-vertical" className="h-4 w-4" />
       </button>
 
-      <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
-        {String(position).padStart(2, '0')}
-      </span>
+      <span style={{ width: 22, fontWeight: 700, color: 'var(--ink-muted)' }}>{position}</span>
 
-      <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-medium text-foreground">{course.title}</p>
-        <p className="truncate text-xs text-muted-foreground">{course.category}</p>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontWeight: 600 }}>{course.title}</div>
+        {!course.published && (
+          <div style={{ fontSize: 12, color: 'var(--ink-muted)' }}>Unpublished</div>
+        )}
       </div>
 
-      {!course.published && <Badge variant="outline">Unpublished</Badge>}
+      <span
+        className={course.access === 'restricted' ? 'badge-neutral' : 'badge-accent'}
+        style={{ flex: 'none' }}
+      >
+        {course.access === 'restricted' && <Icon name="lock" className="h-3 w-3" />}
+        {course.access === 'restricted' ? 'Restricted' : 'Open to all'}
+      </span>
 
       <button
         type="button"
         onClick={onToggleAccess}
         disabled={pending}
-        className={cn(
-          'shrink-0 rounded-full border px-2.5 py-0.5 text-xs font-medium transition-colors disabled:opacity-60',
-          course.access === 'restricted'
-            ? 'border-destructive/30 bg-destructive/10 text-destructive'
-            : 'border-border bg-muted text-muted-foreground hover:border-primary/40',
-        )}
+        className="btn-secondary btn-sm"
+        style={{ flex: 'none' }}
       >
-        {course.access === 'restricted' ? (
-          <span className="inline-flex items-center gap-1">
-            <Icon name="lock" className="size-3" />
-            Restricted
-          </span>
-        ) : (
-          'Open'
-        )}
+        {course.access === 'restricted' ? 'Open to all' : 'Restrict'}
       </button>
-    </li>
+    </div>
   );
 }

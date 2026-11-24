@@ -5,120 +5,161 @@ import { useRouter } from 'next/navigation';
 
 import { updateWioaEmailTemplate } from '@/lib/actions/wioa-email-template';
 import type { WioaEmailTemplateRecord } from '@/lib/data/wioa-email-template';
-import { Button } from '@/components/admin-ui/button';
-import { Card } from '@/components/admin-ui/card';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/admin-ui/dialog';
-import { Input } from '@/components/admin-ui/input';
-import { Label } from '@/components/admin-ui/label';
-import { Textarea } from '@/components/admin-ui/textarea';
+import { fillWioaEmailTemplate } from '@/lib/wioa/email-template';
 
-const PLACEHOLDER_HINT =
-  'Available tokens: {{learnerName}}, {{city}}, {{zip}}, {{courseTitle}}, {{learnerEmail}}, {{learnerPhone}}';
+const TOKENS = ['learnerName', 'city', 'zip', 'courseTitle', 'learnerEmail', 'learnerPhone'];
+
+const PREVIEW_SAMPLE = {
+  learnerName: 'Jordan Alvarez',
+  city: 'Los Angeles',
+  zip: '90012',
+  courseTitle: 'Tile Installation',
+  learnerEmail: 'jordan.alvarez@example.com',
+  learnerPhone: '(213) 555-0148',
+};
 
 export function WioaEmailTemplateAdminView({ template }: { template: WioaEmailTemplateRecord }) {
   const router = useRouter();
-  const [editOpen, setEditOpen] = useState(false);
-
-  return (
-    <div className="flex flex-col gap-4">
-      <div className="flex justify-end">
-        <Button onClick={() => setEditOpen(true)}>Edit template</Button>
-      </div>
-
-      <Card className="py-0">
-        <div className="border-b px-4 py-3">
-          <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
-            Subject
-          </p>
-          <p className="mt-1 text-sm font-medium text-foreground">{template.subject}</p>
-        </div>
-        <div className="p-4">
-          <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">Body</p>
-          <pre className="mt-1 font-sans text-sm whitespace-pre-wrap text-foreground">
-            {template.body}
-          </pre>
-        </div>
-      </Card>
-
-      <EditDialog
-        template={template}
-        open={editOpen}
-        onOpenChange={setEditOpen}
-        onSaved={() => router.refresh()}
-      />
-    </div>
-  );
-}
-
-function EditDialog({
-  template,
-  open,
-  onOpenChange,
-  onSaved,
-}: {
-  template: WioaEmailTemplateRecord;
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  onSaved: () => void;
-}) {
   const [subject, setSubject] = useState(template.subject);
   const [body, setBody] = useState(template.body);
   const [submitting, setSubmitting] = useState(false);
+  const [justSaved, setJustSaved] = useState(false);
 
   const valid = subject.trim().length > 0 && body.trim().length > 0;
+  const dirty = subject !== template.subject || body !== template.body;
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg">
-        <DialogHeader>
-          <DialogTitle>Edit WIOA outreach email</DialogTitle>
-          <DialogDescription>{PLACEHOLDER_HINT}</DialogDescription>
-        </DialogHeader>
-        <div className="flex flex-col gap-3">
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="email-subject">Subject</Label>
-            <Input
-              id="email-subject"
-              value={subject}
-              onChange={(e) => setSubject(e.target.value)}
-              autoFocus
-            />
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="email-body">Body</Label>
-            <Textarea
-              id="email-body"
-              value={body}
-              onChange={(e) => setBody(e.target.value)}
-              rows={14}
-            />
-          </div>
+    <div className="flex flex-col gap-4">
+      <div className="pagehdr">
+        <div>
+          <h1>Outreach Email Template</h1>
+          <p>Pre-fills the message a learner reviews and sends from their Funding page.</p>
         </div>
-        <DialogFooter>
-          <Button variant="ghost" onClick={() => onOpenChange(false)}>
-            Cancel
-          </Button>
-          <Button
-            disabled={!valid || submitting}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 'none' }}>
+          {justSaved && !dirty && (
+            <span style={{ fontSize: 12.5, color: 'var(--ink-muted)' }}>Saved</span>
+          )}
+          <button
+            type="button"
+            className="btn-primary btn-sm"
+            disabled={!valid || !dirty || submitting}
             onClick={async () => {
               setSubmitting(true);
               await updateWioaEmailTemplate({ subject: subject.trim(), body: body.trim() });
               setSubmitting(false);
-              onOpenChange(false);
-              onSaved();
+              setJustSaved(true);
+              router.refresh();
             }}
           >
-            Save changes
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+            Save template
+          </button>
+        </div>
+      </div>
+
+      <div className="wioa-cols">
+        <div className="panel" style={{ flex: 1.2 }}>
+          <div style={{ fontWeight: 600, fontSize: 13.5, marginBottom: 12 }}>Template</div>
+          <label className="field-label" htmlFor="email-subject">
+            Subject
+          </label>
+          <input
+            id="email-subject"
+            className="field-input"
+            style={{ marginBottom: 12 }}
+            value={subject}
+            onChange={(e) => {
+              setSubject(e.target.value);
+              setJustSaved(false);
+            }}
+          />
+          <label className="field-label" htmlFor="email-body">
+            Body
+          </label>
+          <textarea
+            id="email-body"
+            className="field-textarea"
+            style={{ minHeight: 280 }}
+            value={body}
+            onChange={(e) => {
+              setBody(e.target.value);
+              setJustSaved(false);
+            }}
+          />
+          <div
+            style={{
+              marginTop: 16,
+              borderTop: '1px solid var(--nfcap-border)',
+              paddingTop: 14,
+            }}
+          >
+            <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 8 }}>
+              Available variables
+            </div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+              {TOKENS.map((token) => (
+                <span key={token} className="chip2">{`{{${token}}}`}</span>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div className="panel">
+          <div>
+            <div style={{ fontWeight: 600, fontSize: 13.5, marginBottom: 10 }}>Email preview</div>
+            <div
+              style={{
+                border: '1px solid var(--nfcap-border)',
+                borderRadius: 'var(--nfcap-radius-md)',
+                overflow: 'hidden',
+              }}
+            >
+              <div
+                style={{
+                  padding: '10px 12px',
+                  borderBottom: '1px solid var(--nfcap-border)',
+                  background: 'var(--surface-muted)',
+                }}
+              >
+                <div style={{ fontSize: 11, color: 'var(--ink-muted)', marginBottom: 2 }}>
+                  Subject
+                </div>
+                <div style={{ fontSize: 13, fontWeight: 600 }}>
+                  {fillWioaEmailTemplate(subject, PREVIEW_SAMPLE) || '—'}
+                </div>
+              </div>
+              <pre
+                style={{
+                  margin: 0,
+                  padding: '12px',
+                  fontFamily: 'inherit',
+                  fontSize: 12.5,
+                  whiteSpace: 'pre-wrap',
+                  color: 'var(--ink)',
+                }}
+              >
+                {fillWioaEmailTemplate(body, PREVIEW_SAMPLE) || '—'}
+              </pre>
+            </div>
+            <div style={{ fontSize: 11.5, color: 'var(--ink-faint)', marginTop: 8 }}>
+              Shown with example learner data — not sent.
+            </div>
+          </div>
+
+          <div
+            style={{
+              marginTop: 16,
+              borderTop: '1px solid var(--nfcap-border)',
+              paddingTop: 14,
+            }}
+          >
+            <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 8 }}>Delivery</div>
+            <div style={{ fontSize: 12.5, color: 'var(--ink-muted)', lineHeight: 1.6 }}>
+              Learner reviews and confirms before sending — this template is never sent
+              automatically.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }

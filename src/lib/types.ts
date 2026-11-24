@@ -49,6 +49,9 @@ export type Assessment = {
   id: string;
   /** Fraction of questions (0-1) a learner must answer correctly to pass. */
   passThreshold: number;
+  /** Null means unlimited attempts (Quiz Engine Depth, Layer 1 — enforced server-side in
+   * recordQuizAttempt; surfaced here only for display, e.g. LRN05-QuizPre's facts card). */
+  maxAttempts: number | null;
   questions: QuizQuestion[];
 };
 

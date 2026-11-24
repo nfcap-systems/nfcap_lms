@@ -7,13 +7,12 @@ export default async function AdminRolesPage() {
   const users = await getAllUsersWithRoles();
 
   return (
-    <div className="flex flex-col gap-6">
-      <div>
-        <h1 className="text-xl font-semibold text-foreground">Role Management</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Assign or change a user&apos;s role, or deactivate an account that&apos;s leaving. New
-          accounts start as Learner at signup.
-        </p>
+    <div className="flex flex-col gap-4">
+      <div className="pagehdr">
+        <div>
+          <h1>Roles &amp; Access</h1>
+          <p>New accounts start as Learner.</p>
+        </div>
       </div>
 
       <RoleManagementTable users={users} currentUserId={user?.id ?? ''} />

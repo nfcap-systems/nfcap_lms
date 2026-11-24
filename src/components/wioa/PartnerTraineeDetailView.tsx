@@ -20,7 +20,10 @@ const COURSE_STATUS_LABEL: Record<TraineeCourseProgress['status'], string> = {
   'not-started': 'Not started',
 };
 
-const COURSE_STATUS_TONE: Record<TraineeCourseProgress['status'], 'success' | 'pending' | 'neutral'> = {
+const COURSE_STATUS_TONE: Record<
+  TraineeCourseProgress['status'],
+  'success' | 'pending' | 'neutral'
+> = {
   complete: 'success',
   'in-progress': 'pending',
   'not-started': 'neutral',
@@ -35,7 +38,10 @@ const DOC_STATUS_LABEL: Record<WioaDocumentRecord['status'], string> = {
   NOT_APPLICABLE: 'Not applicable',
 };
 
-const DOC_STATUS_TONE: Record<WioaDocumentRecord['status'], 'success' | 'pending' | 'danger' | 'neutral'> = {
+const DOC_STATUS_TONE: Record<
+  WioaDocumentRecord['status'],
+  'success' | 'pending' | 'danger' | 'neutral'
+> = {
   MISSING: 'danger',
   UPLOADED: 'pending',
   UNDER_REVIEW: 'pending',
@@ -51,7 +57,11 @@ function initials(name: string): string {
 
 function formatDate(value: Date | string | null | undefined): string {
   if (!value) return '—';
-  return new Date(value).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  return new Date(value).toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  });
 }
 
 export function PartnerTraineeDetailView({
@@ -69,10 +79,15 @@ export function PartnerTraineeDetailView({
   const [savingNote, setSavingNote] = useState(false);
   const [sendingReminder, setSendingReminder] = useState(false);
 
-  const missingDocs = wioaCase.documents.filter((d) => d.status === 'MISSING' || d.status === 'REJECTED');
-  const completedCount = courseProgress.filter((c) => c.status === 'complete').length;
-  const completionPercent =
-    courseProgress.length > 0 ? Math.round((completedCount / courseProgress.length) * 100) : 0;
+  const missingDocs = wioaCase.documents.filter(
+    (d) => d.status === 'MISSING' || d.status === 'REJECTED',
+  );
+  // The board's ring/badge track enrollment, not completion ("1 of 4 courses enrolled") — a
+  // learner who's enrolled-but-not-finished still counts here, same convention used elsewhere
+  // (HomeView/MyLearningView) for "enrolled."
+  const enrolledCount = courseProgress.filter((c) => c.status !== 'not-started').length;
+  const enrolledPercent =
+    courseProgress.length > 0 ? Math.round((enrolledCount / courseProgress.length) * 100) : 0;
   const notes = wioaCase.communications.filter((c) => c.channel === 'NOTE');
 
   async function saveNote() {
@@ -112,7 +127,10 @@ export function PartnerTraineeDetailView({
       <ProfileHeader
         left={
           <>
-            <CompletionRing percentage={completionPercent} initials={initials(wioaCase.learnerName)} />
+            <CompletionRing
+              percentage={enrolledPercent}
+              initials={initials(wioaCase.learnerName)}
+            />
             <div style={{ minWidth: 0 }}>
               <h1 className="phdr-name">{wioaCase.learnerName}</h1>
               <p className="phdr-sub">
@@ -125,7 +143,7 @@ export function PartnerTraineeDetailView({
                   </Badge>
                 )}
                 <span className="pbadge">
-                  {completedCount} of {courseProgress.length} courses complete
+                  {enrolledCount} of {courseProgress.length} courses enrolled
                 </span>
                 <span className="pbadge">Case opened {formatDate(wioaCase.createdAt)}</span>
               </div>
@@ -133,9 +151,26 @@ export function PartnerTraineeDetailView({
           </>
         }
         actions={
-          <Button variant="primary" size="sm" disabled={sendingReminder} onClick={sendReminder}>
-            {sendingReminder ? 'Sending…' : 'Send reminder'}
-          </Button>
+          <>
+            {/* No Messaging UI exists yet (backend only, Layer 1) — disabled rather than
+                fabricated, same honest-disclosure pattern used elsewhere. */}
+            <button type="button" className="btn-secondary btn-sm" disabled title="Not yet built">
+              <Icon name="mail" className="h-3.5 w-3.5" />
+              Message
+            </button>
+            <Button variant="primary" size="sm" disabled={sendingReminder} onClick={sendReminder}>
+              {sendingReminder ? 'Sending…' : 'Send reminder'}
+            </Button>
+            <button
+              type="button"
+              className="iconbtn-sm"
+              aria-label="More actions"
+              disabled
+              title="Not yet built"
+            >
+              •••
+            </button>
+          </>
         }
       />
 
@@ -156,7 +191,9 @@ export function PartnerTraineeDetailView({
           <div>
             <div className="ov-h">Required documents</div>
             {wioaCase.documents.length === 0 ? (
-              <p style={{ fontSize: 13, color: 'var(--ink-muted)' }}>No documents required for this case.</p>
+              <p style={{ fontSize: 13, color: 'var(--ink-muted)' }}>
+                No documents required for this case.
+              </p>
             ) : (
               <div className="doccard">
                 {wioaCase.documents.map((doc) => (
@@ -169,15 +206,26 @@ export function PartnerTraineeDetailView({
                       <div className="doc-desc">{doc.requirementDescription}</div>
                     </div>
                     <div className="doc-meta">
-                      <Badge tone={DOC_STATUS_TONE[doc.status]}>{DOC_STATUS_LABEL[doc.status]}</Badge>
+                      <Badge tone={DOC_STATUS_TONE[doc.status]}>
+                        {DOC_STATUS_LABEL[doc.status]}
+                      </Badge>
                     </div>
                     <div className="doc-actions">
                       {doc.status === 'MISSING' || doc.status === 'REJECTED' ? (
-                        <Button variant="primary" size="sm" disabled={sendingReminder} onClick={sendReminder}>
+                        <Button
+                          variant="primary"
+                          size="sm"
+                          disabled={sendingReminder}
+                          onClick={sendReminder}
+                        >
                           Send reminder
                         </Button>
                       ) : (
-                        <button type="button" className="dtbtn" onClick={() => viewDocument(doc.id)}>
+                        <button
+                          type="button"
+                          className="dtbtn"
+                          onClick={() => viewDocument(doc.id)}
+                        >
                           View
                         </button>
                       )}
@@ -199,10 +247,14 @@ export function PartnerTraineeDetailView({
             ) : (
               notes.map((n) => (
                 <div className="noterow" key={n.id}>
-                  <div className="note-av">{initials(wioaCase.assignedPartnerStaffName ?? 'Staff')}</div>
+                  <div className="note-av">
+                    {initials(wioaCase.assignedPartnerStaffName ?? 'Staff')}
+                  </div>
                   <div>
                     <div style={{ fontSize: 12.5, fontWeight: 500 }}>{formatDate(n.sentAt)}</div>
-                    <div style={{ fontSize: 12, color: 'var(--ink-muted)', marginTop: 2 }}>{n.body}</div>
+                    <div style={{ fontSize: 12, color: 'var(--ink-muted)', marginTop: 2 }}>
+                      {n.body}
+                    </div>
                   </div>
                 </div>
               ))

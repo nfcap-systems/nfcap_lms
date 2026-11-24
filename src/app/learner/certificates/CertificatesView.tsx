@@ -1,8 +1,11 @@
 'use client';
 
+import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui';
 import { Icon } from '@/components/icons';
+import { LockedCourseDialog, LOCKED_COURSE_COPY } from '@/components/learner/LockedCourseDialog';
+import { generateCertificatePublicSlug } from '@/lib/actions/credentials';
 import { courseLessonCount } from '@/lib/types';
 import type { AdminCourse } from '@/lib/data/courses';
 import type { CourseProgress } from '@/lib/data/progress';
@@ -23,7 +26,18 @@ export function CertificatesView({
   learnerName: string;
 }) {
   const router = useRouter();
+  const [lockedCourse, setLockedCourse] = useState<AdminCourse | null>(null);
+  const [, startSampleTransition] = useTransition();
   const earnedByCourseId = new Map(credentials.map((c) => [c.course.id, c]));
+
+  function viewSampleVerification() {
+    const sample = credentials[0];
+    if (!sample) return;
+    startSampleTransition(async () => {
+      const slug = await generateCertificatePublicSlug(sample.rawId);
+      router.push(`/verify/${slug}`);
+    });
+  }
   const nextUp = pathway.find((course) => {
     const progress = progressMap[course.id];
     return progress?.enrolled && !earnedByCourseId.has(course.id);
@@ -32,31 +46,65 @@ export function CertificatesView({
   const nextUpDone = nextUp ? (progressMap[nextUp.id]?.completedLessonIds.length ?? 0) : 0;
   const nextUpPercent = nextUpTotal > 0 ? Math.round((nextUpDone / nextUpTotal) * 100) : 0;
 
-  if (pathway.length === 0) {
+  // Board's condition (LRN08b-CertificatesEmpty) is "zero certificates earned", not "no courses
+  // at all" — the common real case (enrolled, in progress, nothing earned yet) was previously
+  // rendering the credentials grid with every card muted instead of this screen.
+  if (credentials.length === 0) {
     return (
       <div className="flex flex-col gap-6">
-        <div
-          style={{
-            fontSize: 26,
-            fontWeight: 700,
-            fontFamily: 'var(--font-display)',
-            color: 'var(--ink)',
-          }}
-        >
-          Certificates
+        <div>
+          <div
+            style={{
+              fontSize: 26,
+              fontWeight: 700,
+              fontFamily: 'var(--font-display)',
+              color: 'var(--ink)',
+            }}
+          >
+            Certificates
+          </div>
+          <div style={{ fontSize: 13.5, color: 'var(--ink-muted)', marginTop: 4 }}>
+            View, download as a PDF, or share a public verification link.
+          </div>
         </div>
         <div
           style={{
-            borderRadius: 'var(--nfcap-radius-lg)',
-            background: 'var(--surface-muted)',
+            background: 'var(--surface)',
             border: '1px solid var(--nfcap-border)',
-            padding: 28,
+            borderRadius: 'var(--nfcap-radius-lg)',
+            boxShadow: 'var(--nfcap-shadow-sm)',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            textAlign: 'center',
+            gap: 18,
+            padding: '88px 24px',
           }}
         >
-          <p style={{ fontSize: 13.5, color: 'var(--ink-muted)' }}>
-            Complete a course&apos;s lessons, pass its Knowledge Assessment, and submit Practical
-            Evidence. Once NFCAP staff verify it, your certificate appears here.
-          </p>
+          <div
+            style={{
+              width: 64,
+              height: 64,
+              borderRadius: '50%',
+              background: 'var(--surface-muted)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: 'var(--ink-muted)',
+            }}
+          >
+            <Icon name="award" className="h-7 w-7" />
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxWidth: 430 }}>
+            <b style={{ fontSize: 19, fontFamily: 'var(--font-display)', color: 'var(--ink)' }}>
+              No certificates earned yet
+            </b>
+            <div style={{ fontSize: 13.5, color: 'var(--ink-muted)', lineHeight: 1.6 }}>
+              Finish a module to earn your first certificate — it&apos;ll appear here automatically,
+              ready to view, download as a PDF, and share.
+            </div>
+          </div>
+          <Button onClick={() => router.push('/learner/my-learning')}>Go to My Learning</Button>
         </div>
       </div>
     );
@@ -76,12 +124,11 @@ export function CertificatesView({
           Certificates
         </div>
         <div style={{ fontSize: 13.5, color: 'var(--ink-muted)', marginTop: 4 }}>
-          On-screen today — a downloadable PDF and public verification link are Phase 4 work, not
-          available here yet.
+          View, download as a PDF, or share a public verification link.
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 14 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 14 }}>
         <div className="lrn-stat">
           <span className="lrn-stat-icon" style={{ background: '#f0fdf4', color: '#166534' }}>
             <Icon name="award" className="h-5 w-5" />
@@ -107,11 +154,20 @@ export function CertificatesView({
         </div>
         <div className="lrn-stat">
           <span className="lrn-stat-icon" style={{ background: '#fef3c7', color: '#b45309' }}>
-            <Icon name="clock" className="h-5 w-5" />
+            <Icon name="download" className="h-5 w-5" />
           </span>
           <div className="vals">
             <span className="n">PDF</span>
-            <span className="l">Download — Phase 4</span>
+            <span className="l">Download, any time</span>
+          </div>
+        </div>
+        <div className="lrn-stat">
+          <span className="lrn-stat-icon" style={{ background: '#f3eefe', color: '#7c3aed' }}>
+            <Icon name="shield" className="h-5 w-5" />
+          </span>
+          <div className="vals">
+            <span className="n">Verified</span>
+            <span className="l">Shareable, public link</span>
           </div>
         </div>
       </div>
@@ -155,6 +211,9 @@ export function CertificatesView({
               return (
                 <div
                   key={course.id}
+                  role={locked ? 'button' : undefined}
+                  tabIndex={locked ? 0 : undefined}
+                  onClick={locked ? () => setLockedCourse(course) : undefined}
                   style={{
                     background: 'var(--surface)',
                     border: '1px solid var(--nfcap-border)',
@@ -165,6 +224,7 @@ export function CertificatesView({
                     flexDirection: 'column',
                     gap: 12,
                     opacity: locked ? 0.55 : 0.85,
+                    cursor: locked ? 'pointer' : 'default',
                   }}
                 >
                   <div style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
@@ -187,7 +247,7 @@ export function CertificatesView({
                       <b style={{ fontSize: 15, color: 'var(--ink)' }}>{course.title}</b>
                       <div style={{ fontSize: 12.5, color: 'var(--ink-muted)', marginTop: 2 }}>
                         {locked
-                          ? 'Locked'
+                          ? LOCKED_COURSE_COPY
                           : progress?.enrolled
                             ? `${percent}% complete`
                             : 'Not yet earned'}
@@ -247,7 +307,8 @@ export function CertificatesView({
                 className="h-3.5 w-3.5"
                 style={{ color: 'var(--nfcap-accent)', flexShrink: 0, marginTop: 2 }}
               />
-              Certificates are issued once NFCAP staff verify your Practical Evidence.
+              Every earned certificate gets a public verification link — no login needed to check
+              it.
             </div>
             <div
               style={{
@@ -264,9 +325,28 @@ export function CertificatesView({
                 className="h-3.5 w-3.5"
                 style={{ color: 'var(--nfcap-accent)', flexShrink: 0, marginTop: 2 }}
               />
-              A public, no-login verification link for employers and workforce boards is planned for
-              Phase 4 — not available yet.
+              Employers and workforce boards can confirm it was genuinely issued by NFCAP — use
+              &quot;Copy verify link&quot; on any earned certificate above.
             </div>
+            {credentials.length > 0 && (
+              <button
+                type="button"
+                onClick={viewSampleVerification}
+                style={{
+                  fontSize: 12.5,
+                  color: 'var(--nfcap-accent)',
+                  fontWeight: 600,
+                  textDecoration: 'underline',
+                  textAlign: 'left',
+                  background: 'none',
+                  border: 'none',
+                  padding: 0,
+                  cursor: 'pointer',
+                }}
+              >
+                See a sample verification page →
+              </button>
+            )}
           </div>
 
           {nextUp && (
@@ -315,6 +395,8 @@ export function CertificatesView({
           </div>
         </aside>
       </div>
+
+      <LockedCourseDialog course={lockedCourse} onClose={() => setLockedCourse(null)} />
     </div>
   );
 }

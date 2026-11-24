@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/prisma';
 import type { AdminCourse } from './courses';
 import type { EvidenceSubmission } from './progress';
+import { getLearnerById } from './learners';
 
 /** One criterion's own capture on a guided submission (feature #9) — what the learner actually
  * showed for it. Empty for legacy submissions, whose evidence lives on the submission itself. */
@@ -21,6 +22,12 @@ export type Credential = {
    * (docs/plans/phase-3-and-design-migration-kickoff.md Step 2, feature #12). */
   criteria: CredentialCriterion[];
   certificateId: string;
+  /** The Certificate row's own id (not `certificateId`/certificateCode above) — what
+   * `generateCertificatePublicSlug` needs to create or fetch LRN08-Certificates' public
+   * verification link (LRN09-PublicVerify), matching the board's "See a sample verification
+   * page" / earned-card-opens-Verify-view intent. */
+  rawId: string;
+  issuedAt: string;
 };
 
 /** Courses whose Practical Evidence has been verified — the payoff loop's completion state
@@ -32,7 +39,10 @@ export async function getCredentialsForLearner(
 ): Promise<Credential[]> {
   const certificates = await prisma.certificate.findMany({
     where: { enrollment: { learnerId } },
-    include: {
+    select: {
+      id: true,
+      certificateCode: true,
+      issuedAt: true,
       enrollment: { include: { course: { select: { slug: true } } } },
       evidenceSubmission: {
         include: {
@@ -63,6 +73,9 @@ export async function getCredentialsForLearner(
           hasFile:
             Boolean(evidence.filePath) || assessments.some((a) => Boolean(a.learnerFilePath)),
           hasSubmissionFile: Boolean(evidence.filePath),
+          fileCount:
+            (evidence.filePath ? 1 : 0) +
+            assessments.filter((a) => Boolean(a.learnerFilePath)).length,
           isPerCriterion: assessments.length > 0,
           status: evidence.status.toLowerCase() as EvidenceSubmission['status'],
           submittedAt: evidence.submittedAt.toISOString(),
@@ -76,8 +89,52 @@ export async function getCredentialsForLearner(
           hasFile: Boolean(a.learnerFilePath),
         })),
         certificateId: cert.certificateCode,
+        rawId: cert.id,
+        issuedAt: cert.issuedAt.toISOString(),
       };
     })
     .filter((c): c is Credential => c !== null)
     .sort((a, b) => a.course.pathwayOrder - b.course.pathwayOrder);
+}
+
+export type PublicCredential = {
+  courseTitle: string;
+  learnerName: string;
+  certificateCode: string;
+  issuedAt: string;
+  /** Module count for LRN09-PublicVerify's "Issued using" line ("{N}-module course,
+   * evidence-reviewed") — a scoped `_count`, not a new courseInclude call site. */
+  moduleCount: number;
+};
+
+/** Public Verification Page + QR (docs/build/LAYER1_DATA_MODEL_DESIGN.md) — no-login lookup by
+ * the unguessable slug from `generateCertificatePublicSlug`. Deliberately returns the narrowest
+ * shape a public page should ever show (no email, no internal ids) — a `null` result (unknown
+ * slug, or a certificate whose owner revoked sharing) must render as "not found," never
+ * distinguish the two, or revocation would leak that the slug was once valid. */
+export async function getPublicCredentialBySlug(slug: string): Promise<PublicCredential | null> {
+  const certificate = await prisma.certificate.findUnique({
+    where: { publicSlug: slug },
+    select: {
+      certificateCode: true,
+      issuedAt: true,
+      enrollment: {
+        select: {
+          learnerId: true,
+          course: { select: { title: true, _count: { select: { sections: true } } } },
+        },
+      },
+    },
+  });
+  if (!certificate) return null;
+
+  const learner = await getLearnerById(certificate.enrollment.learnerId);
+
+  return {
+    courseTitle: certificate.enrollment.course.title,
+    moduleCount: certificate.enrollment.course._count.sections,
+    learnerName: learner?.name || 'NFCAP Learner',
+    certificateCode: certificate.certificateCode,
+    issuedAt: certificate.issuedAt.toISOString(),
+  };
 }
