@@ -5,7 +5,10 @@ import { E2eTestUser } from './setup/supabase-test-user';
 import { loginAs } from './setup/login';
 
 test.describe('evidence → certificate', () => {
-  test('submitting and approving evidence issues a certificate', async ({ page, browser }) => {
+  test('submitting and approving evidence issues a certificate', async (
+    { page, browser },
+    testInfo,
+  ) => {
     const { course, lesson } = await createCourseWithOneLesson({ access: 'OPEN' });
     const learner = await E2eTestUser.create('LEARNER');
     const admin = await E2eTestUser.create('ADMIN');
@@ -38,8 +41,23 @@ test.describe('evidence → certificate', () => {
       // The inline Approve/Reject controls render on the default Overview tab's Practical
       // Evidence card (OverviewTab, LearnerProfileView.tsx) for a course with zero criteria —
       // the "Evidence" tab is for the separate per-criterion review flow.
-      await adminPage.getByRole('button', { name: 'Approve' }).click();
-      await expect(adminPage.getByRole('button', { name: /Change to Rejected/i })).toBeVisible();
+      try {
+        await adminPage.getByRole('button', { name: 'Approve' }).click();
+        await expect(adminPage.getByRole('button', { name: /Change to Rejected/i })).toBeVisible();
+      } catch (err) {
+        // adminPage comes from browser.newContext(), not the project's traced `page` fixture, so
+        // it leaves no error-context/trace on failure by default — attach the DOM directly instead
+        // of guessing blind again at what's actually rendered here.
+        await testInfo.attach('admin-page-html', {
+          body: await adminPage.content(),
+          contentType: 'text/html',
+        });
+        await testInfo.attach('admin-page-screenshot', {
+          body: await adminPage.screenshot(),
+          contentType: 'image/png',
+        });
+        throw err;
+      }
       await adminContext.close();
 
       const enrollment = await prisma.enrollment.findUniqueOrThrow({
