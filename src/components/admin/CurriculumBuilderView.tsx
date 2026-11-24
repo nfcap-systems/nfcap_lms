@@ -5,28 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Icon, type IconName } from '@/components/icons';
 import { lessonTypeIcon, lessonTypeLabel } from '@/components/learner/lesson-type';
 import { cn } from '@/lib/cn';
-import { Badge } from '@/components/admin-ui/badge';
-import { Button } from '@/components/admin-ui/button';
-import { Card, CardContent } from '@/components/admin-ui/card';
-import { Checkbox } from '@/components/admin-ui/checkbox';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/admin-ui/dialog';
-import { Input } from '@/components/admin-ui/input';
-import { Label } from '@/components/admin-ui/label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/admin-ui/select';
-import { Textarea } from '@/components/admin-ui/textarea';
+import { Badge, Button, Card, CardContent, Dialog, Input, Textarea } from '@/components/ui';
 import {
   addContentBlock,
   addCriterion,
@@ -68,8 +47,6 @@ type LessonEditorTarget =
 
 type QuestionEditorTarget = { mode: 'add' } | { mode: 'edit'; question: QuizQuestion };
 
-type CriterionEditorTarget = { mode: 'add' } | { mode: 'edit'; criterion: AssessmentCriterion };
-
 type SectionDialogTarget = 'add' | { editSectionId: string };
 
 type ConfirmDeleteState = {
@@ -91,7 +68,9 @@ function LabeledField({
 }) {
   return (
     <div className="flex flex-col gap-1.5">
-      <Label htmlFor={htmlFor}>{label}</Label>
+      <label className="field-label" htmlFor={htmlFor}>
+        {label}
+      </label>
       {children}
       {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
     </div>
@@ -111,7 +90,6 @@ export function CurriculumBuilderView({
   const [sectionDialog, setSectionDialog] = useState<SectionDialogTarget | null>(null);
   const [lessonEditor, setLessonEditor] = useState<LessonEditorTarget | null>(null);
   const [questionEditor, setQuestionEditor] = useState<QuestionEditorTarget | null>(null);
-  const [criterionEditor, setCriterionEditor] = useState<CriterionEditorTarget | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<ConfirmDeleteState | null>(null);
 
   function runAndRefresh(action: Promise<void>) {
@@ -160,23 +138,7 @@ export function CurriculumBuilderView({
         {railSelection.type === 'general' && <GeneralInfoPanel course={course} />}
 
         {railSelection.type === 'criteria' && (
-          <CriteriaPanel
-            courseSlug={course.id}
-            criteria={criteria}
-            runAndRefresh={runAndRefresh}
-            onAddCriterion={() => setCriterionEditor({ mode: 'add' })}
-            onEditCriterion={(criterion) => setCriterionEditor({ mode: 'edit', criterion })}
-            onDeleteCriterion={(criterion) =>
-              setConfirmDelete({
-                title: 'Delete criterion?',
-                description: `"${criterion.title}" will be permanently removed.`,
-                onConfirm: () => {
-                  runAndRefresh(deleteCriterion(course.id, criterion.id));
-                  setConfirmDelete(null);
-                },
-              })
-            }
-          />
+          <CriteriaPanel courseId={course.id} criteria={criteria} />
         )}
 
         {railSelection.type === 'section' &&
@@ -280,39 +242,22 @@ export function CurriculumBuilderView({
         />
       )}
 
-      {criterionEditor && (
-        <CriterionDialog
-          initial={criterionEditor.mode === 'edit' ? criterionEditor.criterion : undefined}
-          onClose={() => setCriterionEditor(null)}
-          onSubmit={(c) =>
-            runAndRefresh(
-              criterionEditor.mode === 'edit'
-                ? updateCriterion(course.id, criterionEditor.criterion.id, c)
-                : addCriterion(course.id, c),
-            )
-          }
-        />
-      )}
-
       <Dialog
         open={confirmDelete !== null}
-        onOpenChange={(open) => !open && setConfirmDelete(null)}
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{confirmDelete?.title}</DialogTitle>
-            <DialogDescription>{confirmDelete?.description}</DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
+        onClose={() => setConfirmDelete(null)}
+        title={confirmDelete?.title}
+        description={confirmDelete?.description}
+        footer={
+          <>
             <Button variant="ghost" onClick={() => setConfirmDelete(null)}>
               Cancel
             </Button>
-            <Button variant="destructive" onClick={() => confirmDelete?.onConfirm()}>
+            <Button variant="danger" onClick={() => confirmDelete?.onConfirm()}>
               Delete
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </>
+        }
+      />
     </div>
   );
 }
@@ -458,14 +403,14 @@ function GeneralInfoPanel({ course }: { course: Course }) {
     <Card>
       <CardContent className="flex flex-col gap-3">
         <div className="flex flex-wrap items-center gap-2">
-          <Badge variant="outline">{course.category}</Badge>
+          <Badge tone="neutral">{course.category}</Badge>
           {course.access === 'restricted' ? (
-            <Badge variant="outline">
+            <Badge tone="neutral">
               <Icon name="lock" className="size-3" />
               Restricted
             </Badge>
           ) : (
-            <Badge variant="outline">Open</Badge>
+            <Badge tone="neutral">Open</Badge>
           )}
         </div>
         <p className="text-sm text-muted-foreground">{course.description}</p>
@@ -625,98 +570,233 @@ function AssessmentPanel({
 }
 
 function CriteriaPanel({
-  courseSlug,
+  courseId,
   criteria,
-  runAndRefresh,
-  onAddCriterion,
-  onEditCriterion,
-  onDeleteCriterion,
 }: {
-  courseSlug: string;
+  courseId: string;
   criteria: AssessmentCriterion[];
-  runAndRefresh: (action: Promise<void>) => void;
-  onAddCriterion: () => void;
-  onEditCriterion: (criterion: AssessmentCriterion) => void;
-  onDeleteCriterion: (criterion: AssessmentCriterion) => void;
 }) {
+  const router = useRouter();
+  const [, startTransition] = useTransition();
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [formResetKey, setFormResetKey] = useState(0);
+
+  function runAndRefresh(action: Promise<void>) {
+    startTransition(async () => {
+      await action;
+      router.refresh();
+    });
+  }
+
+  const editing = criteria.find((c) => c.id === selectedId) ?? null;
+
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-foreground">Assessment Criteria</h2>
-        <Button size="sm" variant="outline" onClick={onAddCriterion}>
-          <Icon name="plus" className="size-4" />
-          Add Criterion
-        </Button>
+    <div className="flex flex-col gap-4 lg:flex-row lg:items-start">
+      <div className="flex min-w-0 flex-1 flex-col gap-4" style={{ flex: 1.4 }}>
+        <div className="panel">
+          <div style={{ fontWeight: 600, fontSize: 14.5, marginBottom: 4 }}>
+            Evidence criteria
+          </div>
+          <div style={{ fontSize: 12.5, color: 'var(--ink-muted)', marginBottom: 14 }}>
+            Each learner must show met evidence against every criterion marked &quot;required for
+            certification&quot; before the course counts as complete.
+          </div>
+          {criteria.length === 0 ? (
+            <p className="text-xs" style={{ color: 'var(--ink-muted)' }}>
+              No criteria yet — add one on the right.
+            </p>
+          ) : (
+            criteria.map((criterion, i) => (
+              <div
+                key={criterion.id}
+                className="crit"
+                style={{ cursor: 'pointer' }}
+                onClick={() => setSelectedId(criterion.id)}
+              >
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke={
+                    criterion.mandatoryForCertification ? 'var(--nfcap-accent)' : 'var(--nfcap-border)'
+                  }
+                  strokeWidth="2"
+                  style={{ marginTop: 1, flex: 'none' }}
+                >
+                  <rect x="3" y="3" width="18" height="18" rx="4" />
+                </svg>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontWeight: 600, fontSize: 13.5 }}>{criterion.title}</div>
+                  <div style={{ fontSize: 12, color: 'var(--ink-muted)' }}>{criterion.guidance}</div>
+                </div>
+                <div style={{ display: 'flex', gap: 2, flex: 'none' }}>
+                  <button
+                    type="button"
+                    className="btn-icon"
+                    disabled={i === 0}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      runAndRefresh(moveCriterion(courseId, criterion.id, 'up'));
+                    }}
+                    aria-label="Move criterion up"
+                  >
+                    <Icon name="chevron-up" className="h-3.5 w-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-icon"
+                    disabled={i === criteria.length - 1}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      runAndRefresh(moveCriterion(courseId, criterion.id, 'down'));
+                    }}
+                    aria-label="Move criterion down"
+                  >
+                    <Icon name="chevron-down" className="h-3.5 w-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-icon"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (selectedId === criterion.id) setSelectedId(null);
+                      runAndRefresh(deleteCriterion(courseId, criterion.id));
+                    }}
+                    aria-label="Delete criterion"
+                  >
+                    <Icon name="trash" className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
       </div>
 
-      <Card>
-        <CardContent className="flex flex-col gap-4">
-          <p className="text-xs text-muted-foreground">
-            The specific things a trainee must demonstrate for this course&apos;s evidence
-            submission to be certifiable. {criteria.length} criteria.
-          </p>
-          {criteria.length === 0 ? (
-            <p className="text-xs text-muted-foreground">No criteria yet.</p>
-          ) : (
-            <ul className="flex flex-col gap-3">
-              {criteria.map((criterion, i) => (
-                <li key={criterion.id} className="group rounded-xl border p-3">
-                  <div className="flex items-start justify-between gap-2">
-                    <p className="text-sm font-medium text-foreground">
-                      {i + 1}. {criterion.title}
-                    </p>
-                    <div className="flex shrink-0 items-center gap-1">
-                      <button
-                        type="button"
-                        onClick={() => runAndRefresh(moveCriterion(courseSlug, criterion.id, 'up'))}
-                        disabled={i === 0}
-                        className="rounded p-1 text-muted-foreground hover:bg-muted disabled:opacity-30"
-                        aria-label="Move criterion up"
-                      >
-                        <Icon name="chevron-up" className="size-4" />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          runAndRefresh(moveCriterion(courseSlug, criterion.id, 'down'))
-                        }
-                        disabled={i === criteria.length - 1}
-                        className="rounded p-1 text-muted-foreground hover:bg-muted disabled:opacity-30"
-                        aria-label="Move criterion down"
-                      >
-                        <Icon name="chevron-down" className="size-4" />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => onEditCriterion(criterion)}
-                        className="rounded p-1 text-muted-foreground opacity-0 hover:bg-muted hover:text-foreground group-hover:opacity-100"
-                        aria-label="Edit criterion"
-                      >
-                        <Icon name="edit" className="size-3.5" />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => onDeleteCriterion(criterion)}
-                        className="rounded p-1 text-destructive opacity-0 hover:bg-muted group-hover:opacity-100"
-                        aria-label="Delete criterion"
-                      >
-                        <Icon name="trash" className="size-3.5" />
-                      </button>
-                    </div>
-                  </div>
-                  <p className="mt-1 text-xs text-muted-foreground">{criterion.guidance}</p>
-                  <div className="mt-2 flex flex-wrap items-center gap-1.5">
-                    {criterion.photoRequired && <Badge variant="outline">Photo required</Badge>}
-                    {criterion.mandatoryForCertification && (
-                      <Badge variant="outline">Required for certification</Badge>
-                    )}
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
-        </CardContent>
-      </Card>
+      <div className="flex min-w-0 flex-1 flex-col gap-4">
+        <div className="flex justify-end">
+          <button type="button" className="btn-primary btn-sm" onClick={() => setSelectedId(null)}>
+            + Add criterion
+          </button>
+        </div>
+        <CriterionForm
+          key={editing?.id ?? `new-${formResetKey}`}
+          courseId={courseId}
+          existing={editing}
+          onSaved={(id) => {
+            setSelectedId(id);
+            setFormResetKey((k) => k + 1);
+            router.refresh();
+          }}
+        />
+      </div>
+    </div>
+  );
+}
+
+function CriterionForm({
+  courseId,
+  existing,
+  onSaved,
+}: {
+  courseId: string;
+  existing: AssessmentCriterion | null;
+  onSaved: (id: string | null) => void;
+}) {
+  const [title, setTitle] = useState(existing?.title ?? '');
+  const [guidance, setGuidance] = useState(existing?.guidance ?? '');
+  const [photoRequired, setPhotoRequired] = useState(existing?.photoRequired ?? true);
+  const [mandatoryForCertification, setMandatoryForCertification] = useState(
+    existing?.mandatoryForCertification ?? true,
+  );
+  const [submitting, setSubmitting] = useState(false);
+
+  const valid = title.trim().length > 0 && guidance.trim().length > 0;
+
+  return (
+    <div className="panel">
+      <div style={{ fontWeight: 600, fontSize: 13.5, marginBottom: 10 }}>
+        {existing ? 'Edit criterion' : 'Add criterion'}
+      </div>
+      <label className="field-label" htmlFor="criterion-title">
+        Criterion name
+      </label>
+      <input
+        id="criterion-title"
+        className="field-input"
+        style={{ marginBottom: 12 }}
+        value={title}
+        onChange={(e) => setTitle(e.target.value)}
+        placeholder="e.g. Correct PPE worn"
+      />
+      <label className="field-label" htmlFor="criterion-guidance">
+        Instructions to learner
+      </label>
+      <textarea
+        id="criterion-guidance"
+        className="field-textarea"
+        style={{ marginBottom: 12 }}
+        value={guidance}
+        onChange={(e) => setGuidance(e.target.value)}
+        placeholder="What the trainee's photo or description must show to satisfy this criterion."
+      />
+      <label className="field-label" htmlFor="criterion-evidence-type">
+        Evidence type
+      </label>
+      <select
+        id="criterion-evidence-type"
+        className="field-select"
+        style={{ marginBottom: 12 }}
+        value={photoRequired ? 'photo' : 'description'}
+        onChange={(e) => setPhotoRequired(e.target.value === 'photo')}
+      >
+        <option value="photo">Photo</option>
+        <option value="description">Description only</option>
+      </select>
+      <label
+        className="flex items-center gap-2 text-sm"
+        style={{ color: 'var(--ink-muted)', marginBottom: 16 }}
+      >
+        <input
+          type="checkbox"
+          className="field-checkbox"
+          checked={mandatoryForCertification}
+          onChange={(e) => setMandatoryForCertification(e.target.checked)}
+        />
+        Required for certification
+      </label>
+      <div style={{ display: 'flex', gap: 8 }}>
+        <button
+          type="button"
+          className="btn-primary btn-sm"
+          disabled={!valid || submitting}
+          onClick={async () => {
+            setSubmitting(true);
+            const fields = {
+              title: title.trim(),
+              guidance: guidance.trim(),
+              photoRequired,
+              mandatoryForCertification,
+            };
+            if (existing) {
+              await updateCriterion(courseId, existing.id, fields);
+              onSaved(existing.id);
+            } else {
+              await addCriterion(courseId, fields);
+              onSaved(null);
+            }
+            setSubmitting(false);
+          }}
+        >
+          Save
+        </button>
+        {existing && (
+          <button type="button" className="btn-secondary btn-sm" onClick={() => onSaved(null)}>
+            Cancel
+          </button>
+        )}
+      </div>
     </div>
   );
 }
@@ -733,21 +813,12 @@ function SectionDialog({
   const isEdit = initialTitle !== undefined;
   const [title, setTitle] = useState(initialTitle ?? '');
   return (
-    <Dialog open onOpenChange={(open) => !open && onClose()}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>{isEdit ? 'Rename section' : 'Add section'}</DialogTitle>
-        </DialogHeader>
-        <LabeledField label="Section title" htmlFor="section-title">
-          <Input
-            id="section-title"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="e.g. Finishing Techniques"
-            autoFocus
-          />
-        </LabeledField>
-        <DialogFooter>
+    <Dialog
+      open
+      onClose={onClose}
+      title={isEdit ? 'Rename section' : 'Add section'}
+      footer={
+        <>
           <Button variant="ghost" onClick={onClose}>
             Cancel
           </Button>
@@ -760,8 +831,18 @@ function SectionDialog({
           >
             {isEdit ? 'Save' : 'Add section'}
           </Button>
-        </DialogFooter>
-      </DialogContent>
+        </>
+      }
+    >
+      <LabeledField label="Section title" htmlFor="section-title">
+        <Input
+          id="section-title"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          placeholder="e.g. Finishing Techniques"
+          autoFocus
+        />
+      </LabeledField>
     </Dialog>
   );
 }
@@ -906,113 +987,111 @@ function LessonEditorDialog({
   }
 
   return (
-    <Dialog open onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-2xl">
-        <DialogHeader>
-          <DialogTitle>{isEdit ? 'Edit lesson' : 'Add lesson'}</DialogTitle>
-          {!isEdit && (
-            <DialogDescription>Adding to &quot;{state.sectionTitle}&quot;</DialogDescription>
-          )}
-        </DialogHeader>
-        <div className="flex max-h-[60vh] flex-col gap-5 overflow-y-auto pr-1">
-          <LabeledField label="Lesson title" htmlFor="lesson-title">
+    <Dialog
+      open
+      onClose={onClose}
+      className="sm:max-w-2xl"
+      title={isEdit ? 'Edit lesson' : 'Add lesson'}
+      description={!isEdit ? `Adding to "${state.sectionTitle}"` : undefined}
+      footer={
+        isEdit ? (
+          <>
+            <Button variant="ghost" onClick={onClose}>
+              Close
+            </Button>
+            <Button
+              disabled={!title.trim()}
+              onClick={() =>
+                runAndRefresh(
+                  updateLesson(courseSlug, state.lesson.id, {
+                    title: title.trim(),
+                    type,
+                    durationMinutes: duration,
+                  }),
+                )
+              }
+            >
+              Save details
+            </Button>
+          </>
+        ) : (
+          <>
+            <Button variant="ghost" onClick={onClose}>
+              Cancel
+            </Button>
+            <Button
+              disabled={!title.trim()}
+              onClick={() => {
+                runAndRefresh(submitAddLesson());
+                onClose();
+              }}
+            >
+              Add lesson
+            </Button>
+          </>
+        )
+      }
+    >
+      <div className="flex max-h-[60vh] flex-col gap-5 overflow-y-auto pr-1">
+        <LabeledField label="Lesson title" htmlFor="lesson-title">
+          <Input
+            id="lesson-title"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="e.g. Baseboard Trim Basics"
+            autoFocus={!isEdit}
+          />
+        </LabeledField>
+        <div className="grid grid-cols-2 gap-3">
+          <LabeledField label="Type" htmlFor="lesson-type">
+            <select
+              id="lesson-type"
+              className="field-select"
+              value={type}
+              onChange={(e) => setType(e.target.value as LessonType)}
+            >
+              {lessonTypes.map((t) => (
+                <option key={t} value={t}>
+                  {lessonTypeLabel[t]}
+                </option>
+              ))}
+            </select>
+          </LabeledField>
+          <LabeledField label="Duration (min)" htmlFor="lesson-duration">
             <Input
-              id="lesson-title"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="e.g. Baseboard Trim Basics"
-              autoFocus={!isEdit}
+              id="lesson-duration"
+              type="number"
+              min={1}
+              value={duration}
+              onChange={(e) => setDuration(Number(e.target.value) || 1)}
             />
           </LabeledField>
-          <div className="grid grid-cols-2 gap-3">
-            <LabeledField label="Type" htmlFor="lesson-type">
-              <Select value={type} onValueChange={(v) => setType(v as LessonType)}>
-                <SelectTrigger id="lesson-type" className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {lessonTypes.map((t) => (
-                    <SelectItem key={t} value={t}>
-                      {lessonTypeLabel[t]}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </LabeledField>
-            <LabeledField label="Duration (min)" htmlFor="lesson-duration">
-              <Input
-                id="lesson-duration"
-                type="number"
-                min={1}
-                value={duration}
-                onChange={(e) => setDuration(Number(e.target.value) || 1)}
-              />
-            </LabeledField>
-          </div>
-
-          <div className="flex flex-col gap-3 border-t pt-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-foreground">Content</h3>
-              <AddContentPicker onPick={addBlock} />
-            </div>
-            {blocks.length === 0 ? (
-              <p className="text-xs text-muted-foreground">No content blocks yet.</p>
-            ) : (
-              <div className="flex flex-col gap-3">
-                {blocks.map((block, i) => (
-                  <BlockRow
-                    key={block.id}
-                    block={block}
-                    onUpdate={(patch) => updateBlock(block.id, patch)}
-                    onDelete={() => deleteBlock(block.id)}
-                    onMove={(direction) => moveBlock(block.id, direction)}
-                    canMoveUp={i > 0}
-                    canMoveDown={i < blocks.length - 1}
-                  />
-                ))}
-              </div>
-            )}
-          </div>
         </div>
-        <DialogFooter>
-          {isEdit ? (
-            <>
-              <Button variant="ghost" onClick={onClose}>
-                Close
-              </Button>
-              <Button
-                disabled={!title.trim()}
-                onClick={() =>
-                  runAndRefresh(
-                    updateLesson(courseSlug, state.lesson.id, {
-                      title: title.trim(),
-                      type,
-                      durationMinutes: duration,
-                    }),
-                  )
-                }
-              >
-                Save details
-              </Button>
-            </>
+
+        <div className="flex flex-col gap-3 border-t pt-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-semibold text-foreground">Content</h3>
+            <AddContentPicker onPick={addBlock} />
+          </div>
+          {blocks.length === 0 ? (
+            <p className="text-xs text-muted-foreground">No content blocks yet.</p>
           ) : (
-            <>
-              <Button variant="ghost" onClick={onClose}>
-                Cancel
-              </Button>
-              <Button
-                disabled={!title.trim()}
-                onClick={() => {
-                  runAndRefresh(submitAddLesson());
-                  onClose();
-                }}
-              >
-                Add lesson
-              </Button>
-            </>
+            <div className="flex flex-col gap-3">
+              {blocks.map((block, i) => (
+                <BlockRow
+                  key={block.id}
+                  block={block}
+                  onUpdate={(patch) => updateBlock(block.id, patch)}
+                  onDelete={() => deleteBlock(block.id)}
+                  onMove={(direction) => moveBlock(block.id, direction)}
+                  canMoveUp={i > 0}
+                  canMoveDown={i < blocks.length - 1}
+                />
+              ))}
+            </div>
           )}
-        </DialogFooter>
-      </DialogContent>
+        </div>
+      </div>
     </Dialog>
   );
 }
@@ -1199,49 +1278,12 @@ function QuestionDialog({
   const valid = prompt.trim().length > 0 && options.every((o) => o.trim().length > 0);
 
   return (
-    <Dialog open onOpenChange={(open) => !open && onClose()}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>{initial ? 'Edit question' : 'Add question'}</DialogTitle>
-        </DialogHeader>
-        <div className="flex flex-col gap-4">
-          <LabeledField label="Question prompt" htmlFor="question-prompt">
-            <Textarea
-              id="question-prompt"
-              value={prompt}
-              onChange={(e) => setPrompt(e.target.value)}
-              placeholder="e.g. What PPE is required before operating a floor grinder?"
-              autoFocus
-            />
-          </LabeledField>
-          <LabeledField
-            label="Answer options"
-            hint="Select the radio button next to the correct answer."
-          >
-            <div className="flex flex-col gap-2">
-              {options.map((option, i) => (
-                <div key={i} className="flex items-center gap-2">
-                  <input
-                    type="radio"
-                    name="correct-option"
-                    checked={correctIndex === i}
-                    onChange={() => setCorrectIndex(i)}
-                    className="size-4 shrink-0 text-primary focus:ring-2 focus:ring-primary/20"
-                    aria-label={`Option ${i + 1} is correct`}
-                  />
-                  <Input
-                    value={option}
-                    onChange={(e) =>
-                      setOptions((prev) => prev.map((o, oi) => (oi === i ? e.target.value : o)))
-                    }
-                    placeholder={`Option ${i + 1}`}
-                  />
-                </div>
-              ))}
-            </div>
-          </LabeledField>
-        </div>
-        <DialogFooter>
+    <Dialog
+      open
+      onClose={onClose}
+      title={initial ? 'Edit question' : 'Add question'}
+      footer={
+        <>
           <Button variant="ghost" onClick={onClose}>
             Cancel
           </Button>
@@ -1258,94 +1300,47 @@ function QuestionDialog({
           >
             {initial ? 'Save' : 'Add question'}
           </Button>
-        </DialogFooter>
-      </DialogContent>
+        </>
+      }
+    >
+      <div className="flex flex-col gap-4">
+        <LabeledField label="Question prompt" htmlFor="question-prompt">
+          <Textarea
+            id="question-prompt"
+            value={prompt}
+            onChange={(e) => setPrompt(e.target.value)}
+            placeholder="e.g. What PPE is required before operating a floor grinder?"
+            autoFocus
+          />
+        </LabeledField>
+        <LabeledField
+          label="Answer options"
+          hint="Select the radio button next to the correct answer."
+        >
+          <div className="flex flex-col gap-2">
+            {options.map((option, i) => (
+              <div key={i} className="flex items-center gap-2">
+                <input
+                  type="radio"
+                  name="correct-option"
+                  checked={correctIndex === i}
+                  onChange={() => setCorrectIndex(i)}
+                  className="size-4 shrink-0 text-primary focus:ring-2 focus:ring-primary/20"
+                  aria-label={`Option ${i + 1} is correct`}
+                />
+                <Input
+                  value={option}
+                  onChange={(e) =>
+                    setOptions((prev) => prev.map((o, oi) => (oi === i ? e.target.value : o)))
+                  }
+                  placeholder={`Option ${i + 1}`}
+                />
+              </div>
+            ))}
+          </div>
+        </LabeledField>
+      </div>
     </Dialog>
   );
 }
 
-function CriterionDialog({
-  initial,
-  onClose,
-  onSubmit,
-}: {
-  initial?: AssessmentCriterion;
-  onClose: () => void;
-  onSubmit: (criterion: {
-    title: string;
-    guidance: string;
-    photoRequired: boolean;
-    mandatoryForCertification: boolean;
-  }) => void;
-}) {
-  const [title, setTitle] = useState(initial?.title ?? '');
-  const [guidance, setGuidance] = useState(initial?.guidance ?? '');
-  const [photoRequired, setPhotoRequired] = useState(initial?.photoRequired ?? true);
-  const [mandatoryForCertification, setMandatoryForCertification] = useState(
-    initial?.mandatoryForCertification ?? true,
-  );
-
-  const valid = title.trim().length > 0 && guidance.trim().length > 0;
-
-  return (
-    <Dialog open onOpenChange={(open) => !open && onClose()}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>{initial ? 'Edit criterion' : 'Add criterion'}</DialogTitle>
-        </DialogHeader>
-        <div className="flex flex-col gap-4">
-          <LabeledField label="Criterion" htmlFor="criterion-title">
-            <Input
-              id="criterion-title"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="e.g. Correct PPE worn"
-              autoFocus
-            />
-          </LabeledField>
-          <LabeledField label="Guidance" htmlFor="criterion-guidance">
-            <Textarea
-              id="criterion-guidance"
-              value={guidance}
-              onChange={(e) => setGuidance(e.target.value)}
-              placeholder="What the trainee's photo or description must show to satisfy this criterion."
-            />
-          </LabeledField>
-          <label className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Checkbox
-              checked={photoRequired}
-              onCheckedChange={(checked) => setPhotoRequired(checked === true)}
-            />
-            Photo required
-          </label>
-          <label className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Checkbox
-              checked={mandatoryForCertification}
-              onCheckedChange={(checked) => setMandatoryForCertification(checked === true)}
-            />
-            Required for certification
-          </label>
-        </div>
-        <DialogFooter>
-          <Button variant="ghost" onClick={onClose}>
-            Cancel
-          </Button>
-          <Button
-            disabled={!valid}
-            onClick={() => {
-              onSubmit({
-                title: title.trim(),
-                guidance: guidance.trim(),
-                photoRequired,
-                mandatoryForCertification,
-              });
-              onClose();
-            }}
-          >
-            {initial ? 'Save' : 'Add criterion'}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-}

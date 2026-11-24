@@ -9,9 +9,11 @@ design-migration-kickoff.md` is Phase 3's plan and is not the source of truth fo
 
 ## Scope boundary — do not touch
 
-- `src/app/admin/courses/[courseId]` and `src/components/admin/CurriculumBuilderView.tsx` (1353
-  lines, the course builder shell) — deferred, under active repeated churn from Phase 3 (#4
-  extended it; #8 Photo Annotation may too).
+- **Reopened 2026-11-24, then built:** `src/app/admin/courses/[courseId]` and
+  `src/components/admin/CurriculumBuilderView.tsx` were listed here as deferred (active Phase 3
+  churn risk) — the user explicitly asked for them built now regardless. See the ADM06/ADM07
+  detail section below for what changed and how the churn risk was handled (pure presentation
+  swap, zero action/data-layer diff, verified).
 - `src/app/admin/layout.tsx`, `src/components/admin-shell/AdminHeader.tsx`/`NavUser.tsx`/
   quick-create dialogs/`AdminPlaceholderScreen` — shared shell chrome not covered by the
   correction below.
@@ -34,20 +36,25 @@ two files — see the Dashboard, Learners, Audit Log batch detail below for what
 - WIOA Reports (`src/components/wioa/WioaReportsView.tsx`) — retrofitted in Step 1.4 of the
   design-system migration.
 
-## Confirmed current state (research pass done 2026-11-23, every Admin route checked)
+## Confirmed current state
+
+Original table below is from the 2026-11-23 research pass and is **stale** — re-verified
+2026-11-24 by grepping each file's actual `@/components/admin-ui` imports directly, not by
+re-trusting this table. Corrections inline.
 
 | Route | Component (lines) | Old library usage |
 | --- | --- | --- |
 | `/admin` | `DashboardView.tsx` (389) | admin-ui badge/card + Recharts (`src/components/admin-ui/chart.tsx`) — only chart usage in the codebase; no new-system chart pattern exists yet |
-| `/admin/courses` (list) | `AdminCoursesView.tsx` (289) | admin-ui badge/button/input/select/table |
+| `/admin/courses` (list) | `AdminCoursesView.tsx` (289) | **Stale — retrofitted as of 2026-11-24, zero `admin-ui` imports.** |
 | `/admin/learners` | `LearnersRosterView.tsx` (264) | admin-ui avatar/badge/button/input/select/table |
-| `/admin/pathway`, `/admin/pathway/apprenticeship` | `PathwayListView.tsx` (74), `PathwayDetailView.tsx` (102) | admin-ui badge/card |
-| `/admin/roles` | `RoleManagementTable.tsx` (145) | admin-ui badge/button/card/select |
+| `/admin/pathway` | `PathwayDetailView.tsx` (moved from `/apprenticeship`, 102) | **Route collapsed 2026-11-24 — `PathwayListView.tsx` deleted, zero `admin-ui` imports remain.** See Batch B detail below. |
+| `/admin/roles` | `RoleManagementTable.tsx` (145) | **Stale — retrofitted as of 2026-11-24, zero `admin-ui` imports.** |
 | `/admin/audit` | `AuditLogView.tsx` (293) | admin-ui badge/button/input/select/table |
 | `/admin/settings` | 11-line placeholder (`AdminPlaceholderScreen`) | trivial — not worth a dedicated pass, fold in if convenient or skip |
-| `/admin/wioa/boards` | `BoardsAdminView.tsx` (68) | admin-ui |
-| `/admin/wioa/document-requirements` | `DocumentRequirementsAdminView.tsx` (237, dialog-heavy) | admin-ui |
-| `/admin/wioa/email-template` | `WioaEmailTemplateAdminView.tsx` (124, dialog-heavy) | admin-ui |
+| `/admin/wioa/boards` | `BoardsAdminView.tsx` | **Retrofitted 2026-11-24, zero `admin-ui` imports.** See Batch C detail below. |
+| `/admin/wioa/document-requirements` | `DocumentRequirementsAdminView.tsx` | **Retrofitted 2026-11-24, zero `admin-ui` imports.** See Batch C detail below. |
+| `/admin/wioa/email-template` | `WioaEmailTemplateAdminView.tsx` | **Retrofitted 2026-11-24, zero `admin-ui` imports.** See Batch C detail below. |
+| `/admin/courses/[courseId]` | `CurriculumBuilderView.tsx` | **Retrofitted 2026-11-24** (scope boundary reopened — see above). Zero `admin-ui` imports. See ADM06/ADM07 detail below. |
 
 ## Board file layers — pull apart, don't treat as one spec
 
@@ -113,9 +120,10 @@ canonical `.dtcard` reference per `docs/MOCKUP-INDEX.md` line 260), `ADM08-Pathw
 
 | Batch | Branch | PR / merge commit | State | Date |
 | --- | --- | --- | --- | --- |
-| A — Dashboard, Learners, Audit Log | `feature/admin-ui-parity-dashboard-learners-audit` | commit `26e4a22`, not pushed | Committed 2026-11-24; `npm run build` clean (first run on this work). Visual pass still owed by the user. | 2026-11-23 |
-| B — Courses, Pathway, Roles | | | Not started | |
-| C — WIOA admin trio | | | Not started | |
+| A — Dashboard, Learners, Audit Log | `feature/admin-ui-parity-dashboard-learners-audit` | commit `26e4a22`, not pushed | Committed; later commits piled on top. Visual pass still owed by the user. | 2026-11-23 |
+| B — Courses, Pathway, Roles | `feature/admin-ui-parity-dashboard-learners-audit` | not identified by a dedicated PR; folded into other commits on this branch | **Closed 2026-11-24.** Courses, Pathway (collapsed to one route), and Roles all confirmed retrofitted — zero `admin-ui` imports. Settings placeholder left untouched (trivial, optional per this doc). Visual pass against the boards still owed by the user; `npm run build` not yet re-run for this batch. | 2026-11-24 |
+| C — WIOA admin trio | `feature/admin-ui-parity-dashboard-learners-audit` | not pushed | **Closed 2026-11-24.** Boards, Document Requirements, Email Template all retrofitted — zero `admin-ui` imports. See Batch C detail below. | 2026-11-24 |
+| ADM06/ADM07 — Curriculum Builder + Criteria Authoring | `feature/admin-ui-parity-dashboard-learners-audit` | not pushed | **Not an original batch — added 2026-11-24 at the user's explicit request to drop the "deferred" scope boundary and build it now.** See detail below. | 2026-11-24 |
 
 ### Batch A detail
 
@@ -210,6 +218,139 @@ the user asked to stop background delegation and continue directly in-session pa
 it was stopped mid-task (after lint/tsc had just come back clean, before it updated this doc) and
 the remaining work — the per-entity-loop fix, this doc update, and verification — was finished
 directly in the main session instead.
+
+### Batch B detail
+
+Courses (`AdminCoursesView.tsx`) and Roles (`RoleManagementTable.tsx`) were found already
+retrofitted when re-verified 2026-11-24 (zero `admin-ui` imports) — not redone this session, just
+confirmed and logged here for the first time.
+
+**Pathway route collapse (the one real Batch B change made this session):** `ADM08-Pathway`
+(`docs/MOCKUP-INDEX.md` line 744) covers both `/admin/pathway` and `/apprenticeship` as a **single**
+board — there is no separate "list of pathways" screen in the board set. The pre-existing code had
+`/admin/pathway` render a clickable summary card (`PathwayListView.tsx`, old `admin-ui` badge/card,
+matched no board) that routed into `/admin/pathway/apprenticeship` for the real mcard+reorder view
+(`PathwayDetailView.tsx`, already retrofitted, matches the board closely). Since NFCAP runs exactly
+one pathway (`PRODUCT_CONTEXT.md` Section 5), confirmed with the user to collapse this into one
+page rather than retheme a screen with no board behind it:
+- `/admin/pathway/page.tsx` now renders `PathwayDetailView` directly (moved from
+  `apprenticeship/page.tsx`).
+- `PathwayDetailView.tsx` and its richer `loading.tsx` skeleton moved up from
+  `pathway/apprenticeship/` to `pathway/`.
+- `PathwayListView.tsx` and the entire `pathway/apprenticeship/` directory deleted — confirmed
+  nothing else in `src/` referenced `/apprenticeship` before removing it.
+
+**Access-toggle UI fixed during the same pass**, found via the user's own screenshots of
+`PathwayView.tsx`'s per-course row control, three iterations:
+1. Original: a plain checkbox for "Restricted" next to a non-interactive-looking flat badge for
+   "Open to all" (this matched `ADM08-Pathway`'s own markup exactly, so the board has the same
+   inconsistency) — user flagged no visible toggle affordance on the open state.
+2. First fix: one consistent pill-shaped switch control for both states (new `.access-toggle`/
+   `.access-toggle-track`/`.access-toggle-thumb` classes) — user found this confusing in practice
+   (screenshot showed every row's switch visually identical regardless of state at a glance) and
+   asked for a plain button instead.
+3. **Final:** reverted to `.btn-secondary.btn-sm` (same class already used by this page's "Preview
+   as Learner" button), but the button label is the **current status** word ("Restricted" with a
+   lock icon, or "Open to all"), not the next action — an early version showed the *next action*
+   as the label (e.g. a restricted course's button read "Open to all", which reads like it's
+   already open, not "click to open it") and was corrected after the user caught it. Final shape
+   is two separate elements per row: a non-interactive `badge-neutral`/`badge-accent` status badge,
+   plus a separate `.btn-secondary.btn-sm` action button labeled with what clicking it will do.
+   The unused `.access-toggle*` CSS from step 2 was removed, not left dead in `design-system.css`.
+
+Verified: `npx tsc --noEmit` clean project-wide and `npx eslint` clean on
+`src/components/admin/PathwayView.tsx` after every iteration. Not yet visually verified in the
+browser by the user as of this doc update.
+
+### Batch C detail
+
+Retrofitted all three WIOA admin screens off `admin-ui` onto `@/components/ui` + `design-system.css`,
+matching `WIOA01-Boards`, `WIOA03-DocumentRequirements`, `WIOA04-EmailTemplate`. Ported each board's
+local CSS into `design-system.css`: `.reqrow` (Document Requirements' per-row layout), `.wioa-cols`/
+`.chip2` (Email Template's two-column layout and variable-token chip).
+
+**BoardsAdminView** — real `.pagehdr` + per-board highlight panel grid + `DataTableCard` table. Added
+two new real, batched data points to `src/lib/data/wioa-boards.ts`'s `getWorkforceBoards` to honestly
+back the board's copy (not fabricated): `activeCaseCount` (one `groupBy` on `WioaCase`, not a
+per-board loop query) and `primaryContactName` (one `distinct`-on query ordered by contact
+`priority`) — both batched across every board in the same function, consistent with CLAUDE.md's
+no-per-entity-loop convention. The "Add board" dialog (`NewWorkforceBoardDialog`) was left untouched
+— shared quick-create chrome, out of this workstream's scope.
+
+**DocumentRequirementsAdminView** — replaced the modal add/edit dialog with the board's real design:
+an always-visible inline "Add / edit requirement" panel at the bottom of the page, no dialog.
+Clicking "Edit" on a row populates the same inline form instead of opening a modal. Badge tone for
+"Conditional" corrected to `neutral` (matching the board's `badge-neutral`, not an invented
+amber/pending tone) after an initial pass used the wrong tone.
+
+**WioaEmailTemplateAdminView** — same change in kind: dropped the separate view-card + edit-dialog
+split for one always-editable inline form (Subject/Body with a "Save template" button in the
+header), matching the board exactly.
+
+All three: trimmed each `page.tsx`'s duplicate `<h1>`/`<p>` header now that the view renders its own
+`.pagehdr` (same convention as every other batch).
+
+### ADM06-CurriculumBuilder / ADM07-CriteriaAuthoring detail
+
+**Not originally scoped** — `CurriculumBuilderView.tsx` was explicitly listed as deferred (active
+Phase 3 churn risk: Feature #4 extended it, #8 Photo Annotation might too). The user asked to build
+it now regardless and to stop deferring further.
+
+**Risk mitigation, confirmed before editing:** grepped for every import of `CurriculumBuilderView`
+and its internal sub-components (`CriteriaPanel`, `CriterionDialog`, `AssessmentPanel`, etc.) —
+only its own `page.tsx` imports the exported component; nothing else in `src/` touches its internals.
+This meant the retrofit could be a **pure presentation swap**: every server action call/signature,
+type, and piece of state logic was kept byte-for-byte identical; only the UI primitive imports and
+their JSX usage changed (admin-ui's compound `Dialog`/`Select`/`Checkbox`/`Badge` components →
+`@/components/ui`'s simpler single-component APIs). Confirmed via `git diff --stat` on
+`src/lib/actions/curriculum.ts`, `src/lib/actions/progress.ts` (the certification-gating file), and
+`src/lib/data/courses.ts` — **zero diff** in any of them from this work.
+
+**First pass (reverted):** pulled "Assessment Criteria" authoring out of the builder's rail
+(previously an embedded panel + modal dialog) into a standalone route,
+`/admin/courses/[courseId]/criteria`, to match `ADM07-CriteriaAuthoring`'s board layout (list +
+inline edit panel, no modal — a real improvement over the old dialog). The user's own browser check
+(`Screenshot 2026-11-24 142505.png`) confirmed this worked, but asked for it **not** to be a separate
+page — "Assessment Criteria" should behave like every other rail item (General Information/Sections/
+Knowledge Assessment): click it, the content area swaps in place, no navigation.
+
+**Final shape:** folded the same list+inline-form UI back into `CurriculumBuilderView.tsx` as an
+embedded `CriteriaPanel`/`CriterionForm`, restored the `'criteria'` `RailSelection` variant and the
+`criteria` prop/fetch in `page.tsx`, and deleted the standalone route entirely (confirmed zero
+remaining references anywhere in `src/` after removal). Kept the "Required for certification"
+checkbox in the form even though the `ADM07` board's mock omits it — it's the real field gating
+`applyEvidenceStatus` (`src/lib/actions/progress.ts`), not something to drop just because the board
+simplified it.
+
+**Design canvas kept in sync (both boards redrawn, same session):**
+- `ADM07-CriteriaAuthoring.dc.html` — redrawn from a standalone page (own breadcrumb) to show the
+  embedded rail panel instead, matching the real final shape above.
+- `ADM06-CurriculumBuilder.dc.html` — also redrawn. Its *previous* version didn't match the real app
+  at all: it showed every section's lessons flat-stacked on one page, with a per-section "quiz" row
+  and an inline "Practical evidence" lesson row. Neither is real — `Lesson.type` is only
+  video/text/image/resource (no quiz/evidence type), Knowledge Assessment is one course-level quiz
+  (not per-section), and evidence criteria are the separate `ADM07` rail panel, not a lesson row.
+  Redrawn to show the real left rail with one selected section's real lesson list on the right.
+- Both published to the same canvas (`https://claude.ai/artifact/6othp9hKDpwXeLJsWtkt3Y`), same
+  frame positions/sizes — no `canvas.json` index change needed. `docs/MOCKUP-INDEX.md`'s `ADM06`/
+  `ADM07` rows updated to record the correction.
+
+Verified: `npx tsc --noEmit` clean project-wide and `npx eslint` clean on every touched file, at each
+step of this detour (initial retrofit, the standalone-route attempt, and the fold-back).
+
+### Full-project build verification (2026-11-24, all of Batch A/B/C + ADM06/ADM07)
+
+No dev server was running (`netstat` checked first, per this doc's process rules). Ran
+`npm run build`: first attempt failed with `.next/dev/types/routes.d.ts` syntax errors — the known
+stale-`.next`-from-a-prior-dev-session corruption documented in `CLAUDE.local.md` #2, not a real type
+error. Fixed with `rm -rf .next` and rebuilt clean: **`npm run build` succeeded**, all routes
+compiled including `/admin/courses/[courseId]`, `/admin/pathway`, `/admin/wioa/boards`,
+`/admin/wioa/document-requirements`, `/admin/wioa/email-template` — and
+`/admin/courses/[courseId]/criteria` correctly does **not** appear (confirms the deleted route is
+really gone).
+
+**Still outstanding for all of Batch A/B/C and ADM06/ADM07: the user's own visual/browser pass.**
+None of this has been clicked through and confirmed against its boards yet.
 
 ### Sidebar structural retrofit (`AppSidebar.tsx`/`NavMain.tsx`/`src/lib/nav.ts`)
 

@@ -739,8 +739,8 @@ status" dropdown only ever offering the real next step or Closed/Ineligible, nev
 | `ADM03-Learners` | 4 Admin | Core | exists | | |
 | `ADM04-LearnerDetail` | 4 Admin | Core | exists | | |
 | `ADM05-Courses` | 4 Admin | Core | exists | | |
-| `ADM06-CurriculumBuilder` | 4 Admin | 1/3/7 | extend | | |
-| `ADM07-CriteriaAuthoring` | 4 Admin | 3 | new | | |
+| `ADM06-CurriculumBuilder` | 4 Admin | 1/3/7 | extend | | **Redrawn 2026-11-24** to match the real shipped `CurriculumBuilderView.tsx`. Previous version showed every section's lessons flat-stacked on one page, with a per-section "quiz" row and an inline "Practical evidence" lesson row — neither is real: `Lesson.type` is only video/text/image/resource, Knowledge Assessment is one course-level quiz (not per-section), and evidence criteria live in their own rail panel (`ADM07`), not an embedded lesson row. Now draws the real left rail (General Information / Sections / Assessment Criteria / Knowledge Assessment) with one selected section's real lesson list on the right, same rail `ADM07` uses. |
+| `ADM07-CriteriaAuthoring` | 4 Admin | 3 | new | | **Redrawn 2026-11-24** — not a standalone page. Shown as one of `ADM06-CurriculumBuilder`'s in-page rail panels (General Information / Sections / **Assessment Criteria** / Knowledge Assessment), reached by clicking "Assessment Criteria" in that rail, same URL as `ADM06` — matches the real shipped `CurriculumBuilderView.tsx`. Both `ADM06` and `ADM07` now draw the same real rail. |
 | `ADM08-Pathway` | 4 Admin | 1/7 | extend | | `/admin/pathway` + `/apprenticeship`; keyboard reorder is Phase 7. ⚠️ Q4. **Renumbered from `ADM11` 2026-11-20** — resequenced into Course/curriculum-setup cluster. |
 | `ADM09-QuizAuthoring` | 4 Admin | 6 | new | | Quiz Engine Depth, admin side (32h). Added 2026-11-18. **Renumbered from `ADM17` 2026-11-20** — resequenced into Course/curriculum-setup cluster. |
 | `ADM10-ReviewQueue` | 4 Admin | 3 | new | | **Renumbered from `ADM08` 2026-11-20** — resequenced into Evidence-review cluster. |

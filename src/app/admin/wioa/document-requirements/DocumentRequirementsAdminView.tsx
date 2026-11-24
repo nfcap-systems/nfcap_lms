@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { FileText, Plus } from 'lucide-react';
 
 import {
   createWioaDocumentRequirement,
@@ -10,28 +9,8 @@ import {
 } from '@/lib/actions/wioa-document-requirements';
 import type { WioaDocumentRequirementAdminRecord } from '@/lib/data/wioa-document-requirements';
 import type { WorkforceBoardSummary } from '@/lib/data/wioa-boards';
-import { Badge } from '@/components/admin-ui/badge';
-import { Button } from '@/components/admin-ui/button';
-import { Card, CardContent } from '@/components/admin-ui/card';
-import { Checkbox } from '@/components/admin-ui/checkbox';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/admin-ui/dialog';
-import { Input } from '@/components/admin-ui/input';
-import { Label } from '@/components/admin-ui/label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/admin-ui/select';
-import { Textarea } from '@/components/admin-ui/textarea';
+import { Icon } from '@/components/icons';
+import { Badge, StateCard } from '@/components/ui';
 
 function groupByBoard(
   requirements: WioaDocumentRequirementAdminRecord[],
@@ -53,87 +32,88 @@ export function DocumentRequirementsAdminView({
   boards: WorkforceBoardSummary[];
 }) {
   const router = useRouter();
-  const [addOpen, setAddOpen] = useState(false);
   const [editing, setEditing] = useState<WioaDocumentRequirementAdminRecord | null>(null);
+  const [formResetKey, setFormResetKey] = useState(0);
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex justify-end">
-        <Button onClick={() => setAddOpen(true)} disabled={boards.length === 0}>
-          <Plus className="size-4" />
-          Add requirement
-        </Button>
+      <div className="pagehdr">
+        <div>
+          <h1>Document Requirements</h1>
+          <p>The checklist shown to learners during WIOA document upload.</p>
+        </div>
       </div>
 
       {boards.length === 0 ? (
-        <Card>
-          <CardContent className="py-10 text-center text-sm text-muted-foreground">
-            Add a workforce board first — requirements are scoped per board.
-          </CardContent>
-        </Card>
+        <StateCard
+          icon={<Icon name="file-text" className="h-5 w-5" />}
+          title="Add a workforce board first"
+          description="Requirements are scoped per board."
+        />
       ) : requirements.length === 0 ? (
-        <Card>
-          <CardContent className="py-10 text-center text-sm text-muted-foreground">
-            No document requirements yet.
-          </CardContent>
-        </Card>
+        <StateCard
+          icon={<Icon name="file-text" className="h-5 w-5" />}
+          title="No document requirements yet"
+          description="Add one below."
+        />
       ) : (
         groupByBoard(requirements).map(([boardName, rows]) => (
-          <Card key={boardName} className="py-0">
-            <p className="border-b px-4 py-3 text-sm font-semibold text-foreground">{boardName}</p>
-            <div className="divide-y divide-border">
-              {rows.map((r) => (
-                <div key={r.id} className="flex items-center gap-3 p-4">
-                  <FileText className="size-4 shrink-0 text-muted-foreground" />
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium text-foreground">{r.name}</p>
-                    <p className="text-xs text-muted-foreground">{r.description}</p>
-                  </div>
-                  <div className="flex shrink-0 items-center gap-2">
-                    {r.conditional ? (
-                      <Badge variant="warning">Conditional</Badge>
-                    ) : (
-                      <Badge variant="outline">Required</Badge>
-                    )}
-                    <Button size="sm" variant="outline" onClick={() => setEditing(r)}>
-                      Edit
-                    </Button>
-                  </div>
-                </div>
-              ))}
+          <div key={boardName} className="panel" style={{ padding: 0, overflow: 'hidden' }}>
+            <div
+              style={{
+                padding: '14px 16px',
+                borderBottom: '1px solid var(--nfcap-border)',
+                fontWeight: 600,
+                fontSize: 13.5,
+              }}
+            >
+              {boardName}
             </div>
-          </Card>
+            {rows.map((r) => (
+              <div key={r.id} className="reqrow">
+                <Icon name="file-text" className="h-4 w-4 shrink-0" style={{ color: 'var(--ink-muted)' }} />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontWeight: 600, fontSize: 13.5 }}>{r.name}</div>
+                  <div style={{ fontSize: 12, color: 'var(--ink-muted)' }}>{r.description}</div>
+                </div>
+                <Badge tone={r.conditional ? 'neutral' : 'success'}>
+                  {r.conditional ? 'Conditional' : 'Required'}
+                </Badge>
+                <button type="button" className="btn-secondary btn-sm" onClick={() => setEditing(r)}>
+                  Edit
+                </button>
+              </div>
+            ))}
+          </div>
         ))
       )}
 
-      <RequirementDialog
-        key={editing?.id ?? 'new'}
-        boards={boards}
-        open={addOpen || editing !== null}
-        existing={editing}
-        onOpenChange={(open) => {
-          if (!open) {
-            setAddOpen(false);
+      {boards.length > 0 && (
+        <RequirementForm
+          key={editing?.id ?? `new-${formResetKey}`}
+          boards={boards}
+          existing={editing}
+          onCancelEdit={() => setEditing(null)}
+          onSaved={() => {
             setEditing(null);
-          }
-        }}
-        onSaved={() => router.refresh()}
-      />
+            setFormResetKey((k) => k + 1);
+            router.refresh();
+          }}
+        />
+      )}
     </div>
   );
 }
 
-function RequirementDialog({
+function RequirementForm({
   boards,
-  open,
   existing,
-  onOpenChange,
+  onCancelEdit,
   onSaved,
 }: {
   boards: WorkforceBoardSummary[];
-  open: boolean;
   existing: WioaDocumentRequirementAdminRecord | null;
-  onOpenChange: (open: boolean) => void;
+  onCancelEdit: () => void;
   onSaved: () => void;
 }) {
   const [workforceBoardId, setWorkforceBoardId] = useState(
@@ -149,70 +129,90 @@ function RequirementDialog({
     workforceBoardId.length > 0 && name.trim().length > 0 && description.trim().length > 0;
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>
-            {existing ? 'Edit document requirement' : 'Add document requirement'}
-          </DialogTitle>
-          <DialogDescription>
-            A conditional requirement only actually applies at case creation for the one hardcoded
-            rule (EDD Award Letter) — a custom conditional name always generates, same as
-            non-conditional.
-          </DialogDescription>
-        </DialogHeader>
-        <div className="flex max-h-96 flex-col gap-3 overflow-y-auto pr-1">
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="req-board">Workforce board</Label>
-            <Select value={workforceBoardId} onValueChange={setWorkforceBoardId}>
-              <SelectTrigger id="req-board" className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {boards.map((b) => (
-                  <SelectItem key={b.id} value={b.id}>
-                    {b.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+    <div className="panel">
+      <div style={{ fontWeight: 600, fontSize: 13.5, marginBottom: 12 }}>
+        {existing ? 'Edit requirement' : 'Add / edit requirement'}
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <div style={{ display: 'flex', gap: 12 }}>
+          <div style={{ flex: 1 }}>
+            <label className="field-label" htmlFor="req-board">
+              Workforce board
+            </label>
+            <select
+              id="req-board"
+              className="field-select"
+              value={workforceBoardId}
+              onChange={(e) => setWorkforceBoardId(e.target.value)}
+            >
+              {boards.map((b) => (
+                <option key={b.id} value={b.id}>
+                  {b.name}
+                </option>
+              ))}
+            </select>
           </div>
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="req-name">Name</Label>
-            <Input id="req-name" value={name} onChange={(e) => setName(e.target.value)} autoFocus />
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="req-description">Description</Label>
-            <Textarea
-              id="req-description"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
+          <div style={{ flex: 1 }}>
+            <label className="field-label" htmlFor="req-name">
+              Document name
+            </label>
+            <input
+              id="req-name"
+              className="field-input"
+              placeholder="e.g. Birth certificate"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
             />
           </div>
-          <label className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Checkbox
-              checked={conditional}
-              onCheckedChange={(checked) => setConditional(checked === true)}
-            />
-            Conditional — only applies to some learners
-          </label>
-          {conditional && (
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="req-rule">Rule (human-readable, not evaluated)</Label>
-              <Input
-                id="req-rule"
-                value={applicableRule}
-                onChange={(e) => setApplicableRule(e.target.value)}
-                placeholder="e.g. unemploymentInsuranceStatus is not 'Not applicable'"
-              />
-            </div>
-          )}
+          <div style={{ flex: 1 }}>
+            <label className="field-label" htmlFor="req-condition">
+              Condition
+            </label>
+            <select
+              id="req-condition"
+              className="field-select"
+              value={conditional ? 'conditional' : 'required'}
+              onChange={(e) => setConditional(e.target.value === 'conditional')}
+            >
+              <option value="required">Required</option>
+              <option value="conditional">Conditional</option>
+            </select>
+          </div>
         </div>
-        <DialogFooter>
-          <Button variant="ghost" onClick={() => onOpenChange(false)}>
-            Cancel
-          </Button>
-          <Button
+        <div>
+          <label className="field-label" htmlFor="req-description">
+            Description
+          </label>
+          <textarea
+            id="req-description"
+            className="field-textarea"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+          />
+        </div>
+        {conditional && (
+          <div>
+            <label className="field-label" htmlFor="req-rule">
+              Rule (human-readable, not evaluated)
+            </label>
+            <input
+              id="req-rule"
+              className="field-input"
+              placeholder="e.g. unemploymentInsuranceStatus is not 'Not applicable'"
+              value={applicableRule}
+              onChange={(e) => setApplicableRule(e.target.value)}
+            />
+          </div>
+        )}
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+          {existing && (
+            <button type="button" className="btn-secondary btn-sm" onClick={onCancelEdit}>
+              Cancel
+            </button>
+          )}
+          <button
+            type="button"
+            className="btn-primary btn-sm"
             disabled={!valid || submitting}
             onClick={async () => {
               setSubmitting(true);
@@ -229,14 +229,13 @@ function RequirementDialog({
                 await createWioaDocumentRequirement(fields);
               }
               setSubmitting(false);
-              onOpenChange(false);
               onSaved();
             }}
           >
             {existing ? 'Save changes' : 'Add requirement'}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }

@@ -142,31 +142,23 @@ function PathwayRow({
         )}
       </div>
 
-      {course.access === 'restricted' ? (
-        <label
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 6,
-            fontSize: 12.5,
-            color: 'var(--ink-muted)',
-            cursor: pending ? 'default' : 'pointer',
-          }}
-        >
-          <input type="checkbox" checked disabled={pending} onChange={onToggleAccess} />
-          Restricted — requires a CourseUnlock grant
-        </label>
-      ) : (
-        <button
-          type="button"
-          onClick={onToggleAccess}
-          disabled={pending}
-          className="badge-neutral"
-          style={{ border: 'none', cursor: pending ? 'default' : 'pointer' }}
-        >
-          Open to all
-        </button>
-      )}
+      <span
+        className={course.access === 'restricted' ? 'badge-neutral' : 'badge-accent'}
+        style={{ flex: 'none' }}
+      >
+        {course.access === 'restricted' && <Icon name="lock" className="h-3 w-3" />}
+        {course.access === 'restricted' ? 'Restricted' : 'Open to all'}
+      </span>
+
+      <button
+        type="button"
+        onClick={onToggleAccess}
+        disabled={pending}
+        className="btn-secondary btn-sm"
+        style={{ flex: 'none' }}
+      >
+        {course.access === 'restricted' ? 'Open to all' : 'Restrict'}
+      </button>
     </div>
   );
 }

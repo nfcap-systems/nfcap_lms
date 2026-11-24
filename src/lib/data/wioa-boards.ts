@@ -10,17 +10,39 @@ export type WorkforceBoardSummary = {
   ajccCount: number;
   jurisdictionCount: number;
   contactCount: number;
+  activeCaseCount: number;
+  primaryContactName: string | null;
 };
 
 /** Admin board roster (docs/build/WIOA_BUILD_WORKFLOW.md Phase 3 — replaces the hardcoded seed with a
- * no-code-change CRUD UI, per the spec's "no-code-change routing" requirement). */
+ * no-code-change CRUD UI, per the spec's "no-code-change routing" requirement).
+ *
+ * `activeCaseCount`/`primaryContactName` back WIOA01-Boards' per-board summary — both are batched
+ * (one groupBy, one distinct-on query) across every board rather than queried per board in a loop,
+ * per CLAUDE.md's performance conventions. */
 export async function getWorkforceBoards(): Promise<WorkforceBoardSummary[]> {
-  const boards = await prisma.workforceBoard.findMany({
-    orderBy: { name: 'asc' },
-    include: {
-      _count: { select: { ajccCenters: true, jurisdictions: true, contacts: true } },
-    },
-  });
+  const [boards, caseCounts, primaryContacts] = await Promise.all([
+    prisma.workforceBoard.findMany({
+      orderBy: { name: 'asc' },
+      include: {
+        _count: { select: { ajccCenters: true, jurisdictions: true, contacts: true } },
+      },
+    }),
+    prisma.wioaCase.groupBy({
+      by: ['workforceBoardId'],
+      where: { closedAt: null, workforceBoardId: { not: null } },
+      _count: true,
+    }),
+    prisma.workforceContact.findMany({
+      where: { active: true },
+      orderBy: [{ workforceBoardId: 'asc' }, { priority: 'asc' }],
+      distinct: ['workforceBoardId'],
+      select: { workforceBoardId: true, name: true },
+    }),
+  ]);
+
+  const caseCountByBoard = new Map(caseCounts.map((c) => [c.workforceBoardId, c._count]));
+  const primaryContactByBoard = new Map(primaryContacts.map((c) => [c.workforceBoardId, c.name]));
 
   return boards.map((b) => ({
     id: b.id,
@@ -31,6 +53,8 @@ export async function getWorkforceBoards(): Promise<WorkforceBoardSummary[]> {
     ajccCount: b._count.ajccCenters,
     jurisdictionCount: b._count.jurisdictions,
     contactCount: b._count.contacts,
+    activeCaseCount: caseCountByBoard.get(b.id) ?? 0,
+    primaryContactName: primaryContactByBoard.get(b.id) ?? null,
   }));
 }
 

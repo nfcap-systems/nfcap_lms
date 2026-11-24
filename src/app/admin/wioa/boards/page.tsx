@@ -3,18 +3,5 @@ import { BoardsAdminView } from './BoardsAdminView';
 
 export default async function AdminWioaBoardsPage() {
   const boards = await getWorkforceBoards();
-
-  return (
-    <div className="flex flex-col gap-4">
-      <div>
-        <h1 className="text-xl font-semibold text-foreground">WIOA Boards</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Workforce boards, AJCC centers, ZIP jurisdictions, and contacts the matching engine routes
-          learners to. Open a board to manage its centers/ZIPs/contacts.
-        </p>
-      </div>
-
-      <BoardsAdminView boards={boards} />
-    </div>
-  );
+  return <BoardsAdminView boards={boards} />;
 }

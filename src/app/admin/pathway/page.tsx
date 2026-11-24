@@ -1,22 +1,12 @@
 import { connection } from 'next/server';
+import { getAllCourses } from '@/lib/data/courses';
 import { getPathwaySummary } from '@/lib/data/pathway';
-import { PathwayListView } from './PathwayListView';
+import { PathwayDetailView } from './PathwayDetailView';
 
-export default async function AdminPathwayListPage() {
+export default async function AdminPathwayPage() {
   // getPathwaySummary folds in the learner roster (src/lib/data/learners.ts), which comes from
   // Supabase Auth directly and has no revalidatePath hook on signup — see src/app/admin/page.tsx.
   await connection();
-  const summary = await getPathwaySummary();
-  return (
-    <div className="flex flex-col gap-4">
-      <div>
-        <h1 className="text-xl font-semibold text-foreground">Pathway</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          The apprenticeship pathway learners progress through. NFCAP runs one pathway for now
-          (docs/product/PRODUCT_CONTEXT.md Section 5).
-        </p>
-      </div>
-      <PathwayListView summary={summary} />
-    </div>
-  );
+  const [courses, summary] = await Promise.all([getAllCourses(), getPathwaySummary()]);
+  return <PathwayDetailView courses={courses} summary={summary} />;
 }
