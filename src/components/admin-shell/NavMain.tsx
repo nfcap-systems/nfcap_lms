@@ -45,18 +45,23 @@ export function NavMain({ items }: { items: NavEntry[] }) {
       <SidebarGroupContent>
         <SidebarMenu>
           <SidebarMenuItem>
-            <div className="flex items-center gap-2">
+            {/* Sidebar.dc.html's .qc row: Quick Create + a bordered, white 36x36 "btn-ic" square
+                (not a plain icon button) holding an envelope icon, side by side when expanded.
+                Collapsed (.sb.collapsed/.rail-ic), the same two stack vertically as plain
+                32x32 icons with no border/white-bg — group-data-[collapsible=icon] below mirrors
+                that instead of squeezing both into one row and clipping, which is what broke the
+                collapsed rail before. */}
+            <div className="flex items-center gap-2 group-data-[collapsible=icon]:flex-col">
               <QuickCreateMenu />
-              {/* Sidebar.dc.html draws this next to Quick Create on every role — no Inbox route
-                  exists yet (Messaging is backend-only, Layer 1), so disabled rather than
-                  fabricated, same pattern as the Dashboard's "Add Learner" button. */}
+              {/* No Inbox route exists yet (Messaging is backend-only, Layer 1) — disabled rather
+                  than fabricated, same pattern as the Dashboard's "Add Learner" button. */}
               <SidebarMenuButton
-                className="w-8 shrink-0 justify-center px-0"
+                className="w-9 shrink-0 justify-center rounded-lg border border-sidebar-border bg-background px-0 group-data-[collapsible=icon]:w-8 group-data-[collapsible=icon]:border-0 group-data-[collapsible=icon]:bg-transparent"
                 disabled
                 tooltip="Inbox — not yet built"
                 aria-label="Inbox"
               >
-                <Icon name="message-circle" className="size-4" />
+                <Icon name="mail" className="size-4" />
               </SidebarMenuButton>
             </div>
           </SidebarMenuItem>
