@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useTransition } from 'react';
 import { Badge, Button, Card, CardContent, Drawer } from '@/components/ui';
 import { Icon } from '@/components/icons';
+import { generateCertificatePublicSlug } from '@/lib/actions/credentials';
 import type { Credential } from '@/lib/data/credentials';
 import { CertificateDocument } from './CertificateDocument';
 
@@ -14,7 +15,18 @@ export function CertificateCard({
   learnerName: string;
 }) {
   const [open, setOpen] = useState(false);
+  const [copyState, setCopyState] = useState<'idle' | 'copied'>('idle');
+  const [, startTransition] = useTransition();
   const { course, evidence } = credential;
+
+  function copyVerificationLink() {
+    startTransition(async () => {
+      const slug = await generateCertificatePublicSlug(credential.rawId);
+      await navigator.clipboard.writeText(`${window.location.origin}/verify/${slug}`);
+      setCopyState('copied');
+      setTimeout(() => setCopyState('idle'), 2000);
+    });
+  }
   const issuedDate = new Date(evidence.statusUpdatedAt ?? evidence.submittedAt).toLocaleDateString(
     undefined,
     { month: 'short', day: 'numeric', year: 'numeric' },
@@ -35,14 +47,15 @@ export function CertificateCard({
             <h3 className="text-base font-semibold text-[var(--ink)]">{course.title}</h3>
             <p className="mt-1 text-xs text-[var(--ink-muted)]">Issued {issuedDate}</p>
           </div>
-          <Button
-            size="sm"
-            variant="outline"
-            className="mt-auto w-full"
-            onClick={() => setOpen(true)}
-          >
-            View Certificate
-          </Button>
+          <div className="mt-auto flex gap-2">
+            <Button size="sm" variant="outline" className="flex-1" onClick={() => setOpen(true)}>
+              View Certificate
+            </Button>
+            <Button size="sm" variant="outline" className="flex-1" onClick={copyVerificationLink}>
+              <Icon name={copyState === 'copied' ? 'check' : 'shield'} className="size-3.5" />
+              {copyState === 'copied' ? 'Copied!' : 'Copy verify link'}
+            </Button>
+          </div>
         </CardContent>
       </Card>
 

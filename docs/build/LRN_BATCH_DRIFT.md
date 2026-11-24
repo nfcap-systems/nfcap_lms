@@ -87,6 +87,51 @@ This matches `docs/plans/mockup-complete-build.md`'s own Decision #1 (2026-11-24
 `/learner/courses/[courseId]`, not a reskin — already scoped as its own unit of work (32h, Quiz
 Engine Depth, Phase 6), not something to fold into the small alignment/parity fixes in this doc.
 
+## Closed out — 2026-11-24, same session
+
+Everything listed as "fixable now" below is now actually fixed, plus the course detail/player/
+quiz/evidence restructure (previous section). Per-board final state:
+
+- **`LearnerHeader`/`LearnerShell`** — two-row header, body/header width alignment, mobile-toggle
+  bug removed.
+- **`LRN01-Home`** — rebuilt (announcement banner, catalog, up-next, portfolio preview, review
+  panel, sidebar certificates). Mentor panel still blocked (no schema).
+- **`LRN02-Pathway`/`02b`/`02c`** — honest locked-course copy (see below), a real `LockedCourseDialog`
+  modal, empty state rebuilt to match the board.
+- **`LRN03`/`04`/`05`(`b`/`c`)** — built from nothing: `CourseOverviewView`, `LessonPlayerView`,
+  `QuizFlow` (chromeless question step via a fixed overlay, not a route restructure). `EvidenceView`
+  (already-matching Phase 3 work) relocated to its own `/evidence` route. A follow-up pass (outside
+  this session, found by something other than this agent) added `RestrictedCourseNotice` and closed
+  a real deep-link gap: the new `/learn/[lessonId]`, `/quiz`, `/evidence` routes didn't originally
+  re-check `access === 'restricted' && !unlocked` the way the Overview page did, so a restricted
+  course could be reached by guessing/typing the URL directly. Fixed, verified, kept.
+- **`LRN07-Portfolio`/`07b`** — real evidence thumbnails (`EvidenceThumbnail`, fetched client-side
+  per the existing signed-URL expiry design, not embedded in page data), a working "Share your
+  portfolio" panel (`generatePortfolioShareToken`, though the public viewing page itself still
+  doesn't exist — said so in the UI rather than hiding it), empty state rebuilt to match the board.
+- **`LRN08-Certificates`/`08b`** — 4th stat added, locked tier uses the same honest copy as `LRN02`,
+  "How verification works" copy corrected (it previously said public verification was "planned for
+  Phase 4, not available yet" — **wrong**, `LRN09-PublicVerify` already shipped this session; now
+  each earned certificate has a real "Copy verify link" action), empty-state condition fixed from
+  `pathway.length === 0` to `credentials.length === 0` (the common real case — enrolled, in
+  progress, zero certificates — was rendering the wrong screen).
+- **`LRN11-Account`** — sidebar built (profile summary, security tip, support link). The board's
+  "Learner ID" row is deliberately left out — no learner-code field exists anywhere in the schema,
+  and inventing a code format would be fabricating data.
+- **`LRN12-SignUp`, `LRN13-Explore`** — **no code change**, by explicit user decision. Both boards
+  encode a narrative (`LRN12`: address always collected at signup; `LRN13`: self-pay/no-eligibility-
+  check enrollment) that contradicts an already-decided, correct product behavior (address deferred
+  to Funding intake; courses are staff-assigned/restricted, not self-pay). These are canvas-redraw
+  items for the lead/QC session, not builder bugs.
+
+**One real, cross-cutting correction made along the way:** every "this course unlocks once you
+finish the previous one" claim (`LRN02`'s locked-card copy, `LRN02b`'s modal) was replaced with
+honest copy describing the real mechanism — a `CourseUnlock` grant (WIOA funding approval or Admin
+assignment). The board's "complete X to unlock automatically" story isn't how the app actually
+works; shipping it as literal UI copy would have told learners something false about their own
+access. Same category of fix as `LRN13`'s self-pay question, just not escalated since the direction
+was unambiguous (match reality, don't fabricate a feature).
+
 ## What's fixable now vs. blocked
 
 **Blocked on a real decision, not a quick fix:**

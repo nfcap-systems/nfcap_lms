@@ -1,22 +1,27 @@
 import Link from 'next/link';
-import { CourseLearningView } from '@/components/learner/CourseLearningView';
-import { getAssessmentCriteria, getCourseBySlug } from '@/lib/data/courses';
+import { CourseOverviewView } from '@/components/learner/CourseOverviewView';
+import { getCourseBySlug, getPublishedCourses } from '@/lib/data/courses';
 import {
   getCourseProgress,
   getCourseUnlocksForLearner,
   type CourseUnlockRecord,
 } from '@/lib/data/progress';
-import { getCriterionReview } from '@/lib/data/criterionReview';
-import { getResubmissionContext } from '@/lib/data/criterionAttempts';
 import { getAuthUser } from '@/lib/supabase/server';
 
-export default async function CourseLearningPage({
+/** LRN03-CourseOverview — the course landing page. Lessons, the quiz, and evidence submission
+ * each live at their own discrete route now (docs/build/LRN_BATCH_DRIFT.md); this page only
+ * shows the syllabus and routes onward via its own Continue button. */
+export default async function CourseOverviewPage({
   params,
 }: {
   params: Promise<{ courseId: string }>;
 }) {
   const { courseId } = await params;
-  const [course, user] = await Promise.all([getCourseBySlug(courseId), getAuthUser()]);
+  const [course, user, published] = await Promise.all([
+    getCourseBySlug(courseId),
+    getAuthUser(),
+    getPublishedCourses(),
+  ]);
 
   if (!course) {
     return (
@@ -32,46 +37,23 @@ export default async function CourseLearningPage({
     );
   }
 
-  const [progress, unlocks, criteria]: [
+  const [progress, unlocks]: [
     Awaited<ReturnType<typeof getCourseProgress>>,
     Record<string, CourseUnlockRecord>,
-    Awaited<ReturnType<typeof getAssessmentCriteria>>,
   ] = user
-    ? await Promise.all([
-        getCourseProgress(user.id, courseId),
-        getCourseUnlocksForLearner(user.id),
-        getAssessmentCriteria(courseId),
-      ])
-    : [undefined, {}, []];
+    ? await Promise.all([getCourseProgress(user.id, courseId), getCourseUnlocksForLearner(user.id)])
+    : [undefined, {}];
 
-  // Only fetched once evidence exists — getCriterionReview itself returns undefined otherwise,
-  // but no point running its enrollment lookup when there's nothing for it to find.
-  const [criterionReview, resubmission] =
-    user && progress?.evidence
-      ? await Promise.all([
-          getCriterionReview(user.id, courseId),
-          progress.evidence.status === 'rejected'
-            ? getResubmissionContext(user.id, courseId)
-            : undefined,
-        ])
-      : [undefined, undefined];
+  const pathway = [...published].sort((a, b) => a.pathwayOrder - b.pathwayOrder);
+  const moduleIndex = pathway.findIndex((c) => c.id === course.id);
 
   return (
-    <div className="flex flex-col gap-4">
-      <div>
-        <p className="text-xs font-medium uppercase tracking-wide text-[var(--ink-muted)]">
-          {course.category}
-        </p>
-        <h1 className="text-xl font-semibold text-[var(--ink)]">{course.title}</h1>
-      </div>
-      <CourseLearningView
-        course={course}
-        progress={progress}
-        unlocked={Boolean(unlocks[courseId])}
-        criteria={criteria}
-        criterionVerdicts={criterionReview?.criteria}
-        resubmission={resubmission}
-      />
-    </div>
+    <CourseOverviewView
+      course={course}
+      progress={progress}
+      unlocked={Boolean(unlocks[courseId])}
+      moduleNumber={moduleIndex >= 0 ? moduleIndex + 1 : 1}
+      moduleTotal={pathway.length || 1}
+    />
   );
 }

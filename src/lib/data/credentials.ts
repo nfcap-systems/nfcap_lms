@@ -22,6 +22,11 @@ export type Credential = {
    * (docs/plans/phase-3-and-design-migration-kickoff.md Step 2, feature #12). */
   criteria: CredentialCriterion[];
   certificateId: string;
+  /** The Certificate row's own id (not `certificateId`/certificateCode above) — what
+   * `generateCertificatePublicSlug` needs to create or fetch LRN08-Certificates' public
+   * verification link (LRN09-PublicVerify), matching the board's "See a sample verification
+   * page" / earned-card-opens-Verify-view intent. */
+  rawId: string;
 };
 
 /** Courses whose Practical Evidence has been verified — the payoff loop's completion state
@@ -77,6 +82,7 @@ export async function getCredentialsForLearner(
           hasFile: Boolean(a.learnerFilePath),
         })),
         certificateId: cert.certificateCode,
+        rawId: cert.id,
       };
     })
     .filter((c): c is Credential => c !== null)

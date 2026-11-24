@@ -1,6 +1,9 @@
-import { Badge } from '@/components/ui';
+import Link from 'next/link';
+import { Badge, Button } from '@/components/ui';
 import { Icon } from '@/components/icons';
 import { EvidenceAttachmentLink } from '@/components/learner/EvidenceAttachmentLink';
+import { EvidenceThumbnail } from '@/components/learner/EvidenceThumbnail';
+import { SharePortfolioPanel } from '@/components/learner/SharePortfolioPanel';
 import type { Credential } from '@/lib/data/credentials';
 
 export function PortfolioView({
@@ -97,37 +100,83 @@ export function PortfolioView({
       >
         <div style={{ display: 'flex', flexDirection: 'column', gap: 28, minWidth: 0 }}>
           {credentials.length === 0 ? (
-            <div
-              style={{
-                borderRadius: 'var(--nfcap-radius-lg)',
-                background: 'var(--surface-muted)',
-                border: '1px solid var(--nfcap-border)',
-                padding: 28,
-              }}
-            >
+            <>
               <div
                 style={{
-                  width: 40,
-                  height: 40,
-                  borderRadius: '50%',
                   background: 'var(--surface)',
+                  border: '1px solid var(--nfcap-border)',
+                  borderRadius: 'var(--nfcap-radius-lg)',
+                  boxShadow: 'var(--nfcap-shadow-sm)',
                   display: 'flex',
+                  flexDirection: 'column',
                   alignItems: 'center',
-                  justifyContent: 'center',
-                  color: 'var(--ink-muted)',
-                  marginBottom: 12,
+                  textAlign: 'center',
+                  gap: 18,
+                  padding: '88px 24px',
                 }}
               >
-                <Icon name="briefcase" className="h-5 w-5" />
+                <div
+                  style={{
+                    width: 64,
+                    height: 64,
+                    borderRadius: '50%',
+                    background: 'var(--surface-muted)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: 'var(--ink-muted)',
+                  }}
+                >
+                  <Icon name="briefcase" className="h-7 w-7" />
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxWidth: 430 }}>
+                  <b
+                    style={{ fontSize: 19, fontFamily: 'var(--font-display)', color: 'var(--ink)' }}
+                  >
+                    No evidence submitted yet
+                  </b>
+                  <div style={{ fontSize: 13.5, color: 'var(--ink-muted)', lineHeight: 1.6 }}>
+                    Once you submit practical evidence from a lesson, it&apos;s kept here
+                    automatically — organized by course, ready for review and your apprenticeship
+                    records.
+                  </div>
+                </div>
+                <Link href="/learner/my-learning">
+                  <Button>Go to My Learning</Button>
+                </Link>
               </div>
-              <h2 style={{ fontSize: 16, fontWeight: 600, color: 'var(--ink)', margin: '0 0 6px' }}>
-                Nothing here yet
-              </h2>
-              <p style={{ fontSize: 13.5, color: 'var(--ink-muted)', maxWidth: 420, margin: 0 }}>
-                Once NFCAP staff verify a piece of Practical Evidence you&apos;ve submitted, it will
-                appear here as proof of your demonstrated skill.
-              </p>
-            </div>
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 12,
+                  background: '#eff6ff',
+                  border: '1px solid #dbeafe',
+                  borderRadius: 'var(--nfcap-radius-lg)',
+                  padding: '16px 20px',
+                }}
+              >
+                <div
+                  style={{
+                    width: 34,
+                    height: 34,
+                    borderRadius: 'var(--nfcap-radius-md)',
+                    background: '#dbeafe',
+                    color: 'var(--nfcap-accent)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0,
+                  }}
+                >
+                  <Icon name="alert-circle" className="h-4 w-4" />
+                </div>
+                <div style={{ fontSize: 13, color: 'var(--ink)', lineHeight: 1.5 }}>
+                  Each module has a practical evidence submission once you reach it — your reviewer
+                  sees it as <b>Met</b> or <b>Not Met</b> with a note, right here in your portfolio.
+                </div>
+              </div>
+            </>
           ) : (
             Array.from(courseGroups.values()).map((group) => (
               <div key={group.title} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
@@ -166,33 +215,45 @@ export function PortfolioView({
                               {credential.criteria.map((criterion) => (
                                 <div
                                   key={criterion.criterionAssessmentId}
-                                  style={{ display: 'flex', flexDirection: 'column', gap: 4 }}
+                                  style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}
                                 >
-                                  <div className="t">{criterion.title}</div>
-                                  {criterion.description && (
-                                    <div style={{ fontSize: 12.5, color: 'var(--ink-muted)' }}>
-                                      {criterion.description}
-                                    </div>
-                                  )}
                                   {criterion.hasFile && (
-                                    <EvidenceAttachmentLink
+                                    <EvidenceThumbnail
                                       criterionAssessmentId={criterion.criterionAssessmentId}
-                                      fileName={criterion.fileName}
                                     />
                                   )}
+                                  <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                                    <div className="t">{criterion.title}</div>
+                                    {criterion.description && (
+                                      <div style={{ fontSize: 12.5, color: 'var(--ink-muted)' }}>
+                                        {criterion.description}
+                                      </div>
+                                    )}
+                                    {criterion.hasFile && (
+                                      <EvidenceAttachmentLink
+                                        criterionAssessmentId={criterion.criterionAssessmentId}
+                                        fileName={criterion.fileName}
+                                      />
+                                    )}
+                                  </div>
                                 </div>
                               ))}
                             </div>
                           ) : (
-                            <>
-                              <div className="t">{credential.evidence.description}</div>
+                            <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
                               {credential.evidence.hasSubmissionFile && (
-                                <EvidenceAttachmentLink
-                                  evidenceSubmissionId={credential.evidence.id}
-                                  fileName={credential.evidence.fileName}
-                                />
+                                <EvidenceThumbnail evidenceSubmissionId={credential.evidence.id} />
                               )}
-                            </>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                                <div className="t">{credential.evidence.description}</div>
+                                {credential.evidence.hasSubmissionFile && (
+                                  <EvidenceAttachmentLink
+                                    evidenceSubmissionId={credential.evidence.id}
+                                    fileName={credential.evidence.fileName}
+                                  />
+                                )}
+                              </div>
+                            </div>
                           )}
                           <Badge tone="success" style={{ width: 'fit-content' }}>
                             <Icon name="check" className="h-3 w-3" />
@@ -209,6 +270,7 @@ export function PortfolioView({
         </div>
 
         <aside style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <SharePortfolioPanel />
           <div className="lrn-side-panel">
             <div className="lrn-side-title">
               <h3>How review works</h3>

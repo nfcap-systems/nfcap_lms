@@ -1,11 +1,12 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Button, Badge } from '@/components/ui';
 import { Icon } from '@/components/icons';
+import { LockedCourseDialog, LOCKED_COURSE_COPY } from '@/components/learner/LockedCourseDialog';
 import { markAnnouncementRead } from '@/lib/actions/announcements';
 import { courseLessonCount, courseDurationMinutes, flattenLessons } from '@/lib/types';
 import { getCourseStatus, courseStatusLabel, courseStatusTone } from '@/lib/course-status';
@@ -51,6 +52,7 @@ export function HomeView({
   firstName: string;
 }) {
   const router = useRouter();
+  const [lockedCourse, setLockedCourse] = useState<AdminCourse | null>(null);
 
   const enrolledCourses = allCourses
     .filter((c) => progressMap[c.id]?.enrolled)
@@ -413,13 +415,48 @@ export function HomeView({
                 course.access === 'restricted' &&
                 !unlockedCourseSlugs.includes(course.id);
               const status = getCourseStatus(course, progress);
+
+              if (locked) {
+                return (
+                  <button
+                    key={course.id}
+                    type="button"
+                    className="lrn-mcard"
+                    style={{ opacity: 0.65 }}
+                    onClick={() => setLockedCourse(course)}
+                  >
+                    <div
+                      className="thumb"
+                      style={{
+                        background: 'var(--nfcap-border)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: 'var(--ink-faint)',
+                      }}
+                    >
+                      <Icon name="lock" className="h-6 w-6" />
+                    </div>
+                    <div className="lrn-mcard-body">
+                      <div className="t">{course.title}</div>
+                      <div style={{ fontSize: 12, color: 'var(--ink-muted)' }}>
+                        {LOCKED_COURSE_COPY}
+                      </div>
+                      <Badge tone="neutral" style={{ width: 'fit-content' }}>
+                        <Icon name="lock" className="h-3 w-3" />
+                        Locked
+                      </Badge>
+                    </div>
+                  </button>
+                );
+              }
+
               return (
                 <button
                   key={course.id}
                   type="button"
                   className="lrn-mcard"
                   onClick={() => router.push(`/learner/courses/${course.id}`)}
-                  disabled={locked}
                 >
                   <Image
                     src={MODULE_PHOTOS[index % MODULE_PHOTOS.length]}
@@ -691,6 +728,8 @@ export function HomeView({
           )}
         </aside>
       </div>
+
+      <LockedCourseDialog course={lockedCourse} onClose={() => setLockedCourse(null)} />
     </div>
   );
 }

@@ -1741,6 +1741,115 @@
   justify-content: center;
   flex-shrink: 0;
 }
+/* LRN05-QuizPre's facts card row. */
+.quizfact {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 13px 0;
+  border-bottom: 1px solid var(--nfcap-border);
+  font-size: 14px;
+  color: var(--ink);
+}
+.quizfact:last-child {
+  border-bottom: none;
+}
+/* LRN05b-QuizQuestion's chromeless full-screen quiz mode — a fixed overlay above the shared
+   header (z-index 40) rather than a route restructure, since only this one internal step needs
+   to look different; LRN05-QuizPre/LRN05c-QuizResult keep the normal LearnerHeader chrome. */
+.lrn-quiz-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: var(--surface-muted);
+  overflow-y: auto;
+}
+.lrn-quiz-bar {
+  height: 64px;
+  border-bottom: 1px solid var(--nfcap-border);
+  display: flex;
+  align-items: center;
+  padding: 0 28px;
+  gap: 36px;
+  background: var(--surface);
+  box-shadow: 0 1px 0 rgba(15, 23, 32, 0.03);
+}
+.quizopt {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 18px;
+  border: 1.5px solid var(--nfcap-border);
+  border-radius: var(--nfcap-radius-md);
+  font-size: 15px;
+  cursor: pointer;
+  background: var(--surface);
+  color: var(--ink);
+  width: 100%;
+  text-align: left;
+}
+.quizopt.selected {
+  border-color: var(--nfcap-accent);
+  background: #eff6ff;
+}
+.quizradio {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid var(--ink-faint);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.quizopt.selected .quizradio {
+  border-color: var(--nfcap-accent);
+}
+.quizopt.selected .quizradio::after {
+  content: '';
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--nfcap-accent);
+}
+/* LRN04-Player's lesson sidebar row — ported from its own `.lrow`. */
+.lrn-player-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: var(--nfcap-radius-md);
+  font-size: 13px;
+  color: var(--ink-muted);
+  background: none;
+  border: none;
+  cursor: pointer;
+  width: 100%;
+}
+.lrn-player-row.on {
+  background: #eff6ff;
+  color: var(--nfcap-accent);
+  font-weight: 600;
+}
+/* LRN02-Pathway's own `.tab`/`.tab.active` — kept separate from the shared `.ptab` (other staff
+   screens already use that one) because the board's version differs: 14px/600 weight always,
+   accent-colored active underline instead of ink-colored. */
+.lrn-tab {
+  padding: 10px 2px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink-muted);
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  background: none;
+  border-left: none;
+  border-right: none;
+  border-top: none;
+}
+.lrn-tab.on {
+  color: var(--ink);
+  border-bottom-color: var(--nfcap-accent);
+}
 .cert-row {
   display: flex;
   align-items: center;

@@ -80,6 +80,7 @@ function mapCourse(db: DbCourse): AdminCourse {
     assessment: {
       id: db.assessment?.id ?? '',
       passThreshold: db.assessment?.passThreshold ?? 0.75,
+      maxAttempts: db.assessment?.maxAttempts ?? null,
       questions: (db.assessment?.questions ?? []).map((q) => ({
         id: q.id,
         prompt: q.prompt,
