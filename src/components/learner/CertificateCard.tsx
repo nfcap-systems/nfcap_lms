@@ -3,14 +3,15 @@
 import { useState, useTransition } from 'react';
 import { Drawer } from '@/components/ui';
 import { Icon } from '@/components/icons';
-import { generateCertificatePublicSlug } from '@/lib/actions/credentials';
+import { generateCertificatePublicSlug, getCertificatePdfBase64 } from '@/lib/actions/credentials';
+import { downloadBase64File } from '@/lib/download';
 import type { Credential } from '@/lib/data/credentials';
 import { CertificateDocument } from './CertificateDocument';
 
 /** LRN08-Certificates' earned card — matches the board's `.ccard` pattern (same one
  * CertificatesView uses inline for the locked/in-progress cards in this same grid), not a
- * separate shadcn design. "Copy verify link" replaces the board's disabled "Download PDF"
- * placeholder — a real, working feature the board never drew, not a missing one. */
+ * separate shadcn design. "Download PDF" is the board's placeholder, now wired for real
+ * (Phase 4); "Copy verify link" sits alongside it rather than replacing it. */
 export function CertificateCard({
   credential,
   learnerName,
@@ -20,6 +21,7 @@ export function CertificateCard({
 }) {
   const [open, setOpen] = useState(false);
   const [copyState, setCopyState] = useState<'idle' | 'copied'>('idle');
+  const [downloading, startDownload] = useTransition();
   const [, startTransition] = useTransition();
   const { course } = credential;
 
@@ -29,6 +31,13 @@ export function CertificateCard({
       await navigator.clipboard.writeText(`${window.location.origin}/verify/${slug}`);
       setCopyState('copied');
       setTimeout(() => setCopyState('idle'), 2000);
+    });
+  }
+
+  function downloadPdf() {
+    startDownload(async () => {
+      const { base64, filename } = await getCertificatePdfBase64(credential.rawId);
+      downloadBase64File(base64, filename, 'application/pdf');
     });
   }
   const issuedDate = new Date(credential.issuedAt).toLocaleDateString(undefined, {
@@ -97,6 +106,22 @@ export function CertificateCard({
           >
             <Icon name={copyState === 'copied' ? 'check' : 'shield'} className="h-3.5 w-3.5" />
             {copyState === 'copied' ? 'Copied!' : 'Copy verify link'}
+          </button>
+          <button
+            type="button"
+            className="btn-secondary btn-sm"
+            style={{
+              flex: 1,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 6,
+            }}
+            onClick={downloadPdf}
+            disabled={downloading}
+          >
+            <Icon name="download" className="h-3.5 w-3.5" />
+            {downloading ? 'Preparing…' : 'Download PDF'}
           </button>
         </div>
       </div>

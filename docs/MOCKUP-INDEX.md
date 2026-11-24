@@ -768,7 +768,7 @@ status" dropdown only ever offering the real next step or Closed/Ineligible, nev
 | `CRD05-StalledCases` | 5 Coordinator | 5 | new | | |
 | `WIOA01-Boards` | 6 WIOA config | 0 | exists | | |
 | `WIOA02-BoardDetail` | 6 WIOA config | 0 | exists | | |
-| `WIOA03-DocumentRequirements` | 6 WIOA config | 0/5 | extend | | ⚠️ Q8 |
+| `WIOA03-DocumentRequirements` | 6 WIOA config | 0/5 | extend | | ⚠️ Q8. **Redrawn 2026-11-24** — was a flat page stacking every board's full requirement list; user picked "board list + detail split" (master-detail) after a 3-option comparison (`temp_ss/wioa03-docreq-variants.html`: board tabs / collapsed accordion / list+detail split). Now a persistent left-hand board list with the selected board's requirements + inline add/edit panel in the right pane. |
 | `WIOA04-EmailTemplate` | 6 WIOA config | 0/5 | extend | | Phase 5 adds delivery + failure visibility |
 | `PTN01-Roster` | 7 Partner staff | 0/5 | extend | | R4: no funding amounts |
 | `PTN02-LearnerDetail` | 7 Partner staff | 0/5 | extend | | |

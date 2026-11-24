@@ -10,19 +10,9 @@ import {
 import type { WioaDocumentRequirementAdminRecord } from '@/lib/data/wioa-document-requirements';
 import type { WorkforceBoardSummary } from '@/lib/data/wioa-boards';
 import { Icon } from '@/components/icons';
-import { Badge, StateCard } from '@/components/ui';
+import { Badge, Dialog, StateCard } from '@/components/ui';
 
-function groupByBoard(
-  requirements: WioaDocumentRequirementAdminRecord[],
-): [string, WioaDocumentRequirementAdminRecord[]][] {
-  const groups = new Map<string, WioaDocumentRequirementAdminRecord[]>();
-  for (const r of requirements) {
-    const existing = groups.get(r.boardName);
-    if (existing) existing.push(r);
-    else groups.set(r.boardName, [r]);
-  }
-  return [...groups.entries()];
-}
+type FormTarget = 'add' | WioaDocumentRequirementAdminRecord;
 
 export function DocumentRequirementsAdminView({
   requirements,
@@ -32,8 +22,34 @@ export function DocumentRequirementsAdminView({
   boards: WorkforceBoardSummary[];
 }) {
   const router = useRouter();
-  const [editing, setEditing] = useState<WioaDocumentRequirementAdminRecord | null>(null);
-  const [formResetKey, setFormResetKey] = useState(0);
+  const [selectedBoardId, setSelectedBoardId] = useState(boards[0]?.id ?? '');
+  const [formTarget, setFormTarget] = useState<FormTarget | null>(null);
+
+  if (boards.length === 0) {
+    return (
+      <div className="flex flex-col gap-4">
+        <div className="pagehdr">
+          <div>
+            <h1>Document Requirements</h1>
+            <p>The checklist shown to learners during WIOA document upload.</p>
+          </div>
+        </div>
+        <StateCard
+          icon={<Icon name="file-text" className="h-5 w-5" />}
+          title="Add a workforce board first"
+          description="Requirements are scoped per board."
+        />
+      </div>
+    );
+  }
+
+  const selectedBoard = boards.find((b) => b.id === selectedBoardId) ?? boards[0];
+  const boardRequirements = requirements.filter((r) => r.workforceBoardId === selectedBoard.id);
+
+  function selectBoard(boardId: string) {
+    setSelectedBoardId(boardId);
+    setFormTarget(null);
+  }
 
   return (
     <div className="flex flex-col gap-4">
@@ -44,34 +60,54 @@ export function DocumentRequirementsAdminView({
         </div>
       </div>
 
-      {boards.length === 0 ? (
-        <StateCard
-          icon={<Icon name="file-text" className="h-5 w-5" />}
-          title="Add a workforce board first"
-          description="Requirements are scoped per board."
-        />
-      ) : requirements.length === 0 ? (
-        <StateCard
-          icon={<Icon name="file-text" className="h-5 w-5" />}
-          title="No document requirements yet"
-          description="Add one below."
-        />
-      ) : (
-        groupByBoard(requirements).map(([boardName, rows]) => (
-          <div key={boardName} className="panel" style={{ padding: 0, overflow: 'hidden' }}>
-            <div
-              style={{
-                padding: '14px 16px',
-                borderBottom: '1px solid var(--nfcap-border)',
-                fontWeight: 600,
-                fontSize: 13.5,
-              }}
+      <div className="splitwrap">
+        <div className="splitlist">
+          {boards.map((b) => {
+            const count = requirements.filter((r) => r.workforceBoardId === b.id).length;
+            return (
+              <button
+                key={b.id}
+                type="button"
+                className={b.id === selectedBoard.id ? 'splititem on' : 'splititem'}
+                onClick={() => selectBoard(b.id)}
+              >
+                <span className="name">{b.name}</span>
+                <span className="meta">
+                  {count} requirement{count === 1 ? '' : 's'}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="splitdetail">
+          <div className="splitdetailhdr">
+            <div style={{ fontWeight: 600, fontSize: 14 }}>{selectedBoard.name}</div>
+            <button
+              type="button"
+              className="btn-primary btn-sm"
+              onClick={() => setFormTarget('add')}
             >
-              {boardName}
+              + Add requirement
+            </button>
+          </div>
+
+          {boardRequirements.length === 0 ? (
+            <div style={{ padding: 20 }}>
+              <StateCard
+                icon={<Icon name="file-text" className="h-5 w-5" />}
+                title="No document requirements yet"
+                description="Add one below."
+              />
             </div>
-            {rows.map((r) => (
+          ) : (
+            boardRequirements.map((r) => (
               <div key={r.id} className="reqrow">
-                <Icon name="file-text" className="h-4 w-4 shrink-0" style={{ color: 'var(--ink-muted)' }} />
+                <Icon
+                  name="file-text"
+                  className="h-4 w-4 shrink-0"
+                  style={{ color: 'var(--ink-muted)' }}
+                />
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontWeight: 600, fontSize: 13.5 }}>{r.name}</div>
                   <div style={{ fontSize: 12, color: 'var(--ink-muted)' }}>{r.description}</div>
@@ -79,79 +115,60 @@ export function DocumentRequirementsAdminView({
                 <Badge tone={r.conditional ? 'neutral' : 'success'}>
                   {r.conditional ? 'Conditional' : 'Required'}
                 </Badge>
-                <button type="button" className="btn-secondary btn-sm" onClick={() => setEditing(r)}>
+                <button type="button" className="btn-secondary btn-sm" onClick={() => setFormTarget(r)}>
                   Edit
                 </button>
               </div>
-            ))}
-          </div>
-        ))
-      )}
+            ))
+          )}
+        </div>
+      </div>
 
-      {boards.length > 0 && (
-        <RequirementForm
-          key={editing?.id ?? `new-${formResetKey}`}
-          boards={boards}
-          existing={editing}
-          onCancelEdit={() => setEditing(null)}
-          onSaved={() => {
-            setEditing(null);
-            setFormResetKey((k) => k + 1);
-            router.refresh();
-          }}
-        />
-      )}
+      <Dialog
+        open={formTarget !== null}
+        onClose={() => setFormTarget(null)}
+        title={formTarget === 'add' ? 'Add requirement' : 'Edit requirement'}
+        description={selectedBoard.name}
+      >
+        {formTarget !== null && (
+          <RequirementForm
+            key={formTarget === 'add' ? 'add' : formTarget.id}
+            boardId={selectedBoard.id}
+            existing={formTarget === 'add' ? null : formTarget}
+            onCancelEdit={() => setFormTarget(null)}
+            onSaved={() => {
+              setFormTarget(null);
+              router.refresh();
+            }}
+          />
+        )}
+      </Dialog>
     </div>
   );
 }
 
 function RequirementForm({
-  boards,
+  boardId,
   existing,
   onCancelEdit,
   onSaved,
 }: {
-  boards: WorkforceBoardSummary[];
+  boardId: string;
   existing: WioaDocumentRequirementAdminRecord | null;
   onCancelEdit: () => void;
   onSaved: () => void;
 }) {
-  const [workforceBoardId, setWorkforceBoardId] = useState(
-    existing?.workforceBoardId ?? boards[0]?.id ?? '',
-  );
   const [name, setName] = useState(existing?.name ?? '');
   const [description, setDescription] = useState(existing?.description ?? '');
   const [conditional, setConditional] = useState(existing?.conditional ?? false);
   const [applicableRule, setApplicableRule] = useState(existing?.applicableRule ?? '');
   const [submitting, setSubmitting] = useState(false);
 
-  const valid =
-    workforceBoardId.length > 0 && name.trim().length > 0 && description.trim().length > 0;
+  const valid = name.trim().length > 0 && description.trim().length > 0;
 
   return (
-    <div className="panel">
-      <div style={{ fontWeight: 600, fontSize: 13.5, marginBottom: 12 }}>
-        {existing ? 'Edit requirement' : 'Add / edit requirement'}
-      </div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
         <div style={{ display: 'flex', gap: 12 }}>
-          <div style={{ flex: 1 }}>
-            <label className="field-label" htmlFor="req-board">
-              Workforce board
-            </label>
-            <select
-              id="req-board"
-              className="field-select"
-              value={workforceBoardId}
-              onChange={(e) => setWorkforceBoardId(e.target.value)}
-            >
-              {boards.map((b) => (
-                <option key={b.id} value={b.id}>
-                  {b.name}
-                </option>
-              ))}
-            </select>
-          </div>
           <div style={{ flex: 1 }}>
             <label className="field-label" htmlFor="req-name">
               Document name
@@ -217,7 +234,7 @@ function RequirementForm({
             onClick={async () => {
               setSubmitting(true);
               const fields = {
-                workforceBoardId,
+                workforceBoardId: boardId,
                 name: name.trim(),
                 description: description.trim(),
                 conditional,
@@ -235,7 +252,6 @@ function RequirementForm({
             {existing ? 'Save changes' : 'Add requirement'}
           </button>
         </div>
-      </div>
     </div>
   );
 }

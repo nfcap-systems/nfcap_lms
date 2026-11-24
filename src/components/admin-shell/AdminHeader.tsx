@@ -17,26 +17,49 @@ import {
 import { Icon } from '@/components/icons';
 import { logout } from '@/lib/actions/auth';
 import { getInitials } from '@/lib/utils';
+import { adminNav, type NavEntry } from '@/lib/nav';
 import Link from 'next/link';
 
 /** ADM01-Shell's `.hdr` row — collapse icon, divider, search pill on the left; notifications and
  * an avatar+chevron account menu on the right. No page title lives in this bar on any board; each
  * page's own heading/greeting is in its `.pagehdr`, inside the body below (see DashboardView). */
-export function AdminHeader({ userName, userEmail }: { userName: string; userEmail: string }) {
+export function AdminHeader({
+  userName,
+  userEmail,
+  accountHref = '/admin/account',
+  navItems = adminNav,
+}: {
+  userName: string;
+  userEmail: string;
+  /** Defaults to today's Admin value — other admin-ui-shell roles (coordinator, partner) pass
+   * their own account route to reuse this same header rather than a duplicate copy. */
+  accountHref?: string;
+  /** Defaults to today's Admin nav — coordinator/partner pass their own so the search bar's
+   * "Go to" shortcuts match the sidebar they actually have, not Admin's. */
+  navItems?: NavEntry[];
+}) {
   return (
     <header className="flex h-14 shrink-0 items-center gap-2 border-b border-border px-4">
       <SidebarTrigger className="-ml-1" />
       <Separator orientation="vertical" className="h-4" />
-      <GlobalSearch variant="bar" />
+      <GlobalSearch variant="bar" navItems={navItems} />
       <div className="ml-auto flex shrink-0 items-center gap-1">
         <NotificationsMenu variant="ghost" />
-        <AccountMenu name={userName} email={userEmail} />
+        <AccountMenu name={userName} email={userEmail} accountHref={accountHref} />
       </div>
     </header>
   );
 }
 
-function AccountMenu({ name, email }: { name: string; email: string }) {
+function AccountMenu({
+  name,
+  email,
+  accountHref,
+}: {
+  name: string;
+  email: string;
+  accountHref: string;
+}) {
   const displayName = name || email;
 
   return (
@@ -68,7 +91,7 @@ function AccountMenu({ name, email }: { name: string; email: string }) {
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
           <DropdownMenuItem asChild>
-            <Link href="/admin/account">
+            <Link href={accountHref}>
               <Icon name="user" className="size-4" />
               Account
             </Link>

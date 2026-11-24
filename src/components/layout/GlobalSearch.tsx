@@ -1,70 +1,78 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { Icon, type IconName } from '@/components/icons';
+import { useEffect, useMemo, useState } from 'react';
+import { useRouter, usePathname } from 'next/navigation';
+import { Award, Briefcase, ClipboardList, Compass, Play, Search, User } from 'lucide-react';
+import { Icon } from '@/components/icons';
+import {
+  CommandDialog,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+  CommandShortcut,
+} from '@/components/admin-ui/command';
 import { searchGlobal } from '@/lib/actions/search';
 import type { SearchResult, SearchResultType } from '@/lib/data/search';
+import { isNavGroup, type NavEntry } from '@/lib/nav';
 
-const TYPE_ICON: Record<SearchResultType, IconName> = {
-  course: 'compass',
-  lesson: 'play',
-  certificate: 'award',
-  portfolio: 'briefcase',
-};
-
-const TYPE_LABEL: Record<SearchResultType, string> = {
-  course: 'Course',
-  lesson: 'Lesson',
-  certificate: 'Certificate',
-  portfolio: 'Portfolio',
-};
-
-function ResultsList({ results, onSelect }: { results: SearchResult[]; onSelect: () => void }) {
-  return (
-    <ul className="max-h-80 overflow-y-auto p-1.5">
-      {results.map((result) => (
-        <li key={`${result.type}-${result.href}-${result.title}`}>
-          <Link
-            href={result.href}
-            onClick={onSelect}
-            className="flex items-center gap-3 rounded-xl px-2.5 py-2 transition-colors hover:bg-[var(--surface-muted)]"
-          >
-            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--surface-muted)] text-[var(--ink-muted)]">
-              <Icon name={TYPE_ICON[result.type]} className="h-4 w-4" />
-            </span>
-            <span className="min-w-0 flex-1">
-              <span className="block truncate text-sm font-medium text-[var(--ink)]">
-                {result.title}
-              </span>
-              <span className="block truncate text-xs text-[var(--ink-muted)]">
-                {TYPE_LABEL[result.type]} · {result.subtitle}
-              </span>
-            </span>
-          </Link>
-        </li>
-      ))}
-    </ul>
+function flattenNavItems(entries: NavEntry[]): { label: string; href: string; icon: Parameters<typeof Icon>[0]['name'] }[] {
+  return entries.flatMap((entry) =>
+    isNavGroup(entry)
+      ? entry.children.map((child) => ({
+          label: `${entry.label} · ${child.label}`,
+          href: child.href,
+          icon: child.icon,
+        }))
+      : [{ label: entry.label, href: entry.href, icon: entry.icon }],
   );
 }
 
-function StatusMessage({ children }: { children: string }) {
-  return <p className="px-4 py-6 text-center text-sm text-[var(--ink-muted)]">{children}</p>;
-}
+const TYPE_ICON: Record<SearchResultType, typeof Search> = {
+  course: Compass,
+  lesson: Play,
+  certificate: Award,
+  portfolio: Briefcase,
+  learner: User,
+  case: ClipboardList,
+};
 
-export function GlobalSearch({ variant = 'icon' }: { variant?: 'icon' | 'pill' | 'bar' } = {}) {
+const TYPE_LABEL: Record<SearchResultType, string> = {
+  course: 'Courses',
+  lesson: 'Lessons',
+  certificate: 'Certificates',
+  portfolio: 'Portfolio',
+  learner: 'Learners',
+  case: 'Cases',
+};
+
+const TYPE_ORDER: SearchResultType[] = [
+  'course',
+  'lesson',
+  'certificate',
+  'portfolio',
+  'learner',
+  'case',
+];
+
+export function GlobalSearch({
+  variant = 'icon',
+  navItems,
+}: {
+  variant?: 'icon' | 'pill' | 'bar';
+  navItems?: NavEntry[];
+} = {}) {
+  const navShortcuts = useMemo(() => flattenNavItems(navItems ?? []), [navItems]);
+  const router = useRouter();
   const pathname = usePathname();
   const [prevPathname, setPrevPathname] = useState(pathname);
-  const [query, setQuery] = useState('');
   const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState('');
   const [resolved, setResolved] = useState<{ query: string; results: SearchResult[] }>({
     query: '',
     results: [],
   });
-  const containerRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
-  const requestId = useRef(0);
 
   if (pathname !== prevPathname) {
     setPrevPathname(pathname);
@@ -75,81 +83,76 @@ export function GlobalSearch({ variant = 'icon' }: { variant?: 'icon' | 'pill' |
   const trimmed = query.trim();
   const isSearchable = trimmed.length >= 2;
   const isLoading = isSearchable && resolved.query !== trimmed;
-  const results = isSearchable && resolved.query === trimmed ? resolved.results : [];
 
   useEffect(() => {
     if (!isSearchable) return;
+    let cancelled = false;
     const timeout = setTimeout(async () => {
-      const id = ++requestId.current;
       const data = await searchGlobal(trimmed);
-      if (id === requestId.current) {
-        setResolved({ query: trimmed, results: data });
-      }
+      if (!cancelled) setResolved({ query: trimmed, results: data });
     }, 250);
-    return () => clearTimeout(timeout);
+    return () => {
+      cancelled = true;
+      clearTimeout(timeout);
+    };
   }, [trimmed, isSearchable]);
 
   useEffect(() => {
-    if (!open) return;
-    const handlePointerDown = (event: MouseEvent) => {
-      if (!containerRef.current?.contains(event.target as Node)) setOpen(false);
+    const down = (event: KeyboardEvent) => {
+      if (event.key === 'k' && (event.metaKey || event.ctrlKey)) {
+        event.preventDefault();
+        setOpen((value) => !value);
+      }
     };
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setOpen(false);
-    };
-    document.addEventListener('mousedown', handlePointerDown);
-    document.addEventListener('keydown', handleKeyDown);
-    return () => {
-      document.removeEventListener('mousedown', handlePointerDown);
-      document.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [open]);
+    document.addEventListener('keydown', down);
+    return () => document.removeEventListener('keydown', down);
+  }, []);
 
-  useEffect(() => {
-    if (open) inputRef.current?.focus();
-  }, [open]);
+  const grouped = useMemo(() => {
+    const results = isSearchable && resolved.query === trimmed ? resolved.results : [];
+    return TYPE_ORDER.map((type) => ({
+      type,
+      items: results.filter((result) => result.type === type),
+    })).filter((group) => group.items.length > 0);
+  }, [isSearchable, resolved, trimmed]);
 
-  const handleSelect = () => {
+  const handleSelect = (href: string) => {
     setOpen(false);
     setQuery('');
+    router.push(href);
   };
 
-  const hint =
+  const emptyMessage =
     trimmed.length > 0 && !isSearchable
       ? 'Keep typing — search needs at least 2 characters.'
       : isLoading
         ? 'Searching…'
-        : isSearchable && results.length === 0
-          ? `No results for "${trimmed}".`
-          : null;
+        : `No results for "${trimmed}".`;
 
   return (
-    <div
-      ref={containerRef}
-      className={variant === 'pill' ? 'relative lhdr-search-wrap' : 'relative'}
-    >
+    <>
       {variant === 'pill' ? (
         <button
           type="button"
-          onClick={() => setOpen((value) => !value)}
+          onClick={() => setOpen(true)}
           aria-haspopup="dialog"
           aria-expanded={open}
           aria-label="Search"
           className="lhdr-search"
         >
-          <Icon name="search" className="h-4 w-4" />
+          <Search className="h-4 w-4" />
           <span>Search…</span>
         </button>
       ) : variant === 'bar' ? (
         <button
           type="button"
-          onClick={() => setOpen((value) => !value)}
+          onClick={() => setOpen(true)}
           aria-haspopup="dialog"
           aria-expanded={open}
           aria-label="Search"
           className="flex h-8 w-64 cursor-pointer items-center gap-2 rounded-md border border-border bg-muted/40 px-3 text-sm text-muted-foreground transition-colors hover:bg-muted/70"
         >
-          <Icon name="search" className="h-3.5 w-3.5" />
+          <Search className="h-3.5 w-3.5" />
           <span className="flex-1 text-left">Search…</span>
           <kbd className="rounded-sm border border-border bg-background px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">
             ⌘K
@@ -158,44 +161,73 @@ export function GlobalSearch({ variant = 'icon' }: { variant?: 'icon' | 'pill' |
       ) : (
         <button
           type="button"
-          onClick={() => setOpen((value) => !value)}
+          onClick={() => setOpen(true)}
           aria-haspopup="dialog"
           aria-expanded={open}
           aria-label="Search"
           className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-full bg-[var(--surface-muted)] text-[var(--ink-muted)] shadow-sm transition-colors hover:text-[var(--ink)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
         >
-          <Icon name="search" className="h-4.5 w-4.5" />
+          <Search className="h-4.5 w-4.5" />
         </button>
       )}
 
-      {open && (
-        <div
-          className={`absolute top-full mt-2 w-[min(22rem,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-[var(--nfcap-border)] bg-[var(--surface)] shadow-elevated ${variant === 'pill' ? 'left-0' : 'right-0'}`}
-        >
-          <div className="relative border-b border-[var(--nfcap-border)] p-2">
-            <Icon
-              name="search"
-              className="pointer-events-none absolute top-1/2 left-5 h-4 w-4 -translate-y-1/2 text-[var(--ink-muted)]"
-            />
-            <input
-              ref={inputRef}
-              type="search"
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder="Search courses, lessons, certificates…"
-              aria-label="Search NFCAP LMS"
-              className="w-full rounded-xl border-none bg-[var(--surface-muted)] py-2 pr-3 pl-9 text-sm text-[var(--ink)] placeholder:text-[var(--ink-muted)] focus:outline-2 focus:outline-offset-2 focus:outline-brand-primary"
-            />
-          </div>
-          {hint ? (
-            <StatusMessage>{hint}</StatusMessage>
-          ) : results.length > 0 ? (
-            <ResultsList results={results} onSelect={handleSelect} />
-          ) : (
-            <StatusMessage>Search across courses, lessons, and your credentials.</StatusMessage>
+      <CommandDialog
+        open={open}
+        onOpenChange={setOpen}
+        title="Search"
+        description="Search by name, email, or title."
+      >
+        <CommandInput
+          value={query}
+          onValueChange={setQuery}
+          placeholder="Search by name, email, or title…"
+        />
+        <CommandList>
+          {!isSearchable ? (
+            trimmed.length > 0 ? (
+              <CommandEmpty>{emptyMessage}</CommandEmpty>
+            ) : navShortcuts.length === 0 ? (
+              <CommandEmpty>Search by name, email, or title.</CommandEmpty>
+            ) : null
+          ) : grouped.length === 0 ? (
+            <CommandEmpty>{emptyMessage}</CommandEmpty>
+          ) : null}
+          {!isSearchable && navShortcuts.length > 0 && (
+            <CommandGroup heading="Go to">
+              {navShortcuts.map((item) => (
+                <CommandItem
+                  key={item.href}
+                  value={`nav-${item.href}-${item.label}`}
+                  onSelect={() => handleSelect(item.href)}
+                >
+                  <Icon name={item.icon} className="size-4 opacity-60" aria-hidden="true" />
+                  <span className="min-w-0 flex-1 truncate">{item.label}</span>
+                </CommandItem>
+              ))}
+            </CommandGroup>
           )}
-        </div>
-      )}
-    </div>
+          {grouped.map((group) => {
+            const GroupIcon = TYPE_ICON[group.type];
+            return (
+              <CommandGroup key={group.type} heading={TYPE_LABEL[group.type]}>
+                {group.items.map((result) => (
+                  <CommandItem
+                    key={`${result.type}-${result.href}-${result.title}`}
+                    value={`${result.type}-${result.href}-${result.title}`}
+                    onSelect={() => handleSelect(result.href)}
+                  >
+                    <GroupIcon className="size-4 opacity-60" aria-hidden="true" />
+                    <span className="min-w-0 flex-1 truncate">{result.title}</span>
+                    <CommandShortcut className="max-w-32 truncate font-sans text-[0.7rem] font-normal normal-case">
+                      {result.subtitle}
+                    </CommandShortcut>
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            );
+          })}
+        </CommandList>
+      </CommandDialog>
+    </>
   );
 }

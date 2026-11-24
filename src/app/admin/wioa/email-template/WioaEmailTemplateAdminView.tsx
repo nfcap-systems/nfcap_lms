@@ -5,8 +5,18 @@ import { useRouter } from 'next/navigation';
 
 import { updateWioaEmailTemplate } from '@/lib/actions/wioa-email-template';
 import type { WioaEmailTemplateRecord } from '@/lib/data/wioa-email-template';
+import { fillWioaEmailTemplate } from '@/lib/wioa/email-template';
 
 const TOKENS = ['learnerName', 'city', 'zip', 'courseTitle', 'learnerEmail', 'learnerPhone'];
+
+const PREVIEW_SAMPLE = {
+  learnerName: 'Jordan Alvarez',
+  city: 'Los Angeles',
+  zip: '90012',
+  courseTitle: 'Tile Installation',
+  learnerEmail: 'jordan.alvarez@example.com',
+  learnerPhone: '(213) 555-0148',
+};
 
 export function WioaEmailTemplateAdminView({ template }: { template: WioaEmailTemplateRecord }) {
   const router = useRouter();
@@ -75,19 +85,66 @@ export function WioaEmailTemplateAdminView({ template }: { template: WioaEmailTe
               setJustSaved(false);
             }}
           />
+          <div
+            style={{
+              marginTop: 16,
+              borderTop: '1px solid var(--nfcap-border)',
+              paddingTop: 14,
+            }}
+          >
+            <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 8 }}>
+              Available variables
+            </div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+              {TOKENS.map((token) => (
+                <span key={token} className="chip2">{`{{${token}}}`}</span>
+              ))}
+            </div>
+          </div>
         </div>
 
         <div className="panel">
-          <div style={{ fontWeight: 600, fontSize: 13.5, marginBottom: 10 }}>
-            Available variables
-          </div>
-          <div style={{ fontSize: 13, lineHeight: 2.1 }}>
-            {TOKENS.map((token) => (
-              <div key={token}>
-                <span className="chip2">{`{{${token}}}`}</span>
+          <div>
+            <div style={{ fontWeight: 600, fontSize: 13.5, marginBottom: 10 }}>Email preview</div>
+            <div
+              style={{
+                border: '1px solid var(--nfcap-border)',
+                borderRadius: 'var(--nfcap-radius-md)',
+                overflow: 'hidden',
+              }}
+            >
+              <div
+                style={{
+                  padding: '10px 12px',
+                  borderBottom: '1px solid var(--nfcap-border)',
+                  background: 'var(--surface-muted)',
+                }}
+              >
+                <div style={{ fontSize: 11, color: 'var(--ink-muted)', marginBottom: 2 }}>
+                  Subject
+                </div>
+                <div style={{ fontSize: 13, fontWeight: 600 }}>
+                  {fillWioaEmailTemplate(subject, PREVIEW_SAMPLE) || '—'}
+                </div>
               </div>
-            ))}
+              <pre
+                style={{
+                  margin: 0,
+                  padding: '12px',
+                  fontFamily: 'inherit',
+                  fontSize: 12.5,
+                  whiteSpace: 'pre-wrap',
+                  color: 'var(--ink)',
+                }}
+              >
+                {fillWioaEmailTemplate(body, PREVIEW_SAMPLE) || '—'}
+              </pre>
+            </div>
+            <div style={{ fontSize: 11.5, color: 'var(--ink-faint)', marginTop: 8 }}>
+              Shown with example learner data — not sent.
+            </div>
           </div>
+
           <div
             style={{
               marginTop: 16,

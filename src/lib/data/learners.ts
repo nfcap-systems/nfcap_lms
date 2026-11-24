@@ -52,6 +52,16 @@ export async function getLearnerIdByPortfolioShareToken(
   return profile?.learnerId;
 }
 
+/** The learner's own current share token, for `/learner/portfolio` to render "Stop sharing" (and
+ * the real link) instead of only ever offering "Copy share link" — `null` when nothing's shared. */
+export async function getPortfolioShareToken(learnerId: string): Promise<string | null> {
+  const profile = await prisma.learnerProfile.findUnique({
+    where: { learnerId },
+    select: { portfolioShareToken: true },
+  });
+  return profile?.portfolioShareToken ?? null;
+}
+
 /** Every PARTNER_STAFF account, for the Coordinator dashboard's case-assignment dropdown
  * (docs/build/WIOA_BUILD_WORKFLOW.md Phase 3). Same prototype-scale assumption as getLearnerRoster. */
 export async function getPartnerStaffRoster(): Promise<LearnerRecord[]> {

@@ -155,7 +155,7 @@ export async function sendWioaOutreach(
 
     if (!wioaCase) {
       const profile = await tx.learnerProfile.findUnique({ where: { learnerId: user.id } });
-      const match = profile?.zip ? await matchWorkforceOffice(profile.zip) : null;
+      const match = profile?.zip ? await matchWorkforceOffice(profile.zip, profile.city) : null;
 
       wioaCase = await tx.wioaCase.create({
         data: {

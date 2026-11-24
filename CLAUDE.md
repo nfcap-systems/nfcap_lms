@@ -160,6 +160,26 @@ to Phase 8.
   Running them needs a local Docker Postgres (`docker-compose.test.yml`) — not available in every
   agent sandbox; CI has it.
 
+## Browser automation (agent-browser)
+
+For ad-hoc manual checks against the running dev server — not a replacement for the Playwright
+suite in `tests/e2e/`, which stays the source of truth for regression coverage. `agent-browser` is
+a global CLI (`npm install -g agent-browser`, already installed on this machine), not a project
+dependency — nothing to add to `package.json`.
+
+1. Start the dev server first: `npm run dev` (default `http://localhost:3000`). agent-browser does
+   not start it — it only drives a browser against whatever's already listening.
+2. Drive it against that URL:
+   ```
+   agent-browser open http://localhost:3000/learner
+   agent-browser snapshot -i
+   agent-browser click @e1
+   agent-browser screenshot shot.png
+   agent-browser close
+   ```
+3. Useful for the kind of thing `CLAUDE.local.md` mistake #1 and #5 describe — actually looking at
+   a real route with real (not seed-shaped) data before calling a board "done."
+
 ## Development approach and Plane (added 2026-11-18, OPS-177)
 
 How we work, on top of everything above. **Read `docs/DEV-APPROACH.md` after `docs/HANDOFF.md`.** It

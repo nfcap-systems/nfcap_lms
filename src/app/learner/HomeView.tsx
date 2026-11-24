@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -8,6 +8,8 @@ import { Button, Badge } from '@/components/ui';
 import { Icon } from '@/components/icons';
 import { LockedCourseDialog, LOCKED_COURSE_COPY } from '@/components/learner/LockedCourseDialog';
 import { markAnnouncementRead } from '@/lib/actions/announcements';
+import { getCertificatePdfBase64 } from '@/lib/actions/credentials';
+import { downloadBase64File } from '@/lib/download';
 import { courseLessonCount, courseDurationMinutes, flattenLessons } from '@/lib/types';
 import { getCourseStatus, courseStatusLabel, courseStatusTone } from '@/lib/course-status';
 import type { AdminCourse } from '@/lib/data/courses';
@@ -53,6 +55,20 @@ export function HomeView({
 }) {
   const router = useRouter();
   const [lockedCourse, setLockedCourse] = useState<AdminCourse | null>(null);
+  const [downloadingCertId, setDownloadingCertId] = useState<string | null>(null);
+  const [, startDownload] = useTransition();
+
+  function downloadCertificatePdf(rawId: string) {
+    setDownloadingCertId(rawId);
+    startDownload(async () => {
+      try {
+        const { base64, filename } = await getCertificatePdfBase64(rawId);
+        downloadBase64File(base64, filename, 'application/pdf');
+      } finally {
+        setDownloadingCertId(null);
+      }
+    });
+  }
 
   const enrolledCourses = allCourses
     .filter((c) => progressMap[c.id]?.enrolled)
@@ -757,13 +773,12 @@ export function HomeView({
                         })}
                       </div>
                     </div>
-                    {/* Downloadable PDF is Phase 4 (CertificatesView.tsx already discloses this),
-                        not built yet — disabled rather than a fake download. */}
                     <button
                       type="button"
                       className="lrn-dl-btn"
-                      disabled
+                      disabled={downloadingCertId === credential.rawId}
                       aria-label="Download certificate"
+                      onClick={() => downloadCertificatePdf(credential.rawId)}
                     >
                       <Icon name="download" className="h-3.5 w-3.5" />
                     </button>

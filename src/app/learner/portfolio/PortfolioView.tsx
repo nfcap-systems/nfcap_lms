@@ -8,9 +8,11 @@ import type { Credential } from '@/lib/data/credentials';
 export function PortfolioView({
   credentials,
   awaitingReview,
+  shareToken,
 }: {
   credentials: Credential[];
   awaitingReview: number;
+  shareToken: string | null;
 }) {
   const courseGroups = new Map<string, { title: string; items: Credential[] }>();
   for (const credential of credentials) {
@@ -257,7 +259,7 @@ export function PortfolioView({
         </div>
 
         <aside style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <SharePortfolioPanel />
+          <SharePortfolioPanel initialToken={shareToken} />
           <div className="lrn-side-panel">
             <div className="lrn-side-title">
               <h3>How review works</h3>

@@ -64,7 +64,7 @@ export function CertificatesView({
             Certificates
           </div>
           <div style={{ fontSize: 13.5, color: 'var(--ink-muted)', marginTop: 4 }}>
-            On-screen today — a downloadable PDF is Phase 4 work, not shown here yet.
+            View, download as a PDF, or share a public verification link.
           </div>
         </div>
         <div
@@ -101,7 +101,7 @@ export function CertificatesView({
             </b>
             <div style={{ fontSize: 13.5, color: 'var(--ink-muted)', lineHeight: 1.6 }}>
               Finish a module to earn your first certificate — it&apos;ll appear here automatically,
-              ready to view and, once Phase 4 ships, download as a PDF.
+              ready to view, download as a PDF, and share.
             </div>
           </div>
           <Button onClick={() => router.push('/learner/my-learning')}>Go to My Learning</Button>
@@ -124,8 +124,7 @@ export function CertificatesView({
           Certificates
         </div>
         <div style={{ fontSize: 13.5, color: 'var(--ink-muted)', marginTop: 4 }}>
-          On-screen today — a downloadable PDF and public verification link are Phase 4 work, not
-          available here yet.
+          View, download as a PDF, or share a public verification link.
         </div>
       </div>
 
@@ -155,11 +154,11 @@ export function CertificatesView({
         </div>
         <div className="lrn-stat">
           <span className="lrn-stat-icon" style={{ background: '#fef3c7', color: '#b45309' }}>
-            <Icon name="clock" className="h-5 w-5" />
+            <Icon name="download" className="h-5 w-5" />
           </span>
           <div className="vals">
             <span className="n">PDF</span>
-            <span className="l">Download — Phase 4</span>
+            <span className="l">Download, any time</span>
           </div>
         </div>
         <div className="lrn-stat">

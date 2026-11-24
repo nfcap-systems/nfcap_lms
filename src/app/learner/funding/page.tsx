@@ -22,7 +22,7 @@ export default async function FundingPage() {
     .filter((c) => c.access === 'restricted')
     .map((c) => ({ id: c.id, title: c.title }));
 
-  const match = profile?.zip ? await matchWorkforceOffice(profile.zip) : null;
+  const match = profile?.zip ? await matchWorkforceOffice(profile.zip, profile.city) : null;
 
   const name = typeof user.user_metadata?.name === 'string' ? user.user_metadata.name : 'You';
   const learnerEmail = user.email ?? '';

@@ -28,18 +28,35 @@ export type MatchedOffice = {
   } | null;
 };
 
-/** ZIP-only lookup (docs/build/WIOA_BUILD_WORKFLOW.md "Open decisions" — no city/county fallback in
- * the prototype). Contact precedence: PRIMARY, falling back to SECONDARY, falling back to
- * GENERAL, matching WIOA_INTEGRATION_PLAN.md Section 5's escalation. Returns null when no
- * seeded jurisdiction covers the ZIP — the caller shows the no-match recovery screen. */
-export async function matchWorkforceOffice(zip: string): Promise<MatchedOffice | null> {
-  const jurisdiction = await prisma.workforceJurisdiction.findFirst({
-    where: { zip, active: true },
-    include: {
-      workforceBoard: true,
-      ajccCenter: true,
-    },
-  });
+/** ZIP-primary, city-fallback lookup (spec §5: "Use residential address/ZIP as the primary
+ * routing source. City can be used as a fallback or secondary check"). Falls back to a
+ * case-insensitive city match only when no jurisdiction row has that exact ZIP — matters more
+ * now that only one board (Alameda) is seeded, since its coverage is a handful of ZIPs plus the
+ * cities they're in, not a dense table. Contact precedence: PRIMARY, falling back to SECONDARY,
+ * falling back to GENERAL, matching WIOA_INTEGRATION_PLAN.md Section 5's escalation. Returns null
+ * only when neither ZIP nor city matches anything — the caller shows the no-match recovery
+ * screen. */
+export async function matchWorkforceOffice(
+  zip: string,
+  city?: string | null,
+): Promise<MatchedOffice | null> {
+  const jurisdiction =
+    (await prisma.workforceJurisdiction.findFirst({
+      where: { zip, active: true },
+      include: {
+        workforceBoard: true,
+        ajccCenter: true,
+      },
+    })) ??
+    (city
+      ? await prisma.workforceJurisdiction.findFirst({
+          where: { city: { equals: city, mode: 'insensitive' }, active: true },
+          include: {
+            workforceBoard: true,
+            ajccCenter: true,
+          },
+        })
+      : null);
   if (!jurisdiction) return null;
 
   const contact = await prisma.workforceContact.findFirst({

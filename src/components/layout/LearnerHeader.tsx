@@ -93,7 +93,7 @@ export function LearnerHeader({
           </button>
           <div className="lhdr-vdivider" />
 
-          <GlobalSearch variant="pill" />
+          <GlobalSearch variant="pill" navItems={navItems} />
 
           <div className="lhdr-spacer" />
 

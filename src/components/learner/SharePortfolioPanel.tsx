@@ -2,22 +2,32 @@
 
 import { useState, useTransition } from 'react';
 import { Icon } from '@/components/icons';
-import { generatePortfolioShareToken } from '@/lib/actions/portfolio';
+import { generatePortfolioShareToken, revokePortfolioShareToken } from '@/lib/actions/portfolio';
 
-/** LRN07-Portfolio's "Share your portfolio" sidebar panel. The public `/portfolio/[token]`-style
- * route this implies doesn't exist yet (Layer 4 — docs/build/LAYER1_DATA_MODEL_DESIGN.md), so the
- * copied link won't resolve to anything real today. Still wires the real token-generation action
- * rather than a fake button, and says so plainly instead of hiding the gap. */
-export function SharePortfolioPanel() {
+/** LRN07-Portfolio's "Share your portfolio" sidebar panel, wired to the real
+ * `/portfolio/[token]` public page (Phase 4) — the copied link now resolves to a real, read-only
+ * view. `initialToken` is the learner's own current share state, fetched server-side by
+ * `PortfolioPage`, so a returning learner sees "Stop sharing" immediately instead of always
+ * starting from "Copy share link". */
+export function SharePortfolioPanel({ initialToken }: { initialToken: string | null }) {
   const [, startTransition] = useTransition();
+  const [token, setToken] = useState(initialToken);
   const [state, setState] = useState<'idle' | 'copied'>('idle');
 
   function copyLink() {
     startTransition(async () => {
-      const token = await generatePortfolioShareToken();
-      await navigator.clipboard.writeText(`${window.location.origin}/portfolio/${token}`);
+      const nextToken = token ?? (await generatePortfolioShareToken());
+      setToken(nextToken);
+      await navigator.clipboard.writeText(`${window.location.origin}/portfolio/${nextToken}`);
       setState('copied');
       setTimeout(() => setState('idle'), 2000);
+    });
+  }
+
+  function stopSharing() {
+    startTransition(async () => {
+      await revokePortfolioShareToken();
+      setToken(null);
     });
   }
 
@@ -46,12 +56,23 @@ export function SharePortfolioPanel() {
         style={{ width: '100%' }}
         onClick={copyLink}
       >
-        {state === 'copied' ? 'Copied!' : 'Copy share link'}
+        {state === 'copied' ? 'Copied!' : token ? 'Copy share link' : 'Create share link'}
       </button>
-      <div style={{ fontSize: 11, color: 'var(--ink-faint)' }}>
-        The read-only viewing page itself isn&apos;t built yet — this link won&apos;t resolve until
-        it is.
-      </div>
+      {token && (
+        <>
+          <div style={{ fontSize: 11, color: 'var(--ink-faint)' }}>
+            Sharing is on — anyone with the link can view your portfolio, no sign-in required.
+          </div>
+          <button
+            type="button"
+            className="btn-secondary btn-sm"
+            style={{ width: '100%' }}
+            onClick={stopSharing}
+          >
+            Stop sharing
+          </button>
+        </>
+      )}
     </div>
   );
 }
