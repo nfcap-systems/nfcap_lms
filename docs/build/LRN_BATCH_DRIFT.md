@@ -56,6 +56,37 @@ directly against its live component on 2026-11-24. None of them are clean matche
 | `LRN16-AuthFlow` | `/login`, forgot/reset/verify | Doesn't exist on canvas | Unchanged since the 2026-11-22 flag in `docs/MOCKUP-INDEX.md`. No board to check `/login` etc. against at all |
 | `LearnerHeader` | shared, every learner route | DRIFT — structural | See above |
 
+## Course detail/player/quiz flow — confirmed 2026-11-24, not a quick fix
+
+Checked `LRN03-CourseOverview`, `LRN04-Player`, `LRN05-QuizPre`, `LRN05b-QuizQuestion`,
+`LRN05c-QuizResult` against `src/app/learner/courses/[courseId]/page.tsx` +
+`CourseLearningView.tsx` (+ `LessonContent`/`LessonSidebar`/`QuizView`). This confirms
+`docs/plans/mockup-complete-build.md`'s own claim ("token sweep only, never structurally
+matched") — and it's slightly worse than that one-line summary captures:
+
+- **`LRN03-CourseOverview`: NOT BUILT, no route at all.** The board is a real landing screen
+  (hero image, breadcrumb, 4 meta chips, 2-column body with a grouped lesson list and a sticky
+  sidebar — progress bar, Continue button, "What you'll need" tool list, mentor contact card).
+  Today `page.tsx` goes straight into `CourseLearningView`, a completely different IA.
+- **`LRN04-Player`: partial, wrong IA.** The sidebar+content+Prev/Next pattern is conceptually
+  similar, but it's one state inside a combined component, not a discrete player screen.
+- **`LRN05-QuizPre`: not built as a discrete screen.** The board has a dedicated pre-quiz screen
+  (question count/time limit/pass mark/attempts, "Start quiz" button) before any question shows;
+  `QuizView.tsx` is just invoked directly as a step inside `CourseLearningView`.
+- **`LRN05b-QuizQuestion`: real structural surprise.** The board uses **completely different,
+  chromeless full-screen UI** for quiz-taking — no `LearnerHeader` at all, just a bare top bar
+  (logo + "Exit quiz"), centered single-question layout. Everything else in the app (including
+  quizzes today) stays inside the persistent sidebar layout — this is a deliberately
+  distraction-free mode the code has no equivalent of.
+- **`LRN05c-QuizResult`: likely partial at best** — a dedicated pass/fail + per-question review
+  screen on the board; not confirmed whether `QuizView.tsx` has an equivalent, but it stays
+  embedded in the same layout rather than becoming its own screen either way.
+
+This matches `docs/plans/mockup-complete-build.md`'s own Decision #1 (2026-11-24): build `LRN03`
+→ `LRN04` → `LRN05`/`05b`/`05c` as **discrete screens**, a real restructure of
+`/learner/courses/[courseId]`, not a reskin — already scoped as its own unit of work (32h, Quiz
+Engine Depth, Phase 6), not something to fold into the small alignment/parity fixes in this doc.
+
 ## What's fixable now vs. blocked
 
 **Blocked on a real decision, not a quick fix:**

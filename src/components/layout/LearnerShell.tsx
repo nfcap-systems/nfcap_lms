@@ -1,6 +1,3 @@
-'use client';
-
-import { useState } from 'react';
 import type { ReactNode } from 'react';
 import { LearnerFooter } from './LearnerFooter';
 import { LearnerHeader } from './LearnerHeader';
@@ -19,7 +16,6 @@ export function LearnerShell({
   learnerInitial: string;
   showWioaNav?: boolean;
 }) {
-  const [mobileOpen, setMobileOpen] = useState(false);
   const navItems: NavItem[] = showWioaNav ? [...learnerNav, wioaNavItem] : learnerNav;
 
   return (
@@ -29,8 +25,6 @@ export function LearnerShell({
         learnerName={learnerName}
         learnerEmail={learnerEmail}
         learnerInitial={learnerInitial}
-        mobileOpen={mobileOpen}
-        onToggleMobile={() => setMobileOpen((open) => !open)}
       />
       <main className="lshell-main">
         {children}

@@ -16,20 +16,18 @@ export type LearnerHeaderProps = {
   learnerName: string;
   learnerEmail: string;
   learnerInitial: string;
-  mobileOpen: boolean;
-  onToggleMobile: () => void;
 };
 
 // Ported literally from the design canvas's LearnerHeader.dc.html, which every learner board
 // (including LRN01-Home) imports as a shared nested component — a two-row sticky header, not
 // the single-row floating-card bar this used to be. See docs/build/LRN_BATCH_DRIFT.md.
+// No mobile nav/toggle — the board is desktop-only (1440px) and mobile/responsive is a deliberate
+// deferral (docs/plans/mockup-complete-build.md, decision 4), not a gap in this port.
 export function LearnerHeader({
   navItems,
   learnerName,
   learnerEmail,
   learnerInitial,
-  mobileOpen,
-  onToggleMobile,
 }: LearnerHeaderProps) {
   const pathname = usePathname();
   const [prevPathname, setPrevPathname] = useState(pathname);
@@ -183,23 +181,13 @@ export function LearnerHeader({
                 </div>
               )}
             </div>
-
-            <button
-              type="button"
-              onClick={onToggleMobile}
-              aria-label={mobileOpen ? 'Close navigation' : 'Open navigation'}
-              aria-expanded={mobileOpen}
-              className="lhdr-iconbtn lg:hidden"
-            >
-              <Icon name={mobileOpen ? 'x' : 'menu'} className="h-5 w-5" />
-            </button>
           </div>
         </div>
       </div>
 
       {/* Row 2 — nav strip, underline-active, scrolls horizontally rather than wrapping. Same
           max-width/padding wrapper as row 1 and the page body. */}
-      <nav className="hidden lhdr-row2 lg:flex">
+      <nav className="lhdr-row2">
         <div className="lhdr-row2-inner">
           {navItems.map((item) => {
             const active = isNavItemActive(pathname, item.href);
@@ -216,35 +204,6 @@ export function LearnerHeader({
           })}
         </div>
       </nav>
-
-      {mobileOpen && (
-        <nav className="lhdr-mobilenav lg:hidden">
-          <ul className="flex flex-col gap-0.5">
-            {navItems.map((item) => {
-              const active = isNavItemActive(pathname, item.href);
-              return (
-                <li key={item.href}>
-                  <Link
-                    href={item.href}
-                    onClick={onToggleMobile}
-                    aria-current={active ? 'page' : undefined}
-                    className={cn('lhdr-mobile-navlink', active && 'on')}
-                  >
-                    <Icon name={item.icon} className="h-4.5 w-4.5" />
-                    {item.label}
-                  </Link>
-                </li>
-              );
-            })}
-            <li
-              className="mt-1"
-              style={{ borderTop: '1px solid var(--nfcap-border)', paddingTop: 8 }}
-            >
-              <LogoutButton className="lhdr-mobile-navlink w-full" />
-            </li>
-          </ul>
-        </nav>
-      )}
     </header>
   );
 }
