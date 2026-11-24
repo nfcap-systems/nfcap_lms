@@ -15,7 +15,9 @@ export default defineConfig({
     trace: 'retain-on-failure',
   },
   webServer: {
-    command: `npm run build && npm run start -- -p ${PORT}`,
+    // `next start` (npm run start) doesn't work with next.config.ts's `output: 'standalone'` —
+    // use the standalone server the same way the Dockerfile runs it in production.
+    command: `npm run build && npm run start:standalone -- ${PORT}`,
     url: `http://localhost:${PORT}/login`,
     reuseExistingServer: !process.env.CI,
     timeout: 180_000,
