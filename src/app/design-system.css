@@ -1316,7 +1316,7 @@
 }
 .lhdr-row2-inner {
   max-width: 1300px;
-  margin: 0 auto;
+  margin: 0;
   height: 100%;
   display: flex;
   align-items: center;
