@@ -98,7 +98,7 @@ export function AdminCoursesView({ courses }: { courses: AdminCourse[] }) {
         </div>
       </div>
 
-      <div className="panel" style={{ padding: 0, overflow: 'hidden' }}>
+      <div className="panel" style={{ padding: 0, overflowX: 'auto', overflowY: 'hidden' }}>
         <table className="data-table">
           <thead>
             <tr>

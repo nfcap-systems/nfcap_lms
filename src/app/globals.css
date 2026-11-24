@@ -109,8 +109,7 @@ body {
 .learner-surface {
   background:
     radial-gradient(circle at 8% 8%, rgba(169, 26, 22, 0.16) 0%, rgba(169, 26, 22, 0) 32%),
-    radial-gradient(circle at 92% 88%, rgba(44, 58, 67, 0.07) 0%, rgba(44, 58, 67, 0) 35%),
-    #f8fafa;
+    radial-gradient(circle at 92% 88%, rgba(44, 58, 67, 0.07) 0%, rgba(44, 58, 67, 0) 35%), #f8fafa;
 }
 
 .no-scrollbar {
@@ -135,7 +134,9 @@ body {
   color: var(--color-brand-primary);
   background: transparent;
   border: 1px solid var(--color-border-default);
-  transition: background-color 0.15s ease, color 0.15s ease;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
 }
 
 .btn-secondary:hover {
@@ -253,4 +254,31 @@ body {
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.556 0 0);
+}
+
+/* The reference template (arhamkhnz/next-shadcn-admin-dashboard) sets this at the top of its own
+   globals.css: `@layer base { * { @apply border-border outline-ring/50; } }`. Without it, every
+   admin-ui component that uses a bare `border`/`border-b`/`border-r` utility (not an explicit
+   `border-border`/`border-sidebar-border` class) has no border color at all — the sidebar's own
+   right edge, the header's bottom rule, table/card borders throughout Admin all silently lost
+   their color. Scoped to `*` like the original (matches CLAUDE.md's already-accepted note that
+   `--border` wins app-wide); nfcap's own classes always set an explicit border-color so this only
+   fills in what admin-ui components were relying on and never had. */
+@layer base {
+  * {
+    border-color: var(--border);
+    outline-color: color-mix(in oklab, var(--ring) 50%, transparent);
+  }
+}
+
+/* The admin-ui/shadcn port never re-applied `body { background: var(--background) }` the way the
+   reference template does — body keeps the brand theme's `--color-bg-page` everywhere, so Admin's
+   sidebar (`--sidebar`, near-white) and its content area (brand `--color-bg-page`, also near-white
+   but a different value) read as two slightly-off whites instead of the reference's clean
+   white-on-white-with-a-border look. Scoped to the shadcn SidebarProvider's own wrapper
+   (`data-slot="sidebar-wrapper"`, unique to src/components/admin-ui/sidebar.tsx) rather than
+   `body`, so Coordinator/Partner's separate `.sshell` shell and the Learner theme are untouched. */
+[data-slot='sidebar-wrapper'] {
+  background: var(--background);
+  color: var(--foreground);
 }

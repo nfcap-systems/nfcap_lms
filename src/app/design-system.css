@@ -481,7 +481,12 @@
   border: 1px solid var(--nfcap-border);
   border-radius: var(--nfcap-radius-lg);
   background: var(--surface);
-  overflow: hidden;
+  /* overflow-x: auto, not hidden — a wide table (more columns than the viewport) must scroll
+     inside the card, not get silently clipped (found on /admin/roles: the Actions column was
+     cut off entirely with no way to reach it). overflow-y stays hidden so the rounded corners
+     still clip top/bottom content the way every other .dtcard screen already expects. */
+  overflow-x: auto;
+  overflow-y: hidden;
 }
 .dtcard-head {
   padding: 18px 20px;

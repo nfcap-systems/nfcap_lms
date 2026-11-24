@@ -559,7 +559,10 @@ function RecentLearnersTable({
   fundingStatusByLearner: Record<string, LearnerFundingStatus>;
 }) {
   return (
-    <div className="panel" style={{ padding: 0, overflow: 'hidden', height: '100%' }}>
+    <div
+      className="panel"
+      style={{ padding: 0, overflowX: 'auto', overflowY: 'hidden', height: '100%' }}
+    >
       <div
         style={{
           padding: '16px 20px',
