@@ -38,9 +38,12 @@ test.describe('evidence → certificate', () => {
       const adminPage = await adminContext.newPage();
       await loginAs(adminPage, admin);
       await adminPage.goto(`/admin/learners/${learner.id}`);
-      // The inline Approve/Reject controls render on the default Overview tab's Practical
-      // Evidence card (OverviewTab, LearnerProfileView.tsx) for a course with zero criteria —
-      // the "Evidence" tab is for the separate per-criterion review flow.
+      // The admin-ui-parity-dashboard-learners-audit redesign split the old single Overview tab
+      // into a slimmer Overview (Program details/Record status/Upcoming/Last activity only) and
+      // a separate Enrollment tab (EnrollmentTab, LearnerProfileView.tsx) that now owns the
+      // per-course cards, including the inline Approve/Reject controls for a course with zero
+      // criteria — the "Evidence" tab is still the separate per-criterion review flow.
+      await adminPage.getByRole('tab', { name: 'Enrollment' }).click();
       try {
         // A short explicit timeout here, well under the 45s test timeout, so a failure leaves
         // enough budget for the diagnostics below to actually run before the whole test is torn
