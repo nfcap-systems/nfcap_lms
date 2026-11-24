@@ -45,7 +45,20 @@ export function NavMain({ items }: { items: NavEntry[] }) {
       <SidebarGroupContent>
         <SidebarMenu>
           <SidebarMenuItem>
-            <QuickCreateMenu />
+            <div className="flex items-center gap-2">
+              <QuickCreateMenu />
+              {/* Sidebar.dc.html draws this next to Quick Create on every role — no Inbox route
+                  exists yet (Messaging is backend-only, Layer 1), so disabled rather than
+                  fabricated, same pattern as the Dashboard's "Add Learner" button. */}
+              <SidebarMenuButton
+                className="w-8 shrink-0 justify-center px-0"
+                disabled
+                tooltip="Inbox — not yet built"
+                aria-label="Inbox"
+              >
+                <Icon name="message-circle" className="size-4" />
+              </SidebarMenuButton>
+            </div>
           </SidebarMenuItem>
           {items.map((entry, index) => {
             const showSectionLabel = showSectionLabels[index];
