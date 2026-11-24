@@ -3,10 +3,18 @@
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Badge, DataTableCard, DataTableCardHeader, Dialog, StateCard, Textarea } from '@/components/ui';
+import {
+  Badge,
+  DataTableCard,
+  DataTableCardHeader,
+  DataTableFilters,
+  Dialog,
+  StateCard,
+  Textarea,
+} from '@/components/ui';
 import { Icon } from '@/components/icons';
 import type { WioaCaseSummary } from '@/lib/data/wioa';
-import { addWioaCaseNote } from '@/lib/actions/wioa';
+import { addWioaCaseNote, sendWioaCaseReminder } from '@/lib/actions/wioa';
 
 /** A trainee's real position in the single apprenticeship pathway (docs/product/PRODUCT_CONTEXT.md
  * Section 5 — "exactly one pathway in this prototype"), computed from real Enrollment rows the
@@ -14,7 +22,10 @@ import { addWioaCaseNote } from '@/lib/actions/wioa';
 export type PartnerRosterRow = WioaCaseSummary & {
   enrolledCount: number;
   totalCourseCount: number;
+  cohortName: string | null;
 };
+
+type DocumentFilter = 'all' | 'missing' | 'on_track';
 
 function initials(name: string): string {
   const parts = name.trim().split(/\s+/);
@@ -23,24 +34,80 @@ function initials(name: string): string {
 
 function formatFollowUp(followUp: WioaCaseSummary['lastFollowUp']): string {
   if (!followUp) return 'No note yet';
-  const date = new Date(followUp.sentAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-  const snippet = followUp.body ? ` — "${followUp.body.slice(0, 60)}${followUp.body.length > 60 ? '…' : ''}"` : '';
+  const date = new Date(followUp.sentAt).toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+  });
+  const snippet = followUp.body
+    ? ` — "${followUp.body.slice(0, 60)}${followUp.body.length > 60 ? '…' : ''}"`
+    : '';
   return `${date}${snippet}`;
 }
 
 const WEEK_MS = 7 * 86_400_000;
 
+function toCsv(rows: PartnerRosterRow[]): string {
+  const header = [
+    'Trainee',
+    'Email',
+    'Pathway',
+    'Cohort',
+    'Progress',
+    'Missing documents',
+    'Last follow-up',
+  ];
+  const csvRows = rows.map((r) => [
+    r.learnerName,
+    r.learnerEmail,
+    r.courseTitle,
+    r.cohortName ?? '',
+    `${r.enrolledCount} of ${r.totalCourseCount} enrolled`,
+    String(r.missingDocumentCount),
+    formatFollowUp(r.lastFollowUp),
+  ]);
+  return [header, ...csvRows]
+    .map((row) => row.map((cell) => `"${cell.replace(/"/g, '""')}"`).join(','))
+    .join('\n');
+}
+
 export function PartnerRosterView({ rows }: { rows: PartnerRosterRow[] }) {
+  const router = useRouter();
   const [search, setSearch] = useState('');
+  const [docFilter, setDocFilter] = useState<DocumentFilter>('all');
+  const [page, setPage] = useState(1);
   const [noteFor, setNoteFor] = useState<PartnerRosterRow | null>(null);
+  const [sendingReminderId, setSendingReminderId] = useState<string | null>(null);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    if (!q) return rows;
-    return rows.filter(
-      (r) => r.learnerName.toLowerCase().includes(q) || r.courseTitle.toLowerCase().includes(q),
-    );
-  }, [rows, search]);
+    return rows.filter((r) => {
+      if (docFilter === 'missing' && r.missingDocumentCount === 0) return false;
+      if (docFilter === 'on_track' && r.missingDocumentCount > 0) return false;
+      if (q && !r.learnerName.toLowerCase().includes(q) && !r.courseTitle.toLowerCase().includes(q))
+        return false;
+      return true;
+    });
+  }, [rows, docFilter, search]);
+
+  const pageCount = Math.max(1, Math.ceil(filtered.length / 10));
+  const pageRows = filtered.slice((page - 1) * 10, page * 10);
+
+  function exportCsv() {
+    const blob = new Blob([toCsv(filtered)], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `my-cases-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  function sendReminder(row: PartnerRosterRow) {
+    setSendingReminderId(row.id);
+    sendWioaCaseReminder(row.id)
+      .then(() => router.refresh())
+      .finally(() => setSendingReminderId(null));
+  }
 
   const [now] = useState(() => Date.now());
   const kpis = useMemo(() => {
@@ -75,7 +142,10 @@ export function PartnerRosterView({ rows }: { rows: PartnerRosterRow[] }) {
           <span className="n">{kpis.assigned}</span>
         </div>
         <div className="mcard">
-          <div className="ic" style={{ background: 'var(--status-problem-bg)', color: 'var(--status-problem)' }}>
+          <div
+            className="ic"
+            style={{ background: 'var(--status-problem-bg)', color: 'var(--status-problem)' }}
+          >
             <Icon name="file-text" className="h-4 w-4" />
           </div>
           <span className="l">Missing documents</span>
@@ -102,23 +172,51 @@ export function PartnerRosterView({ rows }: { rows: PartnerRosterRow[] }) {
           title="My cases"
           description="Only trainees assigned to you — not every case in the system."
           actions={
-            <div className="dtsearch">
-              <Icon name="search" className="h-3.5 w-3.5" />
-              <input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search trainees..."
-                aria-label="Search trainees"
-              />
-            </div>
+            <>
+              <div className="dtsearch">
+                <Icon name="search" className="h-3.5 w-3.5" />
+                <input
+                  value={search}
+                  onChange={(e) => {
+                    setSearch(e.target.value);
+                    setPage(1);
+                  }}
+                  placeholder="Search trainees..."
+                  aria-label="Search trainees"
+                />
+              </div>
+              <button type="button" className="dtbtn" onClick={exportCsv}>
+                <Icon name="upload" className="h-3.5 w-3.5" />
+                Export
+              </button>
+            </>
           }
         />
+
+        <DataTableFilters>
+          <div className="dt-filter-group">
+            <div className="dt-filter">
+              <span className="lbl">Documents:</span>
+              <select
+                value={docFilter}
+                onChange={(e) => {
+                  setDocFilter(e.target.value as DocumentFilter);
+                  setPage(1);
+                }}
+              >
+                <option value="all">All</option>
+                <option value="missing">Missing</option>
+                <option value="on_track">On track</option>
+              </select>
+            </div>
+          </div>
+        </DataTableFilters>
 
         <table className="data-table">
           <thead>
             <tr>
               <th>Trainee</th>
-              <th>Course</th>
+              <th>Pathway / cohort</th>
               <th>Progress</th>
               <th>Missing documents</th>
               <th>Last follow-up</th>
@@ -126,72 +224,124 @@ export function PartnerRosterView({ rows }: { rows: PartnerRosterRow[] }) {
             </tr>
           </thead>
           <tbody>
-            {filtered.map((r) => (
-              <tr key={r.id}>
-                <td>
-                  <Link href={`/partner/${r.id}`} className="rowname">
-                    <div className="av-wrap">
-                      <div className="av">{initials(r.learnerName)}</div>
-                    </div>
-                    <div>
-                      <div>{r.learnerName}</div>
-                      <div className="meta">{r.learnerEmail}</div>
-                    </div>
-                  </Link>
-                </td>
-                <td>
-                  <div className="rowpathway">{r.courseTitle}</div>
-                </td>
-                <td>
-                  {r.enrolledCount} of {r.totalCourseCount} enrolled
-                </td>
-                <td>
-                  {r.missingDocumentCount > 0 ? (
-                    <Badge tone="danger">
-                      {r.missingDocumentCount} document{r.missingDocumentCount === 1 ? '' : 's'} missing
-                    </Badge>
-                  ) : (
-                    <Badge tone="success">All submitted</Badge>
-                  )}
-                </td>
-                <td
-                  style={{
-                    maxWidth: 260,
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap',
-                  }}
-                  title={formatFollowUp(r.lastFollowUp)}
-                >
-                  {formatFollowUp(r.lastFollowUp)}
-                </td>
-                <td style={{ textAlign: 'right' }}>
-                  <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end', flexWrap: 'nowrap' }}>
-                    <button type="button" className="dtbtn" onClick={() => setNoteFor(r)}>
-                      Add note
-                    </button>
-                    <Link href={`/partner/${r.id}`} className="dtbtn">
-                      View
+            {pageRows.map((r) => {
+              // One contextual action per row, matching the board: missing documents is the
+              // most urgent state (primary "Send reminder"); no note yet is the next most
+              // useful ("Add note"); otherwise just "View".
+              const action =
+                r.missingDocumentCount > 0 ? 'remind' : !r.lastFollowUp ? 'note' : 'view';
+              return (
+                <tr key={r.id}>
+                  <td>
+                    <Link href={`/partner/${r.id}`} className="rowname">
+                      <div className="av-wrap">
+                        <div className="av">{initials(r.learnerName)}</div>
+                      </div>
+                      <div>
+                        <div>{r.learnerName}</div>
+                        <div className="meta">{r.learnerEmail}</div>
+                      </div>
                     </Link>
-                  </div>
-                </td>
-              </tr>
-            ))}
+                  </td>
+                  <td>
+                    <div className="rowpathway">
+                      {r.courseTitle}
+                      <div className="sub">{r.cohortName ?? 'No cohort'}</div>
+                    </div>
+                  </td>
+                  <td>
+                    {r.enrolledCount} of {r.totalCourseCount} enrolled
+                  </td>
+                  <td>
+                    {r.missingDocumentCount > 0 ? (
+                      <Badge tone="danger">
+                        {r.missingDocumentCount} document{r.missingDocumentCount === 1 ? '' : 's'}{' '}
+                        missing
+                      </Badge>
+                    ) : (
+                      <Badge tone="success">All submitted</Badge>
+                    )}
+                  </td>
+                  <td
+                    style={{
+                      maxWidth: 260,
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                    }}
+                    title={formatFollowUp(r.lastFollowUp)}
+                  >
+                    {formatFollowUp(r.lastFollowUp)}
+                  </td>
+                  <td style={{ textAlign: 'right' }}>
+                    {action === 'remind' ? (
+                      <button
+                        type="button"
+                        className="btn-primary btn-sm"
+                        disabled={sendingReminderId === r.id}
+                        onClick={() => sendReminder(r)}
+                      >
+                        {sendingReminderId === r.id ? 'Sending…' : 'Send reminder'}
+                      </button>
+                    ) : action === 'note' ? (
+                      <button type="button" className="dtbtn" onClick={() => setNoteFor(r)}>
+                        Add note
+                      </button>
+                    ) : (
+                      <Link href={`/partner/${r.id}`} className="dtbtn">
+                        View
+                      </Link>
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
 
         {filtered.length === 0 ? (
-          <div style={{ padding: '40px 20px', textAlign: 'center', fontSize: 13.5, color: 'var(--ink-muted)' }}>
+          <div
+            style={{
+              padding: '40px 20px',
+              textAlign: 'center',
+              fontSize: 13.5,
+              color: 'var(--ink-muted)',
+            }}
+          >
             No trainees match this search.
           </div>
         ) : (
           <div className="dt-footer">
-            <span className="dt-selcount">
-              {filtered.length} of {rows.length} trainee{rows.length === 1 ? '' : 's'}
+            <span>
+              Showing {pageRows.length} of {filtered.length}
+            </span>
+            <span>
+              Page {page} of {pageCount}
             </span>
           </div>
         )}
       </DataTableCard>
+
+      {pageCount > 1 && (
+        <div style={{ display: 'flex', justifyContent: 'center', gap: 6 }}>
+          <button
+            type="button"
+            className="dtbtn"
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+            disabled={page === 1}
+          >
+            Previous
+          </button>
+          <button
+            type="button"
+            className="dtbtn"
+            onClick={() => setPage((p) => Math.min(pageCount, p + 1))}
+            disabled={page === pageCount}
+          >
+            Next
+          </button>
+        </div>
+      )}
 
       <AddNoteDialog row={noteFor} onClose={() => setNoteFor(null)} />
     </div>
@@ -224,7 +374,12 @@ function AddNoteDialog({ row, onClose }: { row: PartnerRosterRow | null; onClose
           <button type="button" className="btn-secondary btn-sm" onClick={onClose}>
             Cancel
           </button>
-          <button type="button" className="btn-primary btn-sm" disabled={saving || !body.trim()} onClick={save}>
+          <button
+            type="button"
+            className="btn-primary btn-sm"
+            disabled={saving || !body.trim()}
+            onClick={save}
+          >
             {saving ? 'Saving…' : 'Save note'}
           </button>
         </>

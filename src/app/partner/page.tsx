@@ -2,6 +2,7 @@ import { requirePartnerStaff } from '@/lib/actions/guard';
 import { getWioaCases } from '@/lib/data/wioa';
 import { getCoursePathwayList } from '@/lib/data/courses';
 import { getProgressByLearner } from '@/lib/data/progress';
+import { getCohortMembershipsForLearners } from '@/lib/data/cohorts';
 import { PartnerRosterView, type PartnerRosterRow } from '@/components/wioa/PartnerRosterView';
 
 export default async function PartnerPage() {
@@ -11,13 +12,21 @@ export default async function PartnerPage() {
     { assignedPartnerStaffId: user.id },
   );
 
-  const pathwayCourses = await getCoursePathwayList();
-  const progressByLearner = await getProgressByLearner(cases.map((c) => c.learnerId));
+  const [pathwayCourses, progressByLearner, cohortMembershipByLearner] = await Promise.all([
+    getCoursePathwayList(),
+    getProgressByLearner(cases.map((c) => c.learnerId)),
+    getCohortMembershipsForLearners(cases.map((c) => c.learnerId)),
+  ]);
 
   const rows: PartnerRosterRow[] = cases.map((c) => {
     const progress = progressByLearner[c.learnerId] ?? {};
     const enrolledCount = pathwayCourses.filter((course) => progress[course.id]?.enrolled).length;
-    return { ...c, enrolledCount, totalCourseCount: pathwayCourses.length };
+    return {
+      ...c,
+      enrolledCount,
+      totalCourseCount: pathwayCourses.length,
+      cohortName: cohortMembershipByLearner.get(c.learnerId)?.cohortName ?? null,
+    };
   });
 
   return (

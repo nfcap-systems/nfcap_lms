@@ -151,6 +151,9 @@ export type WioaCaseSummary = {
   status: WioaCaseStatus;
   boardName: string | null;
   createdAt: Date;
+  /** Most recent WioaStatusHistory row's timestamp, or createdAt if the case has no history yet
+   * (CRD05-StalledCases' "Stalled since" column — getStalledCases below filters on this). */
+  lastStatusChangeAt: Date;
   pendingDocumentCount: number;
   /** MISSING or REJECTED documents — the ones that need Partner Staff follow-up, distinct from
    * `pendingDocumentCount` (UPLOADED/UNDER_REVIEW, awaiting staff review). PTN01-Roster's
@@ -194,6 +197,7 @@ export async function getWioaCases(
           take: 1,
         },
         communications: { orderBy: { sentAt: 'desc' }, take: 1 },
+        statusHistory: { orderBy: { changedAt: 'desc' }, take: 1 },
       },
     }),
   );
@@ -220,6 +224,7 @@ export async function getWioaCases(
       status: c.status,
       boardName: c.workforceBoard?.name ?? null,
       createdAt: c.createdAt,
+      lastStatusChangeAt: c.statusHistory[0]?.changedAt ?? c.createdAt,
       pendingDocumentCount: c.documents.filter(
         (d) => d.status === 'UPLOADED' || d.status === 'UNDER_REVIEW',
       ).length,
@@ -241,6 +246,37 @@ export async function getWioaCases(
     });
   }
   return result;
+}
+
+const STALL_LIKELY_CAUSE: Partial<Record<WioaCaseStatus, string>> = {
+  AWAITING_RESPONSE: 'No reply from board contact to outreach email',
+  DOCUMENTS_PENDING: 'Required documents not yet uploaded by trainee',
+  CLOSED_INELIGIBLE: 'Closed / Ineligible — no action expected',
+  ELIGIBILITY_UNDER_REVIEW: 'Awaiting board eligibility determination',
+  INTAKE_APPOINTMENT_SCHEDULED: 'Awaiting the scheduled intake appointment',
+  TRAINING_AUTHORIZATION_PENDING: 'Awaiting board training authorization',
+};
+
+export type StalledCase = WioaCaseSummary & { daysStalled: number; likelyCause: string };
+
+/** CRD05-StalledCases — a pre-filtered view of getWioaCases, not a separate dataset, matching
+ * the board's own "dtcard-desc" framing. A case counts as stalled at `thresholdDays` with no
+ * status change, open or closed (a closed case can still show up — "no action expected" is
+ * itself a valid likely-cause row, per the board's own third example row). */
+export async function getStalledCases(
+  viewer: SessionContext,
+  thresholdDays = 14,
+): Promise<StalledCase[]> {
+  const cases = await getWioaCases(viewer);
+  const cutoff = Date.now() - thresholdDays * 86_400_000;
+  return cases
+    .filter((c) => c.lastStatusChangeAt.getTime() <= cutoff)
+    .map((c) => ({
+      ...c,
+      daysStalled: Math.floor((Date.now() - c.lastStatusChangeAt.getTime()) / 86_400_000),
+      likelyCause: STALL_LIKELY_CAUSE[c.status] ?? 'No status change recorded',
+    }))
+    .sort((a, b) => b.daysStalled - a.daysStalled);
 }
 
 export type UpcomingAppointment = {
@@ -355,7 +391,13 @@ export type WioaCaseDetail = WioaCaseRecord & {
   learnerEmail: string;
   assignedPartnerStaffId: string | null;
   assignedPartnerStaffName: string | null;
-  statusHistory: { id: string; status: WioaCaseStatus; changedAt: Date; changedBy: string }[];
+  statusHistory: {
+    id: string;
+    status: WioaCaseStatus;
+    changedAt: Date;
+    changedBy: string;
+    changedByName: string;
+  }[];
   communications: WioaCommunicationRecord[];
   /** Only populated when `includeFunding` is passed (Coordinator dashboard) — Partner Staff's
    * fetch never requests it, so funding data never reaches the client bundle for that role
@@ -394,6 +436,14 @@ export async function getWioaCaseDetail(
     ? await getLearnerById(c.assignedPartnerStaffId)
     : undefined;
 
+  const changedByIds = [...new Set(c.statusHistory.map((h) => h.changedBy))];
+  const changedByNames = new Map(
+    (await Promise.all(changedByIds.map((id) => getLearnerById(id)))).map((user, i) => [
+      changedByIds[i],
+      user?.name ?? 'Unknown',
+    ]),
+  );
+
   return {
     id: c.id,
     courseId: c.course.slug,
@@ -421,7 +471,10 @@ export async function getWioaCaseDetail(
       rejectionReason: d.rejectionReason,
     })),
     appointments: c.appointments,
-    statusHistory: c.statusHistory,
+    statusHistory: c.statusHistory.map((h) => ({
+      ...h,
+      changedByName: changedByNames.get(h.changedBy) ?? 'Unknown',
+    })),
     communications: c.communications.map((comm) => ({
       id: comm.id,
       courseId: comm.courseId,
