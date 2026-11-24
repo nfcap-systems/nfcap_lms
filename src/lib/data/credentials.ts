@@ -88,6 +88,9 @@ export type PublicCredential = {
   learnerName: string;
   certificateCode: string;
   issuedAt: string;
+  /** Module count for LRN09-PublicVerify's "Issued using" line ("{N}-module course,
+   * evidence-reviewed") — a scoped `_count`, not a new courseInclude call site. */
+  moduleCount: number;
 };
 
 /** Public Verification Page + QR (docs/build/LAYER1_DATA_MODEL_DESIGN.md) — no-login lookup by
@@ -102,7 +105,10 @@ export async function getPublicCredentialBySlug(slug: string): Promise<PublicCre
       certificateCode: true,
       issuedAt: true,
       enrollment: {
-        select: { course: { select: { title: true } }, learnerId: true },
+        select: {
+          learnerId: true,
+          course: { select: { title: true, _count: { select: { sections: true } } } },
+        },
       },
     },
   });
@@ -112,6 +118,7 @@ export async function getPublicCredentialBySlug(slug: string): Promise<PublicCre
 
   return {
     courseTitle: certificate.enrollment.course.title,
+    moduleCount: certificate.enrollment.course._count.sections,
     learnerName: learner?.name || 'NFCAP Learner',
     certificateCode: certificate.certificateCode,
     issuedAt: certificate.issuedAt.toISOString(),

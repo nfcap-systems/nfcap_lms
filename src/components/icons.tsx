@@ -43,7 +43,8 @@ export type IconName =
   | 'numbered-list'
   | 'header'
   | 'download'
-  | 'alert-circle';
+  | 'alert-circle'
+  | 'shield';
 
 type IconProps = SVGProps<SVGSVGElement>;
 
@@ -316,6 +317,7 @@ const paths: Record<IconName, React.ReactNode> = {
       <path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" />
     </>
   ),
+  shield: <path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z" />,
 };
 
 export function Icon({ name, ...props }: { name: IconName } & IconProps) {
