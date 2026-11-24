@@ -1,3 +1,4 @@
+import type { CSSProperties } from 'react';
 import { AppSidebar } from '@/components/admin-shell/AppSidebar';
 import { AdminHeader } from '@/components/admin-shell/AdminHeader';
 import { SidebarInset, SidebarProvider } from '@/components/admin-ui/sidebar';
@@ -11,7 +12,14 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
   return (
     <TooltipProvider>
-      <SidebarProvider data-system="staff">
+      {/* 272px (17rem), matching Sidebar.dc.html's own width and the reference template's
+          `calc(var(--spacing) * 68)` — overridden here via the CSS var SidebarProvider already
+          exposes for exactly this, not by changing admin-ui/sidebar.tsx's shared default, so any
+          other consumer of the same component keeps its own width unless it opts in the same way. */}
+      <SidebarProvider
+        data-system="staff"
+        style={{ '--sidebar-width': 'calc(var(--spacing) * 68)' } as CSSProperties}
+      >
         <AppSidebar userName={userName} userEmail={userEmail} />
         <SidebarInset>
           <AdminHeader userName={userName} userEmail={userEmail} />
