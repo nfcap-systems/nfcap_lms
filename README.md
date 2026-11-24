@@ -88,16 +88,14 @@ account at `/signup`, or use one of the demo accounts below.
 
 ### Demo learner accounts
 
-`npm run seed-demo-learners` creates 5 fixed demo accounts reproducing different points in the
-apprenticeship journey, so Admin's dashboard/roster have realistic content beyond your own test
-account:
+`npm run seed-demo-learners` creates 2 fixed demo accounts — one WIOA-funded, one self-pay — with
+real progress/evidence/certificate data, so Admin's dashboard/roster have realistic content beyond
+your own test account:
 
-| Email                           | Journey stage                                        |
-| ------------------------------- | ---------------------------------------------------- |
-| `priya.shah@demo.nfcap.test`    | Fully certified — verified evidence on all 4 courses |
-| `casey.nguyen@demo.nfcap.test`  | Evidence submitted, awaiting Admin review            |
-| `diego.alvarez@demo.nfcap.test` | Evidence rejected, needs resubmission                |
-| `marcus.webb@demo.nfcap.test`   | Just enrolled, one lesson in                         |
+| Email                 | Journey stage                                                                                |
+| --------------------- | --------------------------------------------------------------------------------------------- |
+| `learner@nfcap.demo`  | WIOA-funded — 2 courses certified, a funded WioaCase (Tuition Approved) in progress on a 3rd |
+| `learner2@nfcap.demo` | Self-pay — 2 courses certified, evidence pending review on a 3rd                              |
 
 Password for all demo accounts: `Demo1234!`. These are prototype/local-dev credentials only — do
 not reuse this pattern anywhere real users could reach.
