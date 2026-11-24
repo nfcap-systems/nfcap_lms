@@ -1,12 +1,16 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import { Badge, Button, Card, CardContent, Drawer } from '@/components/ui';
+import { Drawer } from '@/components/ui';
 import { Icon } from '@/components/icons';
 import { generateCertificatePublicSlug } from '@/lib/actions/credentials';
 import type { Credential } from '@/lib/data/credentials';
 import { CertificateDocument } from './CertificateDocument';
 
+/** LRN08-Certificates' earned card — matches the board's `.ccard` pattern (same one
+ * CertificatesView uses inline for the locked/in-progress cards in this same grid), not a
+ * separate shadcn design. "Copy verify link" replaces the board's disabled "Download PDF"
+ * placeholder — a real, working feature the board never drew, not a missing one. */
 export function CertificateCard({
   credential,
   learnerName,
@@ -17,7 +21,7 @@ export function CertificateCard({
   const [open, setOpen] = useState(false);
   const [copyState, setCopyState] = useState<'idle' | 'copied'>('idle');
   const [, startTransition] = useTransition();
-  const { course, evidence } = credential;
+  const { course } = credential;
 
   function copyVerificationLink() {
     startTransition(async () => {
@@ -27,37 +31,75 @@ export function CertificateCard({
       setTimeout(() => setCopyState('idle'), 2000);
     });
   }
-  const issuedDate = new Date(evidence.statusUpdatedAt ?? evidence.submittedAt).toLocaleDateString(
-    undefined,
-    { month: 'short', day: 'numeric', year: 'numeric' },
-  );
+  const issuedDate = new Date(credential.issuedAt).toLocaleDateString(undefined, {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  });
 
   return (
     <>
-      <Card className="flex flex-col">
-        <CardContent className="flex flex-1 flex-col gap-4">
-          <div className="flex items-start justify-between gap-3">
-            <Badge tone="neutral">{course.category}</Badge>
-            <Badge tone="success">
-              <Icon name="award" className="size-3" />
-              Earned
-            </Badge>
+      <div
+        style={{
+          background: 'var(--surface)',
+          border: '1px solid var(--nfcap-border)',
+          borderRadius: 'var(--nfcap-radius-lg)',
+          boxShadow: 'var(--nfcap-shadow-sm)',
+          padding: 22,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 12,
+        }}
+      >
+        <div style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
+          <div
+            style={{
+              width: 52,
+              height: 52,
+              borderRadius: 'var(--nfcap-radius-md)',
+              background: 'var(--status-complete-bg)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: 'var(--status-complete)',
+              flexShrink: 0,
+            }}
+          >
+            <Icon name="award" className="h-6 w-6" />
           </div>
           <div>
-            <h3 className="text-base font-semibold text-[var(--ink)]">{course.title}</h3>
-            <p className="mt-1 text-xs text-[var(--ink-muted)]">Issued {issuedDate}</p>
+            <b style={{ fontSize: 15, color: 'var(--ink)' }}>{course.title}</b>
+            <div style={{ fontSize: 12.5, color: 'var(--ink-muted)', marginTop: 2 }}>
+              Earned {issuedDate} · ID {credential.certificateId}
+            </div>
           </div>
-          <div className="mt-auto flex gap-2">
-            <Button size="sm" variant="outline" className="flex-1" onClick={() => setOpen(true)}>
-              View Certificate
-            </Button>
-            <Button size="sm" variant="outline" className="flex-1" onClick={copyVerificationLink}>
-              <Icon name={copyState === 'copied' ? 'check' : 'shield'} className="size-3.5" />
-              {copyState === 'copied' ? 'Copied!' : 'Copy verify link'}
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+        </div>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button
+            type="button"
+            className="btn-secondary btn-sm"
+            style={{ flex: 1 }}
+            onClick={() => setOpen(true)}
+          >
+            View
+          </button>
+          <button
+            type="button"
+            className="btn-secondary btn-sm"
+            style={{
+              flex: 1,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 6,
+            }}
+            onClick={copyVerificationLink}
+          >
+            <Icon name={copyState === 'copied' ? 'check' : 'shield'} className="h-3.5 w-3.5" />
+            {copyState === 'copied' ? 'Copied!' : 'Copy verify link'}
+          </button>
+        </div>
+      </div>
 
       <Drawer
         open={open}

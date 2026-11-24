@@ -1,10 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui';
 import { Icon } from '@/components/icons';
 import { LockedCourseDialog, LOCKED_COURSE_COPY } from '@/components/learner/LockedCourseDialog';
+import { generateCertificatePublicSlug } from '@/lib/actions/credentials';
 import { courseLessonCount } from '@/lib/types';
 import type { AdminCourse } from '@/lib/data/courses';
 import type { CourseProgress } from '@/lib/data/progress';
@@ -26,7 +27,17 @@ export function CertificatesView({
 }) {
   const router = useRouter();
   const [lockedCourse, setLockedCourse] = useState<AdminCourse | null>(null);
+  const [, startSampleTransition] = useTransition();
   const earnedByCourseId = new Map(credentials.map((c) => [c.course.id, c]));
+
+  function viewSampleVerification() {
+    const sample = credentials[0];
+    if (!sample) return;
+    startSampleTransition(async () => {
+      const slug = await generateCertificatePublicSlug(sample.rawId);
+      router.push(`/verify/${slug}`);
+    });
+  }
   const nextUp = pathway.find((course) => {
     const progress = progressMap[course.id];
     return progress?.enrolled && !earnedByCourseId.has(course.id);
@@ -318,6 +329,25 @@ export function CertificatesView({
               Employers and workforce boards can confirm it was genuinely issued by NFCAP — use
               &quot;Copy verify link&quot; on any earned certificate above.
             </div>
+            {credentials.length > 0 && (
+              <button
+                type="button"
+                onClick={viewSampleVerification}
+                style={{
+                  fontSize: 12.5,
+                  color: 'var(--nfcap-accent)',
+                  fontWeight: 600,
+                  textDecoration: 'underline',
+                  textAlign: 'left',
+                  background: 'none',
+                  border: 'none',
+                  padding: 0,
+                  cursor: 'pointer',
+                }}
+              >
+                See a sample verification page →
+              </button>
+            )}
           </div>
 
           {nextUp && (

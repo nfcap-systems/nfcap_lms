@@ -11,17 +11,19 @@ import { flattenLessons } from '@/lib/types';
 import type { Course } from '@/lib/types';
 import { LessonContent } from './LessonContent';
 
-/** LRN04-Player — a discrete screen per lesson (`/learner/courses/[courseId]/learn/[lessonId]`),
- * replacing the old CourseLearningView's inline lesson state. The sidebar here is lessons only —
- * the board doesn't list the Quiz/Evidence steps here, those live on their own routes now. */
+/** LRN04-Player — a discrete screen per lesson (`/learner/courses/[courseId]/learn/[lessonId]`).
+ * The board's own sidebar lists Quiz as the last row after every lesson, so it's appended here
+ * too rather than left as a lesson-only list. */
 export function LessonPlayerView({
   course,
   lessonId,
   completedLessonIds,
+  quizPassed,
 }: {
   course: Course;
   lessonId: string;
   completedLessonIds: string[];
+  quizPassed: boolean;
 }) {
   const router = useRouter();
   const [, startTransition] = useTransition();
@@ -220,6 +222,22 @@ export function LessonPlayerView({
               </button>
             );
           })}
+          <button
+            type="button"
+            onClick={() => router.push(`/learner/courses/${course.id}/quiz`)}
+            className="lrn-player-row"
+          >
+            {quizPassed ? (
+              <Icon
+                name="check"
+                className="h-3.5 w-3.5"
+                style={{ color: 'var(--status-complete)' }}
+              />
+            ) : (
+              <Icon name="clipboard" className="h-3.5 w-3.5" />
+            )}
+            <span style={{ flex: 1, textAlign: 'left' }}>Quiz</span>
+          </button>
         </div>
       </div>
     </div>

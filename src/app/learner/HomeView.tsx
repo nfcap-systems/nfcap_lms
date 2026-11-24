@@ -143,7 +143,9 @@ export function HomeView({
           <p className="greet-h1">
             {timeOfDayGreeting()}, {firstName}
           </p>
-          <p className="greet-sub">Welcome back — keep going on your training.</p>
+          <p className="greet-sub">
+            Welcome back — keep going on your {pathway[0]?.category ?? 'training'}.
+          </p>
         </div>
         <div className="stat-row">
           <div className="stat-tile">
@@ -451,6 +453,13 @@ export function HomeView({
                 );
               }
 
+              const isActive = course.id === nextUp?.course.id;
+              const coursePercent = isActive
+                ? Math.round(
+                    ((progress?.completedLessonIds.length ?? 0) / courseLessonCount(course)) * 100,
+                  )
+                : 0;
+
               return (
                 <button
                   key={course.id}
@@ -458,13 +467,35 @@ export function HomeView({
                   className="lrn-mcard"
                   onClick={() => router.push(`/learner/courses/${course.id}`)}
                 >
-                  <Image
-                    src={MODULE_PHOTOS[index % MODULE_PHOTOS.length]}
-                    alt=""
-                    width={300}
-                    height={108}
-                    className="thumb"
-                  />
+                  {isActive ? (
+                    <div
+                      className="thumb"
+                      style={{
+                        background: 'var(--surface-muted)',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: 8,
+                        padding: 10,
+                      }}
+                    >
+                      <Badge tone="success" style={{ width: 'fit-content' }}>
+                        ● Active
+                      </Badge>
+                      <div className="lrn-pathway-bar" style={{ width: '100%' }}>
+                        <div className="fill" style={{ width: `${coursePercent}%` }} />
+                      </div>
+                    </div>
+                  ) : (
+                    <Image
+                      src={MODULE_PHOTOS[index % MODULE_PHOTOS.length]}
+                      alt=""
+                      width={300}
+                      height={108}
+                      className="thumb"
+                    />
+                  )}
                   <div className="lrn-mcard-body">
                     <div className="t">{course.title}</div>
                     <div style={{ fontSize: 12, color: 'var(--ink-muted)' }}>
@@ -543,6 +574,11 @@ export function HomeView({
                     {nextUp.remaining} lesson{nextUp.remaining === 1 ? '' : 's'} left in this course
                   </div>
                 </div>
+                <Icon
+                  name="chevron-right"
+                  className="h-4 w-4"
+                  style={{ color: 'var(--ink-faint)', flexShrink: 0 }}
+                />
               </div>
             </div>
           )}
@@ -681,6 +717,11 @@ export function HomeView({
                       <div className="lrn-review-title">{course.title} Evidence</div>
                       <div className="lrn-review-meta">Assignment · Pending review</div>
                     </div>
+                    <Icon
+                      name="chevron-right"
+                      className="h-4 w-4"
+                      style={{ color: 'var(--ink-faint)', flexShrink: 0 }}
+                    />
                   </div>
                 ))}
               </div>
@@ -708,7 +749,12 @@ export function HomeView({
                     <div className="lrn-review-body">
                       <div className="lrn-review-title">{credential.course.title}</div>
                       <div className="lrn-review-meta">
-                        Certificate ID {credential.certificateId}
+                        Earned{' '}
+                        {new Date(credential.issuedAt).toLocaleDateString(undefined, {
+                          year: 'numeric',
+                          month: 'short',
+                          day: 'numeric',
+                        })}
                       </div>
                     </div>
                     {/* Downloadable PDF is Phase 4 (CertificatesView.tsx already discloses this),

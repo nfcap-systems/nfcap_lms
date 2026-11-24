@@ -96,7 +96,7 @@ export function CourseOverviewView({
       <div
         style={{
           position: 'relative',
-          height: 220,
+          height: 280,
           borderRadius: 'var(--nfcap-radius-lg)',
           overflow: 'hidden',
           marginBottom: 28,

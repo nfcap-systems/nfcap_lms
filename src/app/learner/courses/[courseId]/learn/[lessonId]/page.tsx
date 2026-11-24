@@ -47,6 +47,7 @@ export default async function LessonPlayerPage({
       course={course}
       lessonId={lessonId}
       completedLessonIds={progress.completedLessonIds}
+      quizPassed={progress.quizAttempt?.passed ?? false}
     />
   );
 }

@@ -111,7 +111,7 @@ export function MyLearningView({
             alignItems: 'center',
             gap: 12,
             background: '#eff6ff',
-            border: '1px solid #bfdbfe',
+            border: '1px solid #dbeafe',
             borderRadius: 'var(--nfcap-radius-lg)',
             padding: '16px 20px',
           }}

@@ -27,6 +27,7 @@ export type Credential = {
    * verification link (LRN09-PublicVerify), matching the board's "See a sample verification
    * page" / earned-card-opens-Verify-view intent. */
   rawId: string;
+  issuedAt: string;
 };
 
 /** Courses whose Practical Evidence has been verified — the payoff loop's completion state
@@ -38,7 +39,10 @@ export async function getCredentialsForLearner(
 ): Promise<Credential[]> {
   const certificates = await prisma.certificate.findMany({
     where: { enrollment: { learnerId } },
-    include: {
+    select: {
+      id: true,
+      certificateCode: true,
+      issuedAt: true,
       enrollment: { include: { course: { select: { slug: true } } } },
       evidenceSubmission: {
         include: {
@@ -83,6 +87,7 @@ export async function getCredentialsForLearner(
         })),
         certificateId: cert.certificateCode,
         rawId: cert.id,
+        issuedAt: cert.issuedAt.toISOString(),
       };
     })
     .filter((c): c is Credential => c !== null)

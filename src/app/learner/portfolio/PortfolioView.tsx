@@ -1,7 +1,6 @@
 import Link from 'next/link';
 import { Badge, Button } from '@/components/ui';
 import { Icon } from '@/components/icons';
-import { EvidenceAttachmentLink } from '@/components/learner/EvidenceAttachmentLink';
 import { EvidenceThumbnail } from '@/components/learner/EvidenceThumbnail';
 import { SharePortfolioPanel } from '@/components/learner/SharePortfolioPanel';
 import type { Credential } from '@/lib/data/credentials';
@@ -178,94 +177,82 @@ export function PortfolioView({
               </div>
             </>
           ) : (
-            Array.from(courseGroups.values()).map((group) => (
-              <div key={group.title} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--ink)' }}>
-                  {group.title}
-                </div>
+            Array.from(courseGroups.values()).map((group) => {
+              // The board's evidence card is one per evidence piece (one per criterion for a
+              // guided submission, one per legacy submission), not one per credential/certificate
+              // — flatten to match (same pattern HomeView's evidencePieces shelf already uses).
+              const pieces = group.items.flatMap((credential) =>
+                credential.criteria.length > 0
+                  ? credential.criteria.map((criterion) => ({
+                      key: criterion.criterionAssessmentId,
+                      title: criterion.title,
+                      hasFile: criterion.hasFile,
+                      criterionAssessmentId: criterion.criterionAssessmentId as string | undefined,
+                      evidenceSubmissionId: undefined as string | undefined,
+                      fileName: criterion.fileName,
+                    }))
+                  : [
+                      {
+                        key: credential.evidence.id,
+                        title: credential.evidence.description,
+                        hasFile: credential.evidence.hasSubmissionFile,
+                        criterionAssessmentId: undefined as string | undefined,
+                        evidenceSubmissionId: credential.evidence.id as string | undefined,
+                        fileName: credential.evidence.fileName,
+                      },
+                    ],
+              );
+
+              return (
                 <div
-                  style={{
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
-                    gap: 16,
-                  }}
+                  key={group.title}
+                  style={{ display: 'flex', flexDirection: 'column', gap: 14 }}
                 >
-                  {group.items.map((credential) => {
-                    const verifiedDate = new Date(
-                      credential.evidence.statusUpdatedAt ?? credential.evidence.submittedAt,
-                    ).toLocaleDateString(undefined, {
-                      month: 'short',
-                      day: 'numeric',
-                      year: 'numeric',
-                    });
-                    return (
-                      <div
-                        key={credential.certificateId}
-                        className="lrn-mcard"
-                        style={{ cursor: 'default' }}
-                      >
-                        <div className="lrn-mcard-body">
-                          {/* A guided submission (feature #9) carries its evidence per criterion,
-                              not on the submission — rendering `description`/`fileName` alone
-                              leaves an empty card. Legacy submissions still render exactly as
-                              before. See docs/plans/phase-3-and-design-migration-kickoff.md
-                              Step 2, feature #12. */}
-                          {credential.criteria.length > 0 ? (
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                              {credential.criteria.map((criterion) => (
-                                <div
-                                  key={criterion.criterionAssessmentId}
-                                  style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}
-                                >
-                                  {criterion.hasFile && (
-                                    <EvidenceThumbnail
-                                      criterionAssessmentId={criterion.criterionAssessmentId}
-                                    />
-                                  )}
-                                  <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                                    <div className="t">{criterion.title}</div>
-                                    {criterion.description && (
-                                      <div style={{ fontSize: 12.5, color: 'var(--ink-muted)' }}>
-                                        {criterion.description}
-                                      </div>
-                                    )}
-                                    {criterion.hasFile && (
-                                      <EvidenceAttachmentLink
-                                        criterionAssessmentId={criterion.criterionAssessmentId}
-                                        fileName={criterion.fileName}
-                                      />
-                                    )}
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          ) : (
-                            <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
-                              {credential.evidence.hasSubmissionFile && (
-                                <EvidenceThumbnail evidenceSubmissionId={credential.evidence.id} />
-                              )}
-                              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                                <div className="t">{credential.evidence.description}</div>
-                                {credential.evidence.hasSubmissionFile && (
-                                  <EvidenceAttachmentLink
-                                    evidenceSubmissionId={credential.evidence.id}
-                                    fileName={credential.evidence.fileName}
-                                  />
-                                )}
-                              </div>
-                            </div>
-                          )}
+                  <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--ink)' }}>
+                    {group.title}
+                  </div>
+                  <div
+                    style={{
+                      display: 'grid',
+                      gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+                      gap: 16,
+                    }}
+                  >
+                    {pieces.map((piece) => (
+                      <div key={piece.key} className="port-pcard">
+                        {piece.hasFile ? (
+                          <EvidenceThumbnail
+                            variant="cover"
+                            criterionAssessmentId={piece.criterionAssessmentId}
+                            evidenceSubmissionId={piece.evidenceSubmissionId}
+                          />
+                        ) : (
+                          <div
+                            className="thumb"
+                            style={{
+                              background: 'var(--surface-muted)',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              color: 'var(--ink-faint)',
+                            }}
+                          >
+                            <Icon name="image" className="h-6 w-6" />
+                          </div>
+                        )}
+                        <div className="body">
+                          <div className="t">{piece.title}</div>
                           <Badge tone="success" style={{ width: 'fit-content' }}>
                             <Icon name="check" className="h-3 w-3" />
-                            Met {verifiedDate}
+                            Met
                           </Badge>
                         </div>
                       </div>
-                    );
-                  })}
+                    ))}
+                  </div>
                 </div>
-              </div>
-            ))
+              );
+            })
           )}
         </div>
 

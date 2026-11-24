@@ -11,9 +11,13 @@ import { getCriterionFileUrl, getEvidenceFileUrl } from '@/lib/actions/progress'
 export function EvidenceThumbnail({
   evidenceSubmissionId,
   criterionAssessmentId,
+  variant = 'thumb',
 }: {
   evidenceSubmissionId?: string;
   criterionAssessmentId?: string;
+  /** 'thumb' — 44x44 inline icon (HomeView's Portfolio preview shelf). 'cover' — full-width
+   * 100px-tall photo (LRN07-Portfolio's own evidence card, `.port-pcard .thumb`). */
+  variant?: 'thumb' | 'cover';
 }) {
   const [url, setUrl] = useState<string | null>(null);
 
@@ -29,6 +33,29 @@ export function EvidenceThumbnail({
       cancelled = true;
     };
   }, [evidenceSubmissionId, criterionAssessmentId]);
+
+  if (variant === 'cover') {
+    if (!url) {
+      return (
+        <div
+          className="thumb"
+          style={{
+            background: 'var(--surface-muted)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: 'var(--ink-faint)',
+          }}
+        >
+          <Icon name="image" className="h-6 w-6" />
+        </div>
+      );
+    }
+    return (
+      // eslint-disable-next-line @next/next/no-img-element -- a signed, short-lived Storage URL, not a local/optimizable asset
+      <img src={url} alt="" className="thumb" />
+    );
+  }
 
   if (!url) {
     return (
