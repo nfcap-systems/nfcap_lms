@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Plus } from 'lucide-react';
+import { FileText, Plus } from 'lucide-react';
 
 import {
   createWioaDocumentRequirement,
@@ -83,13 +83,18 @@ export function DocumentRequirementsAdminView({
             <p className="border-b px-4 py-3 text-sm font-semibold text-foreground">{boardName}</p>
             <div className="divide-y divide-border">
               {rows.map((r) => (
-                <div key={r.id} className="flex items-center justify-between gap-4 p-4">
-                  <div className="min-w-0">
+                <div key={r.id} className="flex items-center gap-3 p-4">
+                  <FileText className="size-4 shrink-0 text-muted-foreground" />
+                  <div className="min-w-0 flex-1">
                     <p className="text-sm font-medium text-foreground">{r.name}</p>
                     <p className="text-xs text-muted-foreground">{r.description}</p>
                   </div>
                   <div className="flex shrink-0 items-center gap-2">
-                    {r.conditional && <Badge variant="warning">Conditional</Badge>}
+                    {r.conditional ? (
+                      <Badge variant="warning">Conditional</Badge>
+                    ) : (
+                      <Badge variant="outline">Required</Badge>
+                    )}
                     <Button size="sm" variant="outline" onClick={() => setEditing(r)}>
                       Edit
                     </Button>

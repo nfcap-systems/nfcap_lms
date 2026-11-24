@@ -23,7 +23,9 @@ import type {
   WorkforceJurisdictionRecord,
   WorkforceContactRecord,
 } from '@/lib/data/wioa-boards';
-import type { ContactType } from '@/generated/prisma/enums';
+import type { ContactType, WioaCaseStatus } from '@/generated/prisma/enums';
+import { Icon } from '@/components/icons';
+import { WIOA_STATUS_LABEL } from '@/lib/wioa/status';
 import { Badge } from '@/components/admin-ui/badge';
 import { Button } from '@/components/admin-ui/button';
 import { Card, CardContent } from '@/components/admin-ui/card';
@@ -46,7 +48,13 @@ import {
 } from '@/components/admin-ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/admin-ui/tabs';
 
-export function BoardDetailView({ board }: { board: WorkforceBoardDetail }) {
+export function BoardDetailView({
+  board,
+  activeCases,
+}: {
+  board: WorkforceBoardDetail;
+  activeCases: { id: string; learnerName: string; status: WioaCaseStatus }[];
+}) {
   const router = useRouter();
 
   return (
@@ -59,7 +67,14 @@ export function BoardDetailView({ board }: { board: WorkforceBoardDetail }) {
       </TabsList>
 
       <TabsContent value="board" className="pt-4">
-        <BoardFieldsTab board={board} onSaved={() => router.refresh()} />
+        <div className="flex gap-4">
+          <div className="flex-[1.1]">
+            <BoardFieldsTab board={board} onSaved={() => router.refresh()} />
+          </div>
+          <div className="flex-1">
+            <ActiveCasesPanel cases={activeCases} />
+          </div>
+        </div>
       </TabsContent>
       <TabsContent value="ajcc" className="pt-4">
         <AjccTab board={board} onChanged={() => router.refresh()} />
@@ -683,6 +698,110 @@ function ContactDialog({
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  );
+}
+
+const FUNDED_CASE_STATUSES: WioaCaseStatus[] = [
+  'TUITION_APPROVED',
+  'APPRENTICESHIP_ENROLLMENT_COMPLETE',
+];
+
+const CASES_PAGE_SIZE = 10;
+
+/** WIOA02-BoardDetail's "Active cases" + "Contracts on file" panel. The case list is real (every
+ * open WioaCase matched to this board); the contract-file section is disclosed rather than
+ * fabricated — no file-upload feature exists anywhere for a board's own service agreement yet. */
+function ActiveCasesPanel({
+  cases,
+}: {
+  cases: { id: string; learnerName: string; status: WioaCaseStatus }[];
+}) {
+  const [page, setPage] = useState(1);
+  const pageCount = Math.max(1, Math.ceil(cases.length / CASES_PAGE_SIZE));
+  const pageRows = cases.slice((page - 1) * CASES_PAGE_SIZE, page * CASES_PAGE_SIZE);
+
+  return (
+    <Card>
+      <CardContent className="flex flex-col gap-3">
+        <div style={{ fontWeight: 600, fontSize: 14.5 }}>Active cases — {cases.length}</div>
+        {cases.length === 0 ? (
+          <p className="text-sm text-muted-foreground">No open cases matched to this board.</p>
+        ) : (
+          <>
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Learner</th>
+                  <th>Stage</th>
+                </tr>
+              </thead>
+              <tbody>
+                {pageRows.map((c) => (
+                  <tr key={c.id}>
+                    <td>{c.learnerName}</td>
+                    <td>
+                      <span
+                        className={
+                          FUNDED_CASE_STATUSES.includes(c.status)
+                            ? 'badge-complete'
+                            : 'badge-pending'
+                        }
+                      >
+                        {WIOA_STATUS_LABEL[c.status]}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <div className="table-footer">
+              <span>
+                Showing {pageRows.length} of {cases.length}
+              </span>
+              <span>
+                Page {page} of {pageCount}
+              </span>
+            </div>
+            {pageCount > 1 && (
+              <div style={{ display: 'flex', justifyContent: 'center', gap: 6 }}>
+                <button
+                  type="button"
+                  className="dtbtn"
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  disabled={page === 1}
+                >
+                  Previous
+                </button>
+                <button
+                  type="button"
+                  className="dtbtn"
+                  onClick={() => setPage((p) => Math.min(pageCount, p + 1))}
+                  disabled={page === pageCount}
+                >
+                  Next
+                </button>
+              </div>
+            )}
+          </>
+        )}
+
+        <div style={{ borderTop: '1px solid var(--nfcap-border)', paddingTop: 14, marginTop: 2 }}>
+          <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 8 }}>Contracts on file</div>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              fontSize: 12.5,
+              color: 'var(--ink-faint)',
+            }}
+          >
+            <Icon name="file-text" className="h-3.5 w-3.5" />
+            Not yet built — no file-upload feature exists for a board&apos;s service agreement.
+          </div>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 

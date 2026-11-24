@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/prisma';
-import type { ContactType } from '@/generated/prisma/enums';
+import type { ContactType, WioaCaseStatus } from '@/generated/prisma/enums';
 
 export type WorkforceBoardSummary = {
   id: string;
@@ -164,4 +164,22 @@ export async function getWorkforceBoardDetail(
       active: c.active,
     })),
   };
+}
+
+export type BoardCaseRow = {
+  id: string;
+  learnerId: string;
+  status: WioaCaseStatus;
+};
+
+/** WIOA02-BoardDetail's "Active cases" table — every open case matched to this board. Learner
+ * names are resolved by the caller from the same roster fetch other Admin pages already make
+ * (src/lib/data/learners.ts's getLearnerRoster), not a per-row Supabase Auth lookup here. */
+export async function getActiveCasesForBoard(boardId: string): Promise<BoardCaseRow[]> {
+  const cases = await prisma.wioaCase.findMany({
+    where: { workforceBoardId: boardId, closedAt: null },
+    orderBy: { createdAt: 'desc' },
+    select: { id: true, learnerId: true, status: true },
+  });
+  return cases;
 }

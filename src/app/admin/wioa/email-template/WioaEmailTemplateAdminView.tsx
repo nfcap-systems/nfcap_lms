@@ -19,8 +19,8 @@ import { Input } from '@/components/admin-ui/input';
 import { Label } from '@/components/admin-ui/label';
 import { Textarea } from '@/components/admin-ui/textarea';
 
-const PLACEHOLDER_HINT =
-  'Available tokens: {{learnerName}}, {{city}}, {{zip}}, {{courseTitle}}, {{learnerEmail}}, {{learnerPhone}}';
+const TOKENS = ['learnerName', 'city', 'zip', 'courseTitle', 'learnerEmail', 'learnerPhone'];
+const PLACEHOLDER_HINT = `Available tokens: ${TOKENS.map((t) => `{{${t}}}`).join(', ')}`;
 
 export function WioaEmailTemplateAdminView({ template }: { template: WioaEmailTemplateRecord }) {
   const router = useRouter();
@@ -32,20 +32,47 @@ export function WioaEmailTemplateAdminView({ template }: { template: WioaEmailTe
         <Button onClick={() => setEditOpen(true)}>Edit template</Button>
       </div>
 
-      <Card className="py-0">
-        <div className="border-b px-4 py-3">
-          <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
-            Subject
-          </p>
-          <p className="mt-1 text-sm font-medium text-foreground">{template.subject}</p>
-        </div>
-        <div className="p-4">
-          <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">Body</p>
-          <pre className="mt-1 font-sans text-sm whitespace-pre-wrap text-foreground">
-            {template.body}
-          </pre>
-        </div>
-      </Card>
+      <div className="flex gap-4">
+        <Card className="flex-[1.2] py-0">
+          <div className="border-b px-4 py-3">
+            <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+              Subject
+            </p>
+            <p className="mt-1 text-sm font-medium text-foreground">{template.subject}</p>
+          </div>
+          <div className="p-4">
+            <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+              Body
+            </p>
+            <pre className="mt-1 font-sans text-sm whitespace-pre-wrap text-foreground">
+              {template.body}
+            </pre>
+          </div>
+        </Card>
+
+        <Card className="flex-1">
+          <div className="flex flex-col gap-3 p-4">
+            <div className="text-[13.5px] font-semibold">Available variables</div>
+            <div className="flex flex-col gap-1.5">
+              {TOKENS.map((token) => (
+                <code
+                  key={token}
+                  className="w-fit rounded-sm border bg-muted/40 px-1.5 py-0.5 font-mono text-[11.5px]"
+                >
+                  {`{{${token}}}`}
+                </code>
+              ))}
+            </div>
+            <div className="mt-2 border-t pt-3.5">
+              <div className="mb-2 text-[13px] font-semibold">Delivery</div>
+              <p className="text-[12.5px] leading-relaxed text-muted-foreground">
+                Learner reviews and confirms before sending — this template is never sent
+                automatically.
+              </p>
+            </div>
+          </div>
+        </Card>
+      </div>
 
       <EditDialog
         template={template}
