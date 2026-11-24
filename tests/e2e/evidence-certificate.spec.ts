@@ -15,6 +15,9 @@ test.describe('evidence → certificate', () => {
 
       await loginAs(page, learner);
       await page.goto(`/learner/courses/${course.slug}`);
+      // Evidence submission lives on its own route (EvidenceView.tsx), reached via the overview
+      // page's "Continue" CTA — not inline on the overview itself.
+      await page.getByRole('button', { name: 'Continue — Practical Evidence' }).click();
       await page.getByLabel('Description').fill('Finished the flooring section, photo attached.');
       await page.getByRole('button', { name: 'Submit Evidence' }).click();
 
@@ -32,6 +35,9 @@ test.describe('evidence → certificate', () => {
       const adminPage = await adminContext.newPage();
       await loginAs(adminPage, admin);
       await adminPage.goto(`/admin/learners/${learner.id}`);
+      // The inline Approve/Reject controls render under the Evidence tab (LearnerProfileView.tsx),
+      // not the default Overview tab.
+      await adminPage.getByRole('tab', { name: 'Evidence' }).click();
       await adminPage.getByRole('button', { name: 'Approve' }).click();
       await expect(adminPage.getByRole('button', { name: /Change to Rejected/i })).toBeVisible();
       await adminContext.close();

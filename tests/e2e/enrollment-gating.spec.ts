@@ -44,6 +44,9 @@ test.describe('enrollment gating', () => {
       const adminPage = await adminContext.newPage();
       await loginAs(adminPage, admin);
       await adminPage.goto(`/admin/learners/${learner.id}`);
+      // CourseAccessCard (the "Grant access" button) renders under the Enrollment tab
+      // (LearnerProfileView.tsx), not the default Overview tab.
+      await adminPage.getByRole('tab', { name: 'Enrollment' }).click();
       await adminPage.getByRole('button', { name: 'Grant access' }).click();
       // exact: true — otherwise this also matches the "Unlocked via Admin assignment" caption.
       await expect(adminPage.getByText('Unlocked', { exact: true })).toBeVisible();

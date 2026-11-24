@@ -24,11 +24,14 @@ test.describe('WIOA funding status changes', () => {
     try {
       await loginAs(page, coordinator);
       await page.goto(`/coordinator/${wioaCase.id}`);
+      // The status-change control (StatusCard, WioaCaseDetailView.tsx) lives under the "Status
+      // history" tab, not the default "Overview" tab.
+      await page.getByRole('tab', { name: 'Status history' }).click();
 
       await page
-        .getByLabel('Advance to')
+        .getByLabel('New status')
         .selectOption({ label: WIOA_STATUS_LABEL.WORKFORCE_BOARD_MATCHED });
-      await page.getByRole('button', { name: 'Confirm status change' }).click();
+      await page.getByRole('button', { name: 'Save status' }).click();
 
       await expect
         .poll(
@@ -65,14 +68,15 @@ test.describe('WIOA funding status changes', () => {
     try {
       await loginAs(page, coordinator);
       await page.goto(`/coordinator/${wioaCase.id}`);
+      await page.getByRole('tab', { name: 'Status history' }).click();
 
       await expect(
         page
-          .getByLabel('Advance to')
+          .getByLabel('New status')
           .locator('option', { hasText: WIOA_STATUS_LABEL.WIOA_ELIGIBLE }),
       ).toHaveCount(1);
-      await page.getByLabel('Advance to').selectOption({ label: WIOA_STATUS_LABEL.WIOA_ELIGIBLE });
-      await page.getByRole('button', { name: 'Confirm status change' }).click();
+      await page.getByLabel('New status').selectOption({ label: WIOA_STATUS_LABEL.WIOA_ELIGIBLE });
+      await page.getByRole('button', { name: 'Save status' }).click();
 
       // Don't assert the exact server error text — Next.js may redact a thrown Server Action
       // error's message in a production build, so the UI text isn't a reliable signal here. The
