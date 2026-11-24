@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/prisma';
 import type { AdminCourse } from './courses';
 import type { EvidenceSubmission } from './progress';
+import { getLearnerById } from './learners';
 
 /** One criterion's own capture on a guided submission (feature #9) — what the learner actually
  * showed for it. Empty for legacy submissions, whose evidence lives on the submission itself. */
@@ -80,4 +81,39 @@ export async function getCredentialsForLearner(
     })
     .filter((c): c is Credential => c !== null)
     .sort((a, b) => a.course.pathwayOrder - b.course.pathwayOrder);
+}
+
+export type PublicCredential = {
+  courseTitle: string;
+  learnerName: string;
+  certificateCode: string;
+  issuedAt: string;
+};
+
+/** Public Verification Page + QR (docs/build/LAYER1_DATA_MODEL_DESIGN.md) — no-login lookup by
+ * the unguessable slug from `generateCertificatePublicSlug`. Deliberately returns the narrowest
+ * shape a public page should ever show (no email, no internal ids) — a `null` result (unknown
+ * slug, or a certificate whose owner revoked sharing) must render as "not found," never
+ * distinguish the two, or revocation would leak that the slug was once valid. */
+export async function getPublicCredentialBySlug(slug: string): Promise<PublicCredential | null> {
+  const certificate = await prisma.certificate.findUnique({
+    where: { publicSlug: slug },
+    select: {
+      certificateCode: true,
+      issuedAt: true,
+      enrollment: {
+        select: { course: { select: { title: true } }, learnerId: true },
+      },
+    },
+  });
+  if (!certificate) return null;
+
+  const learner = await getLearnerById(certificate.enrollment.learnerId);
+
+  return {
+    courseTitle: certificate.enrollment.course.title,
+    learnerName: learner?.name || 'NFCAP Learner',
+    certificateCode: certificate.certificateCode,
+    issuedAt: certificate.issuedAt.toISOString(),
+  };
 }

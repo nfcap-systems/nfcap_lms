@@ -1,4 +1,5 @@
 import { createAdminClient } from '@/lib/supabase/admin';
+import { prisma } from '@/lib/prisma';
 
 export type LearnerRecord = { id: string; name: string; email: string; createdAt: Date };
 
@@ -34,6 +35,21 @@ export async function getLearnerById(learnerId: string): Promise<LearnerRecord |
   const { data, error } = await admin.auth.admin.getUserById(learnerId);
   if (error || !data.user) return undefined;
   return toLearnerRecord(data.user);
+}
+
+/** Shareable Verified Portfolio (docs/build/LAYER1_DATA_MODEL_DESIGN.md) — resolves a public
+ * share token (`generatePortfolioShareToken` in src/lib/actions/portfolio.ts) to the owning
+ * learner's id, or `undefined` for an unknown/revoked token. The caller (a future public
+ * portfolio page) is responsible for distinguishing nothing further than "not found" — same
+ * minimal-disclosure reasoning as getPublicCredentialBySlug in src/lib/data/credentials.ts. */
+export async function getLearnerIdByPortfolioShareToken(
+  token: string,
+): Promise<string | undefined> {
+  const profile = await prisma.learnerProfile.findUnique({
+    where: { portfolioShareToken: token },
+    select: { learnerId: true },
+  });
+  return profile?.learnerId;
 }
 
 /** Every PARTNER_STAFF account, for the Coordinator dashboard's case-assignment dropdown
