@@ -17,6 +17,17 @@ directly against its live component on 2026-11-24. None of them are clean matche
 - **"Locked item names the specific blocking thing" pattern** is drawn on 2 boards
   (`LRN02-Pathway`'s module cards, `LRN08-Certificates`' locked tier) and missing from both —
   generic "Locked" text instead. Mechanical fix, same shape both places.
+- **`LearnerShell`'s page body — structural drift, not cosmetic.** `LearnerShell.tsx` wrapped
+  every learner page's content in `.lshell-card` — a single bordered/background/padded "card"
+  around the whole page — inside a fixed 1280px-max-width `.lshell-main`. **No board does this.**
+  Every board's real outer wrapper is just `max-width: Npx; margin: 0 auto; padding: ...` directly
+  on the page's muted background; individual sections (sidebar panels, form cards) carry their own
+  background/border only where the board actually draws one. Max-width also isn't one constant —
+  boards with the 300px sidebar (`LRN01-Home`, `LRN07-Portfolio`, `LRN08-Certificates`,
+  `LRN13-OpenCourseEnrol`) use 1300px; boards without one (`LRN02-Pathway`, `LRN11-Account`) use
+  1140px. Fixed 2026-11-24: `.lshell-card` removed, `.lshell-main` corrected to the 1300px/36-24-56
+  case (the majority). The two narrower-board pages (My Learning, Account) still render ~160px
+  wider than their own board until each gets its own override — tracked, not silently left broken.
 - **`LearnerHeader` — structural drift, not cosmetic.** The board (`LearnerHeader.dc.html`,
   imported by every learner board including `LRN01-Home` via `<dc-import name="LearnerHeader">`)
   is a **two-row header** (114px): Row 1 (68px) = brand icon+wordmark, a disabled "Ask AI" pill

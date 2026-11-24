@@ -2,6 +2,7 @@ import { getAllCourses, getPublishedCourses } from '@/lib/data/courses';
 import { getLearnerProgressMap, getCourseUnlocksForLearner } from '@/lib/data/progress';
 import { getCredentialsForLearner } from '@/lib/data/credentials';
 import { getWioaCasesForLearner } from '@/lib/data/wioa';
+import { getActiveAnnouncementsForViewer } from '@/lib/data/announcements';
 import { getAuthUser, getRole } from '@/lib/supabase/server';
 import { HomeView } from './HomeView';
 
@@ -15,13 +16,12 @@ export default async function LearnerHomePage() {
   const [allCourses, published] = await Promise.all([getAllCourses(), getPublishedCourses()]);
   const pathway = [...published].sort((a, b) => a.pathwayOrder - b.pathwayOrder);
   const progressMap = user ? await getLearnerProgressMap(user.id) : {};
-  const unlockedCourseSlugs = user
-    ? Object.keys(await getCourseUnlocksForLearner(user.id))
-    : [];
+  const unlockedCourseSlugs = user ? Object.keys(await getCourseUnlocksForLearner(user.id)) : [];
   const credentials = user ? await getCredentialsForLearner(user.id, allCourses) : [];
   const wioaCases = user
     ? await getWioaCasesForLearner({ userId: user.id, role: getRole(user) ?? 'LEARNER' }, user.id)
     : [];
+  const announcements = user ? await getActiveAnnouncementsForViewer(user.id, 'learner') : [];
 
   return (
     <HomeView
@@ -31,6 +31,7 @@ export default async function LearnerHomePage() {
       unlockedCourseSlugs={unlockedCourseSlugs}
       credentials={credentials}
       wioaCases={wioaCases}
+      announcements={announcements}
       firstName={firstName}
     />
   );

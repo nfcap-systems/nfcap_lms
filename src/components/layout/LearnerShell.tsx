@@ -33,7 +33,7 @@ export function LearnerShell({
         onToggleMobile={() => setMobileOpen((open) => !open)}
       />
       <main className="lshell-main">
-        <div className="lshell-card">{children}</div>
+        {children}
         <LearnerFooter nested />
       </main>
     </div>
