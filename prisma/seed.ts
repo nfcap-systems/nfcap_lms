@@ -505,6 +505,10 @@ async function main() {
     await prisma.section.deleteMany({ where: { courseId: course.id } });
     await prisma.assessment.deleteMany({ where: { courseId: course.id } });
     await prisma.assessmentCriterion.deleteMany({ where: { courseId: course.id } });
+    // Deleting the Assessment cascades its AssessmentQuestion join rows, but the shared
+    // QuizQuestion bank rows themselves survive as orphans (zero attachments) unless cleaned up —
+    // seed questions are never shared across courses, so any now-orphaned row is safe to delete.
+    await prisma.quizQuestion.deleteMany({ where: { assessments: { none: {} } } });
 
     for (const [sectionIndex, section] of c.sections.entries()) {
       await prisma.section.create({
@@ -538,10 +542,14 @@ async function main() {
         passThreshold: c.passThreshold,
         questions: {
           create: c.questions.map((q, questionIndex) => ({
-            prompt: q.prompt,
-            options: q.options,
-            correctIndex: q.correctIndex,
             order: questionIndex,
+            question: {
+              create: {
+                prompt: q.prompt,
+                options: q.options,
+                correctIndex: q.correctIndex,
+              },
+            },
           })),
         },
       },

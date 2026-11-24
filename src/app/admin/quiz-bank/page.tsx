@@ -1,17 +1,20 @@
 import { requireAdmin } from '@/lib/actions/guard';
-import { getCoursesWithAssessment, getQuizBankForCourse } from '@/lib/data/quiz-bank';
+import {
+  getAllBankQuestions,
+  getAssessmentSettingsByCourse,
+  getCoursesWithAssessment,
+} from '@/lib/data/quiz-bank';
 import { QuizBankView } from './QuizBankView';
 
-export default async function AdminQuizBankPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ course?: string }>;
-}) {
+export default async function AdminQuizBankPage() {
   await requireAdmin();
-  const { course: courseParam } = await searchParams;
-  const courses = await getCoursesWithAssessment();
-  const selectedSlug = courseParam ?? courses[0]?.slug ?? null;
-  const bank = selectedSlug ? await getQuizBankForCourse(selectedSlug) : null;
+  const [courses, questions, settingsByCourse] = await Promise.all([
+    getCoursesWithAssessment(),
+    getAllBankQuestions(),
+    getAssessmentSettingsByCourse(),
+  ]);
 
-  return <QuizBankView courses={courses} selectedSlug={selectedSlug} bank={bank} />;
+  return (
+    <QuizBankView courses={courses} questions={questions} settingsByCourse={settingsByCourse} />
+  );
 }

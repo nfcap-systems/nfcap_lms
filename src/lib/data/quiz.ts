@@ -49,7 +49,7 @@ export async function getQuizForAttempt(courseSlug: string): Promise<QuizForAtte
           questionsPerAttempt: true,
           randomizeOrder: true,
           maxAttempts: true,
-          questions: { orderBy: { order: 'asc' } },
+          questions: { orderBy: { order: 'asc' }, include: { question: true } },
         },
       },
     },
@@ -57,7 +57,7 @@ export async function getQuizForAttempt(courseSlug: string): Promise<QuizForAtte
   if (!course?.assessment) return null;
 
   const { assessment } = course;
-  let pool = assessment.questions;
+  let pool = assessment.questions.map((link) => link.question);
   if (assessment.questionsPerAttempt !== null && assessment.questionsPerAttempt < pool.length) {
     pool = shuffle(pool).slice(0, assessment.questionsPerAttempt);
   }

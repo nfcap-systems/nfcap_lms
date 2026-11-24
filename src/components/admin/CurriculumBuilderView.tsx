@@ -273,7 +273,7 @@ export function CurriculumBuilderView({
           onSubmit={(q) =>
             runAndRefresh(
               questionEditor.mode === 'edit'
-                ? updateQuestion(course.id, questionEditor.question.id, q)
+                ? updateQuestion(questionEditor.question.id, q)
                 : addQuestion(course.id, q),
             )
           }
@@ -668,9 +668,7 @@ function CriteriaPanel({
                     <div className="flex shrink-0 items-center gap-1">
                       <button
                         type="button"
-                        onClick={() =>
-                          runAndRefresh(moveCriterion(courseSlug, criterion.id, 'up'))
-                        }
+                        onClick={() => runAndRefresh(moveCriterion(courseSlug, criterion.id, 'up'))}
                         disabled={i === 0}
                         className="rounded p-1 text-muted-foreground hover:bg-muted disabled:opacity-30"
                         aria-label="Move criterion up"

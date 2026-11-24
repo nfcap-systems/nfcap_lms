@@ -2,59 +2,64 @@ import { prisma } from '@/lib/prisma';
 
 export type QuizBankCourse = { slug: string; title: string; category: string };
 
-/** ADM09-QuizAuthoring's course selector — narrow select, not courses.ts's courseInclude
- * (CLAUDE.md performance conventions: "do not add new call sites to courseInclude"). Only
- * courses with an assessment can have questions. */
+/** ADM09-QuizAuthoring's course filter and attach-target list — narrow select, not courses.ts's
+ * courseInclude (CLAUDE.md performance conventions: "do not add new call sites to courseInclude").
+ * Only courses with an assessment can have questions attached. */
 export async function getCoursesWithAssessment(): Promise<QuizBankCourse[]> {
-  const courses = await prisma.course.findMany({
+  return prisma.course.findMany({
     where: { assessment: { isNot: null } },
     orderBy: { pathwayOrder: 'asc' },
     select: { slug: true, title: true, category: true },
   });
-  return courses;
 }
 
-export type QuizBankQuestion = {
+export type BankQuestion = {
   id: string;
   prompt: string;
   options: string[];
   correctIndex: number;
+  /** Every course this question is currently attached to — empty means it's a draft, sitting in
+   * the bank unused. The whole screen is one list filtered by this, not a separate "course view"
+   * vs. "drafts view" vs. "add from bank" modal. */
+  attachedCourses: { slug: string; title: string }[];
 };
 
-export type QuizBankDetail = {
-  courseTitle: string;
-  passThreshold: number;
-  maxAttempts: number | null;
-  questions: QuizBankQuestion[];
-};
-
-/** Same narrow-select rationale as getCoursesWithAssessment — the question-authoring view only
- * needs one course's own assessment, not the full Course payload CurriculumBuilderView's page
- * already fetches via courseInclude. Reuses that file's addQuestion/updateQuestion/deleteQuestion
- * actions rather than duplicating the write side. */
-export async function getQuizBankForCourse(courseSlug: string): Promise<QuizBankDetail | null> {
-  const course = await prisma.course.findUnique({
-    where: { slug: courseSlug },
+/** The entire shared question bank, one fetch — filtering (all / unattached / one course) happens
+ * client-side in QuizBankView since every question already carries its full attachment list. */
+export async function getAllBankQuestions(): Promise<BankQuestion[]> {
+  const questions = await prisma.quizQuestion.findMany({
+    orderBy: { createdAt: 'desc' },
     select: {
-      title: true,
-      assessment: {
-        select: {
-          passThreshold: true,
-          maxAttempts: true,
-          questions: {
-            orderBy: { order: 'asc' },
-            select: { id: true, prompt: true, options: true, correctIndex: true },
-          },
-        },
+      id: true,
+      prompt: true,
+      options: true,
+      correctIndex: true,
+      assessments: {
+        select: { assessment: { select: { course: { select: { slug: true, title: true } } } } },
       },
     },
   });
-  if (!course?.assessment) return null;
 
-  return {
-    courseTitle: course.title,
-    passThreshold: course.assessment.passThreshold,
-    maxAttempts: course.assessment.maxAttempts,
-    questions: course.assessment.questions,
-  };
+  return questions.map((q) => ({
+    id: q.id,
+    prompt: q.prompt,
+    options: q.options,
+    correctIndex: q.correctIndex,
+    attachedCourses: q.assessments.map((a) => a.assessment.course),
+  }));
+}
+
+export type AssessmentSettings = { passThreshold: number; maxAttempts: number | null };
+
+/** Pass threshold/attempts are per-course Assessment settings, not bank-wide — shown when the
+ * list is filtered to one course, not for "All questions"/"Unattached". One query for every
+ * course's settings, not one per course selection. */
+export async function getAssessmentSettingsByCourse(): Promise<Record<string, AssessmentSettings>> {
+  const courses = await prisma.course.findMany({
+    where: { assessment: { isNot: null } },
+    select: { slug: true, assessment: { select: { passThreshold: true, maxAttempts: true } } },
+  });
+  return Object.fromEntries(
+    courses.filter((c) => c.assessment).map((c) => [c.slug, c.assessment as AssessmentSettings]),
+  );
 }

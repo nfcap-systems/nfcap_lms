@@ -177,20 +177,37 @@ model Assessment {
   /// Null means unlimited attempts (today's behavior, unchanged).
   maxAttempts         Int?
 
-  questions QuizQuestion[]
+  questions AssessmentQuestion[]
 }
 
+/// A question is no longer owned by one Assessment — it's a shared, reusable bank item
+/// (docs/build/LAYER1_DATA_MODEL_DESIGN.md's Quiz Bank cross-course sharing decision, 2026-11-24).
+/// Zero attachments = a draft sitting in the bank, not yet live in any course's quiz.
 model QuizQuestion {
-  id           String     @id @default(cuid())
-  assessmentId String
-  assessment   Assessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  id           String   @id @default(cuid())
   prompt       String
   options      String[]
   correctIndex Int
-  /// Display order among sibling questions of the same assessment.
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  assessments AssessmentQuestion[]
+}
+
+/// Join table: which bank questions are currently attached to which course's Assessment, and in
+/// what order for that course specifically (the same question can sit at a different position in
+/// another course's quiz, so order lives here, not on QuizQuestion).
+model AssessmentQuestion {
+  id           String       @id @default(cuid())
+  assessmentId String
+  assessment   Assessment   @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  questionId   String
+  question     QuizQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
   order        Int
 
+  @@unique([assessmentId, questionId])
   @@index([assessmentId])
+  @@index([questionId])
 }
 
 /// One row per learner per course. `learnerId` is a Supabase `auth.users.id` (uuid) stored as a

@@ -21,7 +21,11 @@ const courseInclude = {
       },
     },
   },
-  assessment: { include: { questions: { orderBy: { order: 'asc' as const } } } },
+  // Questions are shared bank items now (AssessmentQuestion is the join) — see
+  // docs/build/LAYER1_DATA_MODEL_DESIGN.md's Quiz Bank cross-course sharing decision.
+  assessment: {
+    include: { questions: { orderBy: { order: 'asc' as const }, include: { question: true } } },
+  },
 };
 
 const contentBlockTypeMap: Record<string, ContentBlockType> = {
@@ -81,11 +85,11 @@ function mapCourse(db: DbCourse): AdminCourse {
       id: db.assessment?.id ?? '',
       passThreshold: db.assessment?.passThreshold ?? 0.75,
       maxAttempts: db.assessment?.maxAttempts ?? null,
-      questions: (db.assessment?.questions ?? []).map((q) => ({
-        id: q.id,
-        prompt: q.prompt,
-        options: q.options,
-        correctIndex: q.correctIndex,
+      questions: (db.assessment?.questions ?? []).map((link) => ({
+        id: link.question.id,
+        prompt: link.question.prompt,
+        options: link.question.options,
+        correctIndex: link.question.correctIndex,
       })),
     },
   };
