@@ -1042,6 +1042,20 @@
 }
 
 /* Step 1.4 follow-up — Partner Staff's dedicated views (PTN01-Roster, PTN02-LearnerDetail). */
+.rowkebab {
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: transparent;
+  border-radius: var(--nfcap-radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ink-muted);
+}
+.rowkebab:hover {
+  background: var(--surface-muted);
+}
 .rowpathway {
   font-size: 13px;
 }
@@ -2033,6 +2047,12 @@
 }
 .av-dot.active {
   background: #16a34a;
+}
+.av-dot.week {
+  background: #d97706;
+}
+.av-dot.stale {
+  background: var(--ink-faint);
 }
 
 /* Upcoming-events-style date tile (ADM02 Dashboard's "Upcoming WIOA Appointments" panel). */
