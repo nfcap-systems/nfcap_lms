@@ -3,7 +3,7 @@
 import { useMemo, useState, useTransition } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { StateCard } from '@/components/ui';
+import { Pagination, StateCard } from '@/components/ui';
 import { Icon } from '@/components/icons';
 import { bulkApproveEvidence } from '@/lib/actions/progress';
 import { timeAgo } from '@/lib/time-ago';
@@ -18,7 +18,10 @@ export type ReviewQueueRow = {
   courseTitle: string;
   submittedAt: string;
   hasFile: boolean;
+  fileCount: number;
 };
+
+const PAGE_SIZE = 10;
 
 type SortOrder = 'oldest' | 'newest';
 
@@ -36,6 +39,7 @@ export function ReviewQueueView({
   const [courseFilter, setCourseFilter] = useState<string>('all');
   const [sort, setSort] = useState<SortOrder>('oldest');
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [page, setPage] = useState(1);
   /** Outcome of the last bulk approve — feature #7's gated certification means some rows can be
    * refused, and that has to be shown here rather than thrown (feature #12). */
   const [notice, setNotice] = useState<{ tone: 'ok' | 'warn'; text: string } | null>(null);
@@ -57,6 +61,8 @@ export function ReviewQueueView({
   }, [rows, courseFilter, sort]);
 
   const oldestAge = rows.length > 0 ? timeAgo(rows[0].submittedAt) : null;
+  const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const pageRows = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   function toggleRow(evidenceId: string) {
     setSelected((prev) => {
@@ -203,7 +209,10 @@ export function ReviewQueueView({
         <button
           type="button"
           className={courseFilter === 'all' ? 'chip on' : 'chip'}
-          onClick={() => setCourseFilter('all')}
+          onClick={() => {
+            setCourseFilter('all');
+            setPage(1);
+          }}
         >
           All courses
         </button>
@@ -212,7 +221,10 @@ export function ReviewQueueView({
             key={c.courseId}
             type="button"
             className={courseFilter === c.courseId ? 'chip on' : 'chip'}
-            onClick={() => setCourseFilter(c.courseId)}
+            onClick={() => {
+              setCourseFilter(c.courseId);
+              setPage(1);
+            }}
           >
             {c.courseTitle}
           </button>
@@ -248,7 +260,7 @@ export function ReviewQueueView({
             </tr>
           </thead>
           <tbody>
-            {filtered.map((row) => (
+            {pageRows.map((row) => (
               <tr key={row.evidenceId}>
                 <td className="tcol-check">
                   <input
@@ -263,7 +275,7 @@ export function ReviewQueueView({
                 <td>{row.courseTitle}</td>
                 <td>{timeAgo(row.submittedAt)}</td>
                 <td>
-                  {row.hasFile ? (
+                  {row.fileCount > 0 ? (
                     <span
                       style={{
                         display: 'flex',
@@ -274,7 +286,8 @@ export function ReviewQueueView({
                         fontSize: 12.5,
                       }}
                     >
-                      <Icon name="image" className="h-3.5 w-3.5" />1 attachment
+                      <Icon name="image" className="h-3.5 w-3.5" />
+                      {row.fileCount} photo{row.fileCount === 1 ? '' : 's'}
                     </span>
                   ) : (
                     <span style={{ fontSize: 12.5, color: 'var(--ink-muted)' }}>No attachment</span>
@@ -294,10 +307,15 @@ export function ReviewQueueView({
         </table>
         <div className="table-footer">
           <span>
-            Showing {filtered.length} of {rows.length}
+            Showing {pageRows.length} of {filtered.length}
+          </span>
+          <span>
+            Rows per page: {PAGE_SIZE} · Page {page} of {pageCount}
           </span>
         </div>
       </div>
+
+      {pageCount > 1 && <Pagination page={page} pageCount={pageCount} onPageChange={setPage} />}
     </div>
   );
 }

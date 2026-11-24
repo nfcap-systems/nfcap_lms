@@ -34,6 +34,7 @@ export default async function AdminReviewQueuePage() {
           courseTitle: course.title,
           submittedAt: evidence.submittedAt,
           hasFile: evidence.hasFile,
+          fileCount: evidence.fileCount,
         });
       } else if (evidence.statusUpdatedAt && new Date(evidence.statusUpdatedAt) >= todayStart) {
         if (evidence.status === 'approved') approvedToday += 1;

@@ -73,6 +73,9 @@ export async function getCredentialsForLearner(
           hasFile:
             Boolean(evidence.filePath) || assessments.some((a) => Boolean(a.learnerFilePath)),
           hasSubmissionFile: Boolean(evidence.filePath),
+          fileCount:
+            (evidence.filePath ? 1 : 0) +
+            assessments.filter((a) => Boolean(a.learnerFilePath)).length,
           isPerCriterion: assessments.length > 0,
           status: evidence.status.toLowerCase() as EvidenceSubmission['status'],
           submittedAt: evidence.submittedAt.toISOString(),

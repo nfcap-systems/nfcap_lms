@@ -15,6 +15,9 @@ export type EvidenceSubmission = {
    * and are fetched with `getCriterionFileUrl` (docs/plans/phase-3-and-design-migration-kickoff.md
    * Step 2, feature #12). */
   hasSubmissionFile: boolean;
+  /** Total photo count across the legacy course-level file (0 or 1) and every per-criterion
+   * capture — the Review Queue's real "N photos" preview (ADM10), not a hardcoded "1". */
+  fileCount: number;
   /** True when this submission was made through the per-criterion guided capture flow (feature
    * #9) — i.e. it has CriterionAssessment rows of its own. False for submissions made before that
    * flow existed, even on a course that has assessment criteria now: those still carry their
@@ -79,6 +82,9 @@ function mapEnrollment(enrollment: DbEnrollment): CourseProgress {
             Boolean(evidence.filePath) ||
             evidence.criterionAssessments.some((ca) => Boolean(ca.learnerFilePath)),
           hasSubmissionFile: Boolean(evidence.filePath),
+          fileCount:
+            (evidence.filePath ? 1 : 0) +
+            evidence.criterionAssessments.filter((ca) => Boolean(ca.learnerFilePath)).length,
           isPerCriterion: evidence.criterionAssessments.length > 0,
           status: evidence.status.toLowerCase() as EvidenceStatus,
           submittedAt: evidence.submittedAt.toISOString(),
