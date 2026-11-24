@@ -152,3 +152,34 @@ was unambiguous (match reality, don't fabricate a feature).
 - `LRN11-Account`'s missing sidebar.
 - `LRN12-SignUp`'s field-gating difference (make address always-visible per the board) — flagged,
   not assumed, since it changes signup data-collection behavior.
+
+## Second pass — 2026-11-24, after Layer 1 (deliberately deferred, not fixed)
+
+A full board-by-board re-verification of everything built this session (fresh forks reading each
+board directly, not trusting any prior "matched" claim) found the structural gaps already fixed in
+commit `fc4aa88` (Portfolio evidence cards, CertificateCard, LRN10i-Appointments route, plus the
+small HomeView/Player/Overview fixes). Six further findings were deliberately **not** touched —
+user decision 2026-11-24 ("deal with this later") — logged here so they aren't lost:
+
+- **Real content/schema gaps (don't fabricate without real data):**
+  - `LRN01-Home`/catalog cards' difficulty pill (e.g. "Intermediate") — real per-course metadata,
+    no `difficulty` field on `AdminCourse`.
+  - `LRN03-CourseOverview`'s "What you'll need" tools card — the board's list
+    (notched trowel / tile spacers / spirit level / thin-set mortar) is genuinely course-specific
+    content, not generic copy. Same category as Phase 3's `[PLACEHOLDER]` criteria — needs real
+    content from NFCAP, not an invented list, before it can be built per course.
+- **Small, no-fabrication fixes, still open (tiny — one grid cell / one list row each):**
+  - `LRN01-Home`'s "Up next" row has an empty deadline cell (no deadline concept in schema) —
+    fix is to drop the column, not invent a date.
+  - `LRN05-QuizPre`'s facts card is missing a "Time limit" row — confirmed `Assessment` has no
+    time-limit field anywhere; fix is to drop the row, not invent a number.
+- **Real feature/product decisions, bigger than a UI fix:**
+  - `LRN06-EvidenceCriteria`/`LRN06b`: the board's "one photo for all criteria vs. separate
+    per-criterion" submission-choice screen was never built — every course with criteria is
+    forced into per-criterion capture today, with no alternative path. Also missing: per-criterion
+    reference photos in guided capture (likely needs a reference-image field on
+    `AssessmentCriterion`).
+  - `LRN11-Account`: board wants one combined Profile card (name+email+phone, one save); code has
+    4 separate cards. `AccountSettingsForm` is shared across all 4 roles with a deliberate
+    reauth-gated-email design from Phase 2 — restructuring for Learner's board risks changing that
+    shared behavior for Admin/Coordinator/Partner too. Needs a decision, not a blind conform.
