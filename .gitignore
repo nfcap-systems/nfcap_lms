@@ -63,3 +63,7 @@ next-env.d.ts
 # Local-only, personal agent notes — never pushed (standard Claude Code companion to CLAUDE.md)
 /CLAUDE.local.md
 
+# Local-only working reports, never pushed
+/docs/local/
+
+.gstack/

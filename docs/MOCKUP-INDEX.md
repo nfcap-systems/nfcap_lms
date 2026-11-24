@@ -49,6 +49,43 @@ future session:** call the Artifact tool's `list` action with `scope: "files"` o
   type on every publish); the board table and counts below should match it exactly. If they don't,
   this file is stale, full stop.
 
+## ⏪ Learner shell reversed to two-row top bar (variant B) — 2026-11-23
+
+**Reverses the "left sidebar wins" direction recorded earlier the same day.** `LearnerHeader.dc.html`
+and every LRN board importing it now use `temp_ss/mockups/learner-nav-comparison.html`'s variant B —
+a two-row top bar (114px total: 68px brand/search/account row + 46px underline-active nav row), not
+the sidebar. Logged here and in `docs/plans/phase-3-and-design-migration-kickoff.md`.
+
+Evidence, not re-argued here:
+- The real learner nav is 5 items today (6 with Funding) per `src/lib/nav.ts` — Messages is Phase 6
+  and isn't in that file at all. The "7 items don't fit a top bar" stress test behind the sidebar
+  recommendation was hypothetical, not the real item count.
+- Both the live code (`src/components/layout/LearnerHeader.tsx`) and the canvas
+  (`LearnerHeader.dc.html`) were already a top bar before this session — the sidebar was the proposed
+  change, not the status quo. B is the status quo refined, not a new pattern.
+- The "Ask AI (Soon)" pill and the "Avg. quiz score" stat tile drawn on variant B (and now on
+  `LRN01-Home`) are by explicit user decision 2026-11-23 and are **not** in the 65-feature scope: no
+  AI feature exists in `NFCAP_LMS_Production_Scope_Summary_Client.md`, and no quiz-average metric is
+  computed anywhere in the codebase. Flagged here so a future reader doesn't mistake either for a
+  committed feature.
+
+Mechanically: `LearnerHeader.dc.html` dropped its `fundingContext`/`messagesContext` context-swap
+props — all six nav items render always now, no `<sc-if>` hiding. All 26 importing boards had their
+`hint-size`, wrapper `min-height` and `$preview` height bumped +50px for the taller header (confirmed
+non-importers: `LRN02b-PathwayLocked`, `LRN04b-PlayerPhone`, `LRN05b-QuizQuestion`,
+`LRN06c-EvidenceCapturePhone`, `LRN09-PublicVerify`, `LRN10b-EligibilitySelfCheck`, `LRN12-SignUp`,
+`LRN15-MessagingConversation` have no header at all; `LRN10e-FundingIntakeForm` and
+`LRN10f-NoOfficeMatched` hand-copy the *old* one-row header markup inline rather than importing the
+component — **not fixed in this pass**, flagged as a known drift since the brief scoped the sweep to
+real importers only). `LRN01-Home` rebuilt to variant B's body (greeting + 3 stat tiles, announcement
+banner, Continue/Catalog/Pathway/Portfolio, right rail). `FND13-Shells` and `SITE05-NavPerRole`
+updated to match; `Main.dc.html`'s cover page carries the same note.
+
+Also fixed: `temp_ss/mockups/learner-nav-comparison.html`'s own verdict paragraph claimed "both fit
+all 7 items" — false. B fits six as text links and demotes Messages to a utility icon with
+`overflow-x: auto` masking anything that still doesn't fit; only the sidebar (A) fit all 7. Corrected
+so the comparison file doesn't carry a wrong fact now that it's the record of why B was chosen.
+
 ## ⚠️ Routing gaps — not real routes yet, flag for Plane tickets after gate NFCAP-6
 
 User decision 2026-11-19: this session stays design-canvas only (`docs/DEV-APPROACH.md`'s lead/builder

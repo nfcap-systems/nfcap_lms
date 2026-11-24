@@ -1,0 +1,222 @@
+'use client';
+
+import { useActionState, useEffect, useState, type CSSProperties } from 'react';
+import { useRouter } from 'next/navigation';
+import NextLink from 'next/link';
+import Image from 'next/image';
+import { Center } from '@astryxdesign/core/Center';
+import { VStack } from '@astryxdesign/core/Layout';
+import { Card } from '@astryxdesign/core/Card';
+import { Text } from '@astryxdesign/core/Text';
+import { TextInput } from '@astryxdesign/core/TextInput';
+import { Selector } from '@astryxdesign/core/Selector';
+import { DateInput } from '@astryxdesign/core/DateInput';
+import type { ISODateString } from '@astryxdesign/core/Calendar';
+import { Button } from '@astryxdesign/core/Button';
+import { Link } from '@astryxdesign/core/Link';
+import { signup, type AuthFormState } from '@/lib/actions/auth';
+import { SIGNUP_STEP1_KEY, type SignupStep1 } from '../signup-step1-storage';
+
+const pageStyle: CSSProperties = {
+  minHeight: '100vh',
+  backgroundImage:
+    'linear-gradient(rgba(15, 17, 21, 0.6), rgba(15, 17, 21, 0.6)), url(/images/learner/tile-installation.jpg)',
+  backgroundSize: 'cover',
+  backgroundPosition: 'center',
+};
+
+const EMPLOYMENT_OPTIONS = [
+  { value: 'Unemployed', label: 'Unemployed' },
+  { value: 'Employed part-time', label: 'Employed part-time' },
+  { value: 'Employed full-time', label: 'Employed full-time' },
+  { value: 'Not in labor force', label: 'Not in labor force' },
+];
+
+const UI_STATUS_OPTIONS = [
+  { value: 'Currently receiving', label: 'Currently receiving' },
+  { value: 'Filed, awaiting decision', label: 'Filed, awaiting decision' },
+  { value: 'Exhausted in last 6 months', label: 'Exhausted in last 6 months' },
+  { value: 'Not applicable', label: 'Not applicable' },
+];
+
+const initialState: AuthFormState = {};
+
+/** LRN-Signup Step 2 of 2 — the WIOA profile fields, reached only from Step 1
+ * (SignupAstryx.tsx) checking "pursuing WIOA." Submits the SAME `signup` server action as Step 1
+ * does, with Step 1's fields carried along as hidden inputs — one account-creation call either
+ * way, just split across two screens per docs/wioa/WIOA_INTEGRATION_PLAN.md Section 5. */
+export function SignupWioaAstryx() {
+  const router = useRouter();
+  const [state, formAction, pending] = useActionState(signup, initialState);
+
+  // Step 1 must have run first — there's no session yet to carry this any other way pre-auth.
+  // Lazy initializer (not an effect), same pattern as AppShell's sidebar-collapsed read. Left in
+  // sessionStorage rather than cleared on read: Step 1's own "Back" prefill (SignupAstryx.tsx)
+  // depends on it still being there if the learner goes back from here. It's per-tab, never
+  // reaches the server, and clears itself when the tab closes either way.
+  const [step1] = useState<SignupStep1 | null>(() => {
+    if (typeof window === 'undefined') return null;
+    try {
+      const raw = sessionStorage.getItem(SIGNUP_STEP1_KEY);
+      return raw ? (JSON.parse(raw) as SignupStep1) : null;
+    } catch {
+      return null;
+    }
+  });
+
+  // Redirecting (a navigation side effect, not React state) belongs in an effect — step1 itself
+  // is never set here, only read above.
+  useEffect(() => {
+    if (!step1) router.replace('/signup');
+  }, [step1, router]);
+
+  const [dateOfBirth, setDateOfBirth] = useState<ISODateString | undefined>(undefined);
+  const [mobilePhone, setMobilePhone] = useState('');
+  const [streetAddress, setStreetAddress] = useState('');
+  const [city, setCity] = useState('');
+  const [state2, setState2] = useState('CA');
+  const [zip, setZip] = useState('');
+  const [preferredLanguage, setPreferredLanguage] = useState('English');
+  const [employmentStatus, setEmploymentStatus] = useState('');
+  const [unemploymentInsuranceStatus, setUnemploymentInsuranceStatus] = useState('');
+  const [trainingInterest, setTrainingInterest] = useState('');
+
+  if (!step1) return null;
+
+  return (
+    <Center role="main" axis="both" padding={6} style={pageStyle}>
+      <Card padding={8} width="100%" maxWidth={440}>
+        <form action={formAction}>
+          <input type="hidden" name="name" value={step1.name} />
+          <input type="hidden" name="email" value={step1.email} />
+          <input type="hidden" name="password" value={step1.password} />
+          <input type="hidden" name="pursuingWioa" value="on" />
+          <input type="hidden" name="dateOfBirth" value={dateOfBirth ?? ''} />
+          <VStack gap={4} hAlign="stretch">
+            <VStack gap={3} hAlign="center">
+              <Image src="/nfcap-logo.png" alt="NFCAP" width={160} height={18} priority />
+              <VStack gap={1} hAlign="center">
+                <Text type="display-1" as="h1">
+                  WIOA funding details
+                </Text>
+                <Text type="body" color="secondary" size="sm">
+                  Step 2 of 2 — these details are used to match you to your local workforce board;
+                  they&apos;re not shared anywhere else in the app.
+                </Text>
+              </VStack>
+            </VStack>
+
+            <VStack gap={3}>
+              <DateInput
+                label="Date of birth"
+                isRequired
+                value={dateOfBirth}
+                onChange={setDateOfBirth}
+              />
+
+              <TextInput
+                label="Mobile phone"
+                htmlName="mobilePhone"
+                type="tel"
+                autoComplete="tel"
+                isRequired
+                value={mobilePhone}
+                onChange={setMobilePhone}
+              />
+
+              <TextInput
+                label="Street address"
+                htmlName="streetAddress"
+                autoComplete="address-line1"
+                isRequired
+                value={streetAddress}
+                onChange={setStreetAddress}
+              />
+
+              <TextInput
+                label="City"
+                htmlName="city"
+                autoComplete="address-level2"
+                isRequired
+                value={city}
+                onChange={setCity}
+              />
+              <TextInput
+                label="State"
+                htmlName="state"
+                autoComplete="address-level1"
+                isRequired
+                value={state2}
+                onChange={setState2}
+              />
+              <TextInput
+                label="ZIP code"
+                htmlName="zip"
+                inputMode="numeric"
+                autoComplete="postal-code"
+                isRequired
+                value={zip}
+                onChange={setZip}
+              />
+
+              <TextInput
+                label="Preferred language"
+                htmlName="preferredLanguage"
+                value={preferredLanguage}
+                onChange={setPreferredLanguage}
+              />
+
+              <Selector
+                label="Employment status"
+                htmlName="employmentStatus"
+                options={EMPLOYMENT_OPTIONS}
+                placeholder="Select one"
+                value={employmentStatus}
+                onChange={(v) => setEmploymentStatus(v ?? '')}
+              />
+
+              <Selector
+                label="Unemployment insurance status"
+                htmlName="unemploymentInsuranceStatus"
+                description="Have you filed for, received, or exhausted UI in the last 6 months?"
+                options={UI_STATUS_OPTIONS}
+                placeholder="Select one"
+                value={unemploymentInsuranceStatus}
+                onChange={(v) => setUnemploymentInsuranceStatus(v ?? '')}
+              />
+
+              <TextInput
+                label="Training / apprenticeship interest"
+                htmlName="trainingApprenticeshipInterest"
+                placeholder="e.g. Flooring & Tile Apprenticeship"
+                isRequired
+                value={trainingInterest}
+                onChange={setTrainingInterest}
+              />
+            </VStack>
+
+            {state.error && (
+              <Text type="supporting" color="primary">
+                {state.error}
+              </Text>
+            )}
+
+            <Button
+              label={pending ? 'Creating account…' : 'Create account'}
+              type="submit"
+              variant="primary"
+              size="lg"
+              isLoading={pending}
+            />
+
+            <VStack hAlign="center">
+              <Link href="/signup" as={NextLink} type="supporting">
+                &larr; Back
+              </Link>
+            </VStack>
+          </VStack>
+        </form>
+      </Card>
+    </Center>
+  );
+}

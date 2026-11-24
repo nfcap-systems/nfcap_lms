@@ -4,13 +4,18 @@ import { prisma } from '@/lib/prisma';
 import type { NotificationType } from '@/generated/prisma/enums';
 import type { Prisma } from '@/generated/prisma/client';
 import { requireUser } from './guard';
+import { getRole } from '@/lib/supabase/server';
 
 /** Notification Coverage Completion (docs/build/LAYER1_DATA_MODEL_DESIGN.md). `createNotification`
- * is a system/server-side call (not role-gated to a human caller) — it's meant to be invoked from
- * inside other actions (evidence reviewed, case status changed, etc.) once those are wired to emit
- * notifications, not called directly from a form. No UI wired to these yet
- * (ADM18-NotificationsPanel is not built, Layer 3B). */
-
+ * is meant to be invoked from inside other actions (evidence reviewed, case status changed, etc.)
+ * once those are wired to emit notifications, not called directly from a form. No UI wired to
+ * these yet (ADM18-NotificationsPanel is not built, Layer 3B).
+ *
+ * Still a `'use server'` export, so it's directly callable by anyone with a session regardless of
+ * what the UI currently wires up (src/lib/actions/guard.ts's requireAdmin comment: "a server
+ * action can be invoked directly"/next-action POSTs skip proxy.ts entirely) — gated to
+ * ADMIN/WIOA_COORDINATOR, its only legitimate current and planned callers, instead of being
+ * reachable by any signed-in user to write arbitrary content into anyone else's notification feed. */
 export async function createNotification(params: {
   userId: string;
   type: NotificationType;
@@ -19,6 +24,11 @@ export async function createNotification(params: {
   link?: string;
   metadata?: Record<string, unknown>;
 }): Promise<void> {
+  const caller = await requireUser();
+  const role = getRole(caller);
+  if (role !== 'ADMIN' && role !== 'WIOA_COORDINATOR') {
+    throw new Error('Not authorized to create notifications.');
+  }
   await prisma.notification.create({
     data: {
       userId: params.userId,

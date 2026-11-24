@@ -1,29 +1,16 @@
 import { Suspense } from 'react';
-import Link from 'next/link';
-import { LoginForm } from './LoginForm';
-import { AuthShell } from '@/components/auth/AuthShell';
+import '@astryxdesign/core/reset.css';
+import '@astryxdesign/core/astryx.css';
+import { Theme } from '@astryxdesign/core/theme';
+import { themes, defaultThemeSlug } from '@/astryx-themes';
+import { LoginAstryx } from './LoginAstryx';
 
 export default function LoginPage() {
   return (
-    <AuthShell
-      active="signin"
-      heading="Welcome back"
-      subheading="Sign in to your NFCAP account to access your learning dashboard, courses, and certificates."
-      footer={
-        <>
-          Don&apos;t have an account?{' '}
-          <Link
-            href="/signup"
-            className="font-semibold text-[var(--nfcap-accent)] hover:text-[var(--nfcap-accent-hover)]"
-          >
-            Create one →
-          </Link>
-        </>
-      }
-    >
+    <Theme theme={themes[defaultThemeSlug]}>
       <Suspense>
-        <LoginForm />
+        <LoginAstryx />
       </Suspense>
-    </AuthShell>
+    </Theme>
   );
 }
