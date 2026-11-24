@@ -1,9 +1,18 @@
 -- Layer 1 — board-driven data-model design pass (docs/build/LAYER1_DATA_MODEL_DESIGN.md,
 -- docs/plans/mockup-complete-build.md). Generated via `prisma migrate diff --from-schema
 -- --to-schema` against the prior committed schema.prisma, not `migrate dev` — no local/shadow
--- database is available in this environment, so this file is UNAPPLIED, same as the original WIOA
--- RLS migration was when it was written. Run `prisma migrate deploy` against the real project
--- before any Layer 3 code depends on these tables.
+-- database is available in this environment.
+--
+-- CORRECTED after a real incident: this file was committed alongside application code that
+-- queries the new tables/columns (same commit, ffd9d36) WITHOUT ever running `prisma migrate
+-- deploy` against the real project first — the original version of this comment said "UNAPPLIED,
+-- run migrate deploy before Layer 3 depends on these tables," but Layer 1's own backend actions
+-- (committed right after, same session) already depended on them immediately, not "Layer 3."
+-- That shipped a live "Something went wrong" on /learner and other pages. Confirmed applied now
+-- (`npx prisma migrate status` reports up to date; every table/column verified present by direct
+-- query) — by whom or exactly when is unknown; it was not this session's `migrate deploy`, since
+-- none was run. See CLAUDE.local.md's process-mistake log for the fix: `npm run predev` now runs
+-- `prisma migrate status` and fails loudly on drift instead of silently shipping ahead of it.
 
 -- CreateEnum
 CREATE TYPE "AnnouncementAudience" AS ENUM ('ALL', 'LEARNERS', 'ADMIN', 'COORDINATOR', 'PARTNER');

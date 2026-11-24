@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "predev": "prisma migrate status",
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
@@ -11,6 +12,8 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "prisma:generate": "prisma generate",
+    "db:status": "prisma migrate status",
+    "db:deploy": "prisma migrate deploy",
     "prisma:seed": "tsx prisma/seed.ts",
     "prisma:seed-wioa": "tsx prisma/seed-wioa.ts",
     "prisma:seed-wioa-documents": "tsx prisma/seed-wioa-documents.ts",
