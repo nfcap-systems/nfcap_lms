@@ -14,8 +14,17 @@ import {
 
 import { NavMain } from './NavMain';
 import { NavUser } from './NavUser';
+import { SidebarPromoBanner } from './SidebarPromoBanner';
 
-export function AppSidebar({ userName, userEmail }: { userName: string; userEmail: string }) {
+export function AppSidebar({
+  userName,
+  userEmail,
+  pendingReviewCount,
+}: {
+  userName: string;
+  userEmail: string;
+  pendingReviewCount: number;
+}) {
   return (
     <Sidebar variant="sidebar" collapsible="icon">
       <SidebarHeader>
@@ -35,7 +44,15 @@ export function AppSidebar({ userName, userEmail }: { userName: string; userEmai
       <SidebarContent>
         <NavMain items={adminNav} />
       </SidebarContent>
-      <SidebarFooter>
+      <SidebarFooter className="gap-3">
+        {pendingReviewCount > 0 && (
+          <SidebarPromoBanner
+            icon="check"
+            title={`${pendingReviewCount} submission${pendingReviewCount === 1 ? '' : 's'} waiting`}
+            description="Evidence is in your Review Queue, ready to go."
+            href="/admin/reviews"
+          />
+        )}
         <NavUser name={userName} email={userEmail} />
       </SidebarFooter>
       <SidebarRail />

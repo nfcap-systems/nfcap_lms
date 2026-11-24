@@ -4,9 +4,10 @@ import { AdminHeader } from '@/components/admin-shell/AdminHeader';
 import { SidebarInset, SidebarProvider } from '@/components/admin-ui/sidebar';
 import { TooltipProvider } from '@/components/admin-ui/tooltip';
 import { getAuthUser } from '@/lib/supabase/server';
+import { getPendingReviewCount } from '@/lib/data/progress';
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
-  const user = await getAuthUser();
+  const [user, pendingReviewCount] = await Promise.all([getAuthUser(), getPendingReviewCount()]);
   const userName = typeof user?.user_metadata?.name === 'string' ? user.user_metadata.name : '';
   const userEmail = user?.email ?? '';
 
@@ -20,7 +21,11 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         data-system="staff"
         style={{ '--sidebar-width': 'calc(var(--spacing) * 68)' } as CSSProperties}
       >
-        <AppSidebar userName={userName} userEmail={userEmail} />
+        <AppSidebar
+          userName={userName}
+          userEmail={userEmail}
+          pendingReviewCount={pendingReviewCount}
+        />
         <SidebarInset>
           <AdminHeader userName={userName} userEmail={userEmail} />
           <div className="flex flex-1 flex-col gap-4 p-4 md:p-6">{children}</div>

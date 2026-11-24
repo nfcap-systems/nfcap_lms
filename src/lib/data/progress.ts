@@ -140,6 +140,18 @@ export async function getProgressByLearner(
   return result;
 }
 
+/** Count of enrollments whose most recent evidence submission is still pending — Admin's sidebar
+ * promo banner. Narrow select (just the latest status per enrollment), not the full roster+
+ * progress scan /admin/reviews' page.tsx does to build the actual queue rows. */
+export async function getPendingReviewCount(): Promise<number> {
+  const enrollments = await prisma.enrollment.findMany({
+    select: {
+      evidenceSubmissions: { orderBy: { submittedAt: 'desc' }, take: 1, select: { status: true } },
+    },
+  });
+  return enrollments.filter((e) => e.evidenceSubmissions[0]?.status === 'PENDING').length;
+}
+
 export type CourseUnlockRecord = { source: 'WIOA_FUNDING' | 'ADMIN_ASSIGNMENT'; grantedAt: Date };
 
 /** A learner's RESTRICTED-course unlocks, keyed by course slug — feeds Admin's course-assignment
