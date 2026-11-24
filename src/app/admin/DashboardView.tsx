@@ -9,7 +9,7 @@ import { getCourseStatus, courseStatusLabel, courseStatusTone } from '@/lib/cour
 import type { LearnerRecord } from '@/lib/data/learners';
 import type { AdminCourse } from '@/lib/data/courses';
 import type { CourseProgress } from '@/lib/data/progress';
-import type { UpcomingAppointment } from '@/lib/data/wioa';
+import type { UpcomingAppointment, LearnerFundingStatus } from '@/lib/data/wioa';
 import { Badge } from '@/components/ui';
 import { Icon } from '@/components/icons';
 import {
@@ -24,6 +24,25 @@ type DashboardProps = {
   learners: LearnerRecord[];
   progressByLearner: Record<string, Record<string, CourseProgress>>;
   upcomingAppointments: UpcomingAppointment[];
+  fundingStatusByLearner: Record<string, LearnerFundingStatus>;
+  fundedCaseCount: number;
+  adminName: string;
+};
+
+function timeOfDayGreeting(): string {
+  const hour = new Date().getHours();
+  if (hour < 12) return 'Good morning';
+  if (hour < 17) return 'Good afternoon';
+  return 'Good evening';
+}
+
+const fundingStatusBadge: Record<
+  LearnerFundingStatus,
+  { tone: 'success' | 'pending' | 'neutral'; label: string }
+> = {
+  funded: { tone: 'success', label: '● Funded' },
+  pending: { tone: 'pending', label: '● Pending review' },
+  self_pay: { tone: 'neutral', label: 'Self-pay' },
 };
 
 const DAY_MS = 86_400_000;
@@ -103,6 +122,9 @@ export function DashboardView({
   learners,
   progressByLearner,
   upcomingAppointments,
+  fundingStatusByLearner,
+  fundedCaseCount,
+  adminName,
 }: DashboardProps) {
   const [now] = useState(() => Date.now());
   const cutoff30 = now - 30 * DAY_MS;
@@ -119,16 +141,10 @@ export function DashboardView({
         new Date(a.evidence.submittedAt).getTime() - new Date(b.evidence.submittedAt).getTime(),
     );
 
-  let activeLearners = 0;
   let enrolledNow = 0;
   let enrolledThirtyDaysAgo = 0;
   for (const learner of learners) {
     const progress = progressByLearner[learner.id] ?? {};
-    const hasStarted = courses.some((c) => {
-      const p = progress[c.id];
-      return p?.enrolled && (p.completedLessonIds.length > 0 || p.quizAttempt || p.evidence);
-    });
-    if (hasStarted) activeLearners += 1;
     for (const c of courses) {
       const p = progress[c.id];
       if (!p?.enrolled) continue;
@@ -136,8 +152,6 @@ export function DashboardView({
       if (new Date(p.enrolledAt).getTime() <= cutoff30) enrolledThirtyDaysAgo += 1;
     }
   }
-  const activeLearnerRate =
-    learners.length === 0 ? 0 : Math.round((activeLearners / learners.length) * 100);
 
   const learnersThirtyDaysAgo = learners.filter((l) => l.createdAt.getTime() <= cutoff30).length;
 
@@ -164,11 +178,11 @@ export function DashboardView({
       trend: null,
     },
     {
-      label: 'Active Learner Rate',
-      value: `${activeLearnerRate}%`,
+      label: 'Funded Cases (WIOA)',
+      value: fundedCaseCount,
       icon: 'bar-chart' as const,
-      // Same reasoning as above — "active" here is a lifetime flag (ever started), not a
-      // point-in-time state, so there's no honest 30-days-ago comparison to make.
+      // No status-history table for WioaCase either — same honest-omission reasoning as
+      // Pending Evidence Reviews above.
       trend: null,
     },
   ];
@@ -235,12 +249,20 @@ export function DashboardView({
       <div className="pagehdr">
         <div>
           <h1>Admin Dashboard</h1>
-          <p>Here&apos;s today&apos;s overview.</p>
+          <p>
+            {timeOfDayGreeting()}, {adminName}. Here&apos;s today&apos;s overview.
+          </p>
         </div>
         <div style={{ display: 'flex', gap: 8, flex: 'none' }}>
           <Link href="/admin/reviews" className="btn-primary btn-sm">
             Review Queue
           </Link>
+          {/* No admin-initiated learner-creation flow exists anywhere in the app yet (learners
+              sign up themselves) — disabled rather than fabricated, same pattern as Pathway's
+              "Preview as Learner" button. */}
+          <button type="button" className="btn-secondary btn-sm" disabled title="Not yet built">
+            Add Learner
+          </button>
         </div>
       </div>
 
@@ -271,6 +293,7 @@ export function DashboardView({
           rows={recentLearners}
           courses={courses}
           totalLearners={learners.length}
+          fundingStatusByLearner={fundingStatusByLearner}
         />
         <UpcomingAppointmentsCard appointments={upcomingAppointments} learners={learners} />
       </div>
@@ -406,28 +429,44 @@ function EvidenceByWeekChart({
         }}
       >
         <div style={{ fontWeight: 600, fontSize: 14.5 }}>Evidence submissions by week</div>
-        <div className="segrange">
-          <button
-            type="button"
-            className={range === 'today' ? 'on' : undefined}
-            onClick={() => setRange('today')}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <Link
+            href="/admin/analytics"
+            style={{
+              fontSize: 12,
+              color: 'var(--ink-muted)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 4,
+              whiteSpace: 'nowrap',
+            }}
           >
-            Today
-          </button>
-          <button
-            type="button"
-            className={range === '7d' ? 'on' : undefined}
-            onClick={() => setRange('7d')}
-          >
-            7d
-          </button>
-          <button
-            type="button"
-            className={range === '30d' ? 'on' : undefined}
-            onClick={() => setRange('30d')}
-          >
-            30d
-          </button>
+            View Report
+            <Icon name="chevron-right" className="h-3 w-3" />
+          </Link>
+          <div className="segrange">
+            <button
+              type="button"
+              className={range === 'today' ? 'on' : undefined}
+              onClick={() => setRange('today')}
+            >
+              Today
+            </button>
+            <button
+              type="button"
+              className={range === '7d' ? 'on' : undefined}
+              onClick={() => setRange('7d')}
+            >
+              7d
+            </button>
+            <button
+              type="button"
+              className={range === '30d' ? 'on' : undefined}
+              onClick={() => setRange('30d')}
+            >
+              30d
+            </button>
+          </div>
         </div>
       </div>
       <div
@@ -509,6 +548,7 @@ function RecentLearnersTable({
   rows,
   courses,
   totalLearners,
+  fundingStatusByLearner,
 }: {
   rows: {
     learner: LearnerRecord;
@@ -516,6 +556,7 @@ function RecentLearnersTable({
   }[];
   courses: AdminCourse[];
   totalLearners: number;
+  fundingStatusByLearner: Record<string, LearnerFundingStatus>;
 }) {
   return (
     <div className="panel" style={{ padding: 0, overflow: 'hidden', height: '100%' }}>
@@ -550,17 +591,26 @@ function RecentLearnersTable({
           <table className="data-table">
             <thead>
               <tr>
+                <th className="tcol-check">
+                  <span className="tcheck" aria-label="Select all" />
+                </th>
                 <th>Name</th>
-                <th>Course</th>
+                <th>Pathway</th>
                 <th>Progress</th>
                 <th>Last activity</th>
+                <th>Status</th>
               </tr>
             </thead>
             <tbody>
               {rows.map(({ learner, activity }) => {
                 const status = getCourseStatus(activity!.course, activity!.progress);
+                const funding = fundingStatusByLearner[learner.id] ?? 'self_pay';
+                const fundingBadge = fundingStatusBadge[funding];
                 return (
                   <tr key={learner.id}>
+                    <td className="tcol-check">
+                      <span className="tcheck" aria-label="Select row" />
+                    </td>
                     <td>
                       <Link href={`/admin/learners/${learner.id}`} className="rowname">
                         <div className="av-wrap">
@@ -569,11 +619,14 @@ function RecentLearnersTable({
                         <div>{learner.name}</div>
                       </Link>
                     </td>
-                    <td>{activity!.course.title}</td>
+                    <td>{activity!.course.category}</td>
                     <td>
                       <Badge tone={courseStatusTone[status]}>{courseStatusLabel[status]}</Badge>
                     </td>
                     <td style={{ color: 'var(--ink-muted)' }}>{formatRelative(activity!.at)}</td>
+                    <td>
+                      <Badge tone={fundingBadge.tone}>{fundingBadge.label}</Badge>
+                    </td>
                   </tr>
                 );
               })}
@@ -614,8 +667,30 @@ function UpcomingAppointmentsCard({
   const learnerNameById = new Map(learners.map((l) => [l.id, l.name]));
   return (
     <div className="panel" style={{ height: '100%' }}>
-      <div style={{ fontWeight: 600, fontSize: 14.5, marginBottom: 6 }}>
-        Upcoming WIOA Appointments
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'baseline',
+          justifyContent: 'space-between',
+          marginBottom: 6,
+        }}
+      >
+        <div style={{ fontWeight: 600, fontSize: 14.5 }}>Upcoming WIOA Appointments</div>
+        {/* No admin calendar view exists anywhere in the app yet — same honest-disclosure
+            pattern as the disabled "Add Learner" button above, not a fabricated destination. */}
+        <span
+          style={{
+            fontSize: 12,
+            color: 'var(--ink-faint)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 4,
+          }}
+          title="Not yet built"
+        >
+          View Calendar
+          <Icon name="chevron-right" className="h-3 w-3" />
+        </span>
       </div>
       {appointments.length === 0 ? (
         <p

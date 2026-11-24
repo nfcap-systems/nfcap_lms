@@ -283,6 +283,54 @@ export async function getUpcomingWioaAppointments(
   }));
 }
 
+export type LearnerFundingStatus = 'funded' | 'pending' | 'self_pay';
+
+const FUNDED_CASE_STATUSES: WioaCaseStatus[] = [
+  'TUITION_APPROVED',
+  'APPRENTICESHIP_ENROLLMENT_COMPLETE',
+];
+
+/** Per-learner funding status for the Admin Dashboard's and Learners roster's "Status" column
+ * (ADM02/ADM03) — batched (one query for every learnerId requested, not a per-row lookup, per
+ * CLAUDE.md's "no per-entity queries in a loop"). A learner's most recent open case decides their
+ * status; a learner with no open case is 'self_pay' (the real default — not every learner has a
+ * WIOA case at all). */
+export async function getFundingStatusForLearners(
+  viewer: SessionContext,
+  learnerIds: string[],
+): Promise<Record<string, LearnerFundingStatus>> {
+  if (learnerIds.length === 0) return {};
+  const cases = await withRlsContext(viewer, (tx) =>
+    tx.wioaCase.findMany({
+      where: { learnerId: { in: learnerIds }, closedAt: null },
+      orderBy: { createdAt: 'desc' },
+      select: { learnerId: true, status: true },
+    }),
+  );
+  const latestByLearner = new Map<string, WioaCaseStatus>();
+  for (const c of cases) {
+    if (!latestByLearner.has(c.learnerId)) latestByLearner.set(c.learnerId, c.status);
+  }
+  const result: Record<string, LearnerFundingStatus> = {};
+  for (const id of learnerIds) {
+    const status = latestByLearner.get(id);
+    result[id] = !status
+      ? 'self_pay'
+      : FUNDED_CASE_STATUSES.includes(status)
+        ? 'funded'
+        : 'pending';
+  }
+  return result;
+}
+
+/** Count of currently-open WIOA cases whose funding is actually approved — the Admin Dashboard's
+ * "Funded Cases (WIOA)" KPI (ADM02). Counts cases, matching the board's own framing, not learners. */
+export async function getFundedCaseCount(viewer: SessionContext): Promise<number> {
+  return withRlsContext(viewer, (tx) =>
+    tx.wioaCase.count({ where: { closedAt: null, status: { in: FUNDED_CASE_STATUSES } } }),
+  );
+}
+
 export type WioaFundingRecord = {
   id: string;
   trainingProgram: string | null;
@@ -670,7 +718,8 @@ export async function getWioaReportingSummary(
           ),
           fundedCases,
           fundingRequestsSubmitted,
-          approvalRate: fundingRequestsSubmitted > 0 ? fundedCases / fundingRequestsSubmitted : null,
+          approvalRate:
+            fundingRequestsSubmitted > 0 ? fundedCases / fundingRequestsSubmitted : null,
           avgDaysToApproval:
             allDaysToApproval.length > 0
               ? allDaysToApproval.reduce((a, x) => a + x, 0) / allDaysToApproval.length

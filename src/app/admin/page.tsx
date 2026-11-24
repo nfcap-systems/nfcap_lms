@@ -3,7 +3,11 @@ import { requireAdmin } from '@/lib/actions/guard';
 import { getAllCourses } from '@/lib/data/courses';
 import { getLearnerRoster } from '@/lib/data/learners';
 import { getProgressByLearner } from '@/lib/data/progress';
-import { getUpcomingWioaAppointments } from '@/lib/data/wioa';
+import {
+  getUpcomingWioaAppointments,
+  getFundingStatusForLearners,
+  getFundedCaseCount,
+} from '@/lib/data/wioa';
 import { DashboardView } from './DashboardView';
 
 export default async function AdminDashboardPage() {
@@ -15,10 +19,20 @@ export default async function AdminDashboardPage() {
   await connection();
   const admin = await requireAdmin();
   const [courses, learners] = await Promise.all([getAllCourses(), getLearnerRoster()]);
-  const [progressByLearner, upcomingAppointments] = await Promise.all([
-    getProgressByLearner(learners.map((l) => l.id)),
-    getUpcomingWioaAppointments({ userId: admin.id, role: 'ADMIN' }),
-  ]);
+  const viewer = { userId: admin.id, role: 'ADMIN' as const };
+  const [progressByLearner, upcomingAppointments, fundingStatusByLearner, fundedCaseCount] =
+    await Promise.all([
+      getProgressByLearner(learners.map((l) => l.id)),
+      getUpcomingWioaAppointments(viewer),
+      getFundingStatusForLearners(
+        viewer,
+        learners.map((l) => l.id),
+      ),
+      getFundedCaseCount(viewer),
+    ]);
+
+  const adminName =
+    typeof admin.user_metadata?.name === 'string' ? admin.user_metadata.name : 'Admin';
 
   return (
     <div className="flex flex-col gap-6">
@@ -27,6 +41,9 @@ export default async function AdminDashboardPage() {
         learners={learners}
         progressByLearner={progressByLearner}
         upcomingAppointments={upcomingAppointments}
+        fundingStatusByLearner={fundingStatusByLearner}
+        fundedCaseCount={fundedCaseCount}
+        adminName={adminName}
       />
     </div>
   );
