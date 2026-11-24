@@ -995,10 +995,12 @@ function CourseAccessCard({
   const [pending, startTransition] = useTransition();
   const [grantingId, setGrantingId] = useState<string | null>(null);
 
-  function grant(courseId: string) {
-    setGrantingId(courseId);
+  // `course.id` below IS the course's slug (AdminCourse.id — src/lib/data/courses.ts's
+  // mapCourse), so this param name matches grantCourseUnlock's, not a mismatch.
+  function grant(courseSlug: string) {
+    setGrantingId(courseSlug);
     startTransition(async () => {
-      await grantCourseUnlock(learnerId, courseId);
+      await grantCourseUnlock(learnerId, courseSlug);
       setGrantingId(null);
       router.refresh();
     });

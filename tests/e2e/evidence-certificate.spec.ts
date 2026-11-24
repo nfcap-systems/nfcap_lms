@@ -35,9 +35,9 @@ test.describe('evidence → certificate', () => {
       const adminPage = await adminContext.newPage();
       await loginAs(adminPage, admin);
       await adminPage.goto(`/admin/learners/${learner.id}`);
-      // The inline Approve/Reject controls render under the Evidence tab (LearnerProfileView.tsx),
-      // not the default Overview tab.
-      await adminPage.getByRole('tab', { name: 'Evidence' }).click();
+      // The inline Approve/Reject controls render on the default Overview tab's Practical
+      // Evidence card (OverviewTab, LearnerProfileView.tsx) for a course with zero criteria —
+      // the "Evidence" tab is for the separate per-criterion review flow.
       await adminPage.getByRole('button', { name: 'Approve' }).click();
       await expect(adminPage.getByRole('button', { name: /Change to Rejected/i })).toBeVisible();
       await adminContext.close();

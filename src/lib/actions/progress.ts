@@ -67,15 +67,14 @@ async function getOrCreateEnrollment(learnerId: string, courseSlug: string) {
 /** Admin assignment path (WIOA_INTEGRATION_PLAN.md Section 4 — "the same 'real assignment
  * mechanism' PRODUCT_CONTEXT.md §15 already defers"). Write path only, no bulk UI — a minimal way
  * to demo a self-pay learner reaching a RESTRICTED course without a WioaCase. */
-export async function grantCourseUnlock(learnerId: string, courseId: string): Promise<void> {
+export async function grantCourseUnlock(learnerId: string, courseSlug: string): Promise<void> {
   const admin = await requireAdmin();
-  // AdminCourse (the type the one caller, CourseAccessCard, has on hand) carries `id` but not
-  // `slug` — looked up by id and resolved to a slug here instead, rather than widening that
-  // type's select just for this one write path (CLAUDE.md performance conventions — narrowest
-  // shape that works).
+  // AdminCourse.id IS the DB's slug here (src/lib/data/courses.ts's mapCourse — `id: db.slug`,
+  // deliberately, so routes/lookups stay on the readable slug everywhere), so the one caller
+  // (CourseAccessCard) passing course.id as this param is correct, not a mismatch.
   const course = await prisma.course.findUniqueOrThrow({
-    where: { id: courseId },
-    select: { id: true, slug: true },
+    where: { slug: courseSlug },
+    select: { id: true },
   });
   await prisma.courseUnlock.upsert({
     where: { learnerId_courseId: { learnerId, courseId: course.id } },
@@ -87,9 +86,9 @@ export async function grantCourseUnlock(learnerId: string, courseId: string): Pr
     action: 'GRANT_COURSE_UNLOCK',
     targetType: 'CourseUnlock',
     targetId: course.id,
-    metadata: { learnerId, courseSlug: course.slug },
+    metadata: { learnerId, courseSlug },
   });
-  revalidateLearnerViews(learnerId, course.slug);
+  revalidateLearnerViews(learnerId, courseSlug);
 }
 
 export async function enroll(courseSlug: string): Promise<void> {

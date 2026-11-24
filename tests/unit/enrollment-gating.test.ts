@@ -37,7 +37,7 @@ describe('enrollment gating', () => {
   it('allows enrollment in a RESTRICTED course once an admin grants a CourseUnlock', async () => {
     const course = await createCourse({ access: 'RESTRICTED' });
     mockAuthUser('ADMIN', fakeUserId());
-    await grantCourseUnlock(learnerId, course.id);
+    await grantCourseUnlock(learnerId, course.slug);
 
     mockAuthUser('LEARNER', learnerId);
     await enroll(course.slug);
@@ -58,6 +58,6 @@ describe('enrollment gating', () => {
     const course = await createCourse({ access: 'RESTRICTED' });
     mockAuthUser('LEARNER', fakeUserId());
 
-    await expect(grantCourseUnlock(learnerId, course.id)).rejects.toThrow(/admin/i);
+    await expect(grantCourseUnlock(learnerId, course.slug)).rejects.toThrow(/admin/i);
   });
 });
