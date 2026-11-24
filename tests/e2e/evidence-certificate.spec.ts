@@ -42,8 +42,14 @@ test.describe('evidence → certificate', () => {
       // Evidence card (OverviewTab, LearnerProfileView.tsx) for a course with zero criteria —
       // the "Evidence" tab is for the separate per-criterion review flow.
       try {
-        await adminPage.getByRole('button', { name: 'Approve' }).click();
-        await expect(adminPage.getByRole('button', { name: /Change to Rejected/i })).toBeVisible();
+        // A short explicit timeout here, well under the 45s test timeout, so a failure leaves
+        // enough budget for the diagnostics below to actually run before the whole test is torn
+        // down — the previous attempt's catch never fired because the test's own timeout pre-empted
+        // it mid-click, with no trace captured (adminPage isn't the traced `page` fixture).
+        await adminPage.getByRole('button', { name: 'Approve' }).click({ timeout: 15_000 });
+        await expect(
+          adminPage.getByRole('button', { name: /Change to Rejected/i }),
+        ).toBeVisible({ timeout: 10_000 });
       } catch (err) {
         // adminPage comes from browser.newContext(), not the project's traced `page` fixture, so
         // it leaves no error-context/trace on failure by default — attach the DOM directly instead
