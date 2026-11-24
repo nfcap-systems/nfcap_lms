@@ -1032,10 +1032,10 @@ function CourseAccessCard({
                 <AdminButton
                   size="sm"
                   variant="outline"
-                  disabled={pending && grantingId === course.id}
-                  onClick={() => grant(course.id)}
+                  disabled={pending && grantingId === course.slug}
+                  onClick={() => grant(course.slug)}
                 >
-                  {pending && grantingId === course.id ? 'Granting…' : 'Grant access'}
+                  {pending && grantingId === course.slug ? 'Granting…' : 'Grant access'}
                 </AdminButton>
               )}
             </div>
