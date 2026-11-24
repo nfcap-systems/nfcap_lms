@@ -28,19 +28,9 @@ type ReviewQueueEntry = {
 
 const ENTRIES: ReviewQueueEntry[] = [
   {
-    learnerEmail: 'diego.alvarez@demo.nfcap.test',
+    learnerEmail: 'learner@nfcap.demo',
     courseSlug: 'tile-installation',
     photoFile: 'tile-installation.jpg',
-  },
-  {
-    learnerEmail: 'casey.nguyen@demo.nfcap.test',
-    courseSlug: 'safety-tools',
-    photoFile: 'safety-tools.jpg',
-  },
-  {
-    learnerEmail: 'marcus.webb@demo.nfcap.test',
-    courseSlug: 'flooring-fundamentals',
-    photoFile: 'flooring-fundamentals.jpg',
   },
 ];
 

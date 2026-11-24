@@ -12,12 +12,7 @@ import { Pool } from 'pg';
 // Usage: npm run seed-cohorts
 // Requires scripts/seed-demo-learners.ts to have been run first (looks up its accounts by email).
 
-const DEMO_LEARNER_EMAILS = [
-  'priya.shah@demo.nfcap.test',
-  'casey.nguyen@demo.nfcap.test',
-  'diego.alvarez@demo.nfcap.test',
-  'marcus.webb@demo.nfcap.test',
-];
+const DEMO_LEARNER_EMAILS = ['learner@nfcap.demo', 'learner2@nfcap.demo'];
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -59,17 +54,7 @@ async function main() {
     ],
   });
 
-  const winterCohort = await upsertCohort({
-    name: 'Winter 2027 Flooring Cohort',
-    pathwayId: pathway.id,
-    startDate: new Date('2027-01-05'),
-    endDate: null,
-    memberEmails: ['casey.nguyen@demo.nfcap.test', 'diego.alvarez@demo.nfcap.test'],
-    deadlines: [{ label: 'Orientation complete', dueDate: new Date('2027-01-19') }],
-  });
-
   console.log(`Seeded cohort: ${fallCohort.name} (${fallCohort.id})`);
-  console.log(`Seeded cohort: ${winterCohort.name} (${winterCohort.id})`);
 
   async function upsertCohort(params: {
     name: string;

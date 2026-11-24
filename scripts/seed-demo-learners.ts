@@ -4,14 +4,18 @@ import { PrismaClient } from '../src/generated/prisma/client';
 import { EvidenceStatus as PrismaEvidenceStatus } from '../src/generated/prisma/enums';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { Pool } from 'pg';
+import { WIOA_STATUS_ORDER } from '../src/lib/wioa/status';
+import type { WioaCaseStatus } from '../src/generated/prisma/enums';
 
-// Reproduces the five learner journey stages the old mock progress-store.tsx SEED_STATE used to
-// demo (fully certified, pending review, needs resubmission, barely started) as real Supabase
-// accounts + database rows, so Admin's dashboard/roster have realistic content to show instead
-// of just whoever has actually signed up. Safe to re-run — every step upserts.
+// Two realistic demo learners for presentations — a WIOA-funded one and a self-pay one, each
+// with enough real course/evidence/funding data to look like an actual trainee rather than a
+// bare login. Replaces the old 4-learner + 1-wioa-learner set (priya.shah, casey.nguyen,
+// diego.alvarez, marcus.webb, wioa.learner@demo.nfcap.test), which had accumulated alongside 40+
+// leftover E2E test accounts as exactly the kind of "idle, not in use" clutter this session was
+// asked to clean up.
 //
 // Usage: npm run seed-demo-learners
-// Demo login: any email below, password "Demo1234!" (documented in README.md).
+// Login: learner@nfcap.demo (WIOA-funded) / learner2@nfcap.demo (self-pay), password Demo1234!
 
 const DEMO_PASSWORD = 'Demo1234!';
 
@@ -25,14 +29,18 @@ type DemoCourseProgress = {
     fileName?: string;
     status: 'pending' | 'approved' | 'rejected';
   };
+  /** How a RESTRICTED course became accessible — omitted for OPEN courses. */
+  unlockSource?: 'WIOA_FUNDING' | 'ADMIN_ASSIGNMENT';
 };
 
 type DemoLearner = { email: string; name: string; courses: DemoCourseProgress[] };
 
 const demoLearners: DemoLearner[] = [
   {
-    email: 'priya.shah@demo.nfcap.test',
-    name: 'Priya Shah',
+    // WIOA-funded — safety-tools/flooring-fundamentals done with certificates, and
+    // tile-installation (RESTRICTED) in progress, unlocked by the funded WioaCase seeded below.
+    email: 'learner@nfcap.demo',
+    name: 'Jordan Lee',
     courses: [
       {
         slug: 'safety-tools',
@@ -58,30 +66,16 @@ const demoLearners: DemoLearner[] = [
       },
       {
         slug: 'tile-installation',
-        completedLessons: 'all',
-        quiz: { scorePercent: 75, passed: true },
-        evidence: {
-          description:
-            'Tile layout and setting on a 120 sq ft bathroom floor, 12x24 porcelain in a running-bond pattern, 1/4" square-notch trowel.',
-          fileName: 'bathroom-tile-install.jpg',
-          status: 'approved',
-        },
-      },
-      {
-        slug: 'professionalism',
-        completedLessons: 'all',
-        quiz: { scorePercent: 100, passed: true },
-        evidence: {
-          description:
-            'Proactively flagged a two-day material delay to the client and proposed a revised schedule before they had to ask.',
-          status: 'approved',
-        },
+        completedLessons: 2,
+        unlockSource: 'WIOA_FUNDING',
       },
     ],
   },
   {
-    email: 'casey.nguyen@demo.nfcap.test',
-    name: 'Casey Nguyen',
+    // Self-pay — same two OPEN courses completed, tile-installation unlocked by an admin
+    // assignment instead of a funding case, with a pending evidence submission in progress.
+    email: 'learner2@nfcap.demo',
+    name: 'Morgan Diaz',
     courses: [
       {
         slug: 'safety-tools',
@@ -91,33 +85,32 @@ const demoLearners: DemoLearner[] = [
           description:
             'Photo of full PPE (hard hat, safety glasses, gloves) and a clear, taped-off work area on the Miller Ave job site.',
           fileName: 'miller-ave-ppe.jpg',
+          status: 'approved',
+        },
+      },
+      {
+        slug: 'flooring-fundamentals',
+        completedLessons: 'all',
+        quiz: { scorePercent: 90, passed: true },
+        evidence: {
+          description:
+            'Subfloor prep and flatness check on a 200 sq ft living room before plank installation.',
+          fileName: 'living-room-subfloor.jpg',
+          status: 'approved',
+        },
+      },
+      {
+        slug: 'tile-installation',
+        completedLessons: 'all',
+        quiz: { scorePercent: 80, passed: true },
+        evidence: {
+          description: 'Tile layout photo from the Harrison St bathroom remodel.',
+          fileName: 'harrison-st-tile.jpg',
           status: 'pending',
         },
+        unlockSource: 'ADMIN_ASSIGNMENT',
       },
-      { slug: 'flooring-fundamentals', completedLessons: 1 },
     ],
-  },
-  {
-    email: 'diego.alvarez@demo.nfcap.test',
-    name: 'Diego Alvarez',
-    courses: [
-      {
-        slug: 'safety-tools',
-        completedLessons: 'all',
-        quiz: { scorePercent: 75, passed: true },
-        evidence: {
-          description: 'Job site photo from the Elm Street project.',
-          fileName: 'elm-street.jpg',
-          status: 'rejected',
-        },
-      },
-      { slug: 'flooring-fundamentals', completedLessons: 2 },
-    ],
-  },
-  {
-    email: 'marcus.webb@demo.nfcap.test',
-    name: 'Marcus Webb',
-    courses: [{ slug: 'safety-tools', completedLessons: 1 }],
   },
 ];
 
@@ -131,8 +124,11 @@ const supabaseAdmin = createClient(
 const pool = new Pool({ connectionString: process.env.DIRECT_URL! });
 const prisma = new PrismaClient({ adapter: new PrismaPg(pool) });
 
-function buildCertificateCode(courseSlug: string): string {
-  return `NFCAP-${courseSlug.toUpperCase().replace(/[^A-Z0-9]/g, '-')}`;
+// certificateCode has its own unique constraint (Certificate_certificateCode_key) — must be
+// unique per learner, not just per course, or a second learner completing the same course
+// collides on create (Prisma's upsert below only keys on enrollmentId, which differs).
+function buildCertificateCode(learnerId: string, courseSlug: string): string {
+  return `NFCAP-${courseSlug.toUpperCase().replace(/[^A-Z0-9]/g, '-')}-${learnerId.slice(0, 8).toUpperCase()}`;
 }
 
 async function upsertAuthUser(email: string, name: string): Promise<string> {
@@ -187,7 +183,7 @@ async function seedLearnerCourse(learnerId: string, entry: DemoCourseProgress): 
       create: {
         learnerId,
         courseId: course.id,
-        source: 'ADMIN_ASSIGNMENT',
+        source: entry.unlockSource ?? 'ADMIN_ASSIGNMENT',
         grantedBy: 'seed-demo-learners-script',
       },
     });
@@ -241,10 +237,167 @@ async function seedLearnerCourse(learnerId: string, entry: DemoCourseProgress): 
         create: {
           enrollmentId: enrollment.id,
           evidenceSubmissionId: evidence.id,
-          certificateCode: buildCertificateCode(entry.slug),
+          certificateCode: buildCertificateCode(learnerId, entry.slug),
         },
       });
     }
+  }
+}
+
+/** Gives the WIOA-funded demo learner a real, fully-funded case for `tile-installation` —
+ * matched board/AJCC/contact, a document checklist marked ACCEPTED, status history walked all
+ * the way to TUITION_APPROVED (the funded threshold — src/lib/data/wioa.ts's
+ * FUNDED_CASE_STATUSES), an EtplFundingRequest + FundingAuthorization with a real approved
+ * amount, an upcoming appointment, and an outreach-log entry. Mirrors the shape
+ * sendWioaOutreach/advanceWioaCaseStatus build at runtime (src/lib/actions/wioa.ts), written
+ * directly via Prisma since those are Server Actions tied to a live request/session. */
+async function seedFundedWioaCase(learnerId: string): Promise<void> {
+  const course = await prisma.course.findUniqueOrThrow({ where: { slug: 'tile-installation' } });
+
+  const jurisdiction = await prisma.workforceJurisdiction.findFirst({
+    where: { zip: '94544', active: true },
+    include: { workforceBoard: true, ajccCenter: true },
+  });
+  if (!jurisdiction) {
+    console.warn('WARNING: ZIP 94544 has no seeded jurisdiction — run npm run prisma:seed-wioa');
+  }
+  const contact = jurisdiction
+    ? await prisma.workforceContact.findFirst({
+        where: { workforceBoardId: jurisdiction.workforceBoardId, contactType: 'PRIMARY' },
+      })
+    : null;
+
+  await prisma.learnerProfile.upsert({
+    where: { learnerId },
+    create: {
+      learnerId,
+      streetAddress: '456 Demo Ave',
+      city: jurisdiction?.city ?? 'Hayward',
+      state: 'CA',
+      zip: '94544',
+      preferredLanguage: 'English',
+      employmentStatus: 'Unemployed',
+      unemploymentInsuranceStatus: 'Not applicable',
+      trainingApprenticeshipInterest: 'Flooring apprenticeship',
+      fundingSource: 'WIOA_PENDING',
+      dateOfBirth: new Date('1997-03-10'),
+      mobilePhone: '(510) 555-0142',
+    },
+    update: { fundingSource: 'WIOA_PENDING' },
+  });
+
+  let wioaCase = await prisma.wioaCase.findFirst({
+    where: { learnerId, courseId: course.id, closedAt: null },
+  });
+  if (!wioaCase) {
+    wioaCase = await prisma.wioaCase.create({
+      data: {
+        learnerId,
+        courseId: course.id,
+        workforceBoardId: jurisdiction?.workforceBoardId,
+        ajccCenterId: jurisdiction?.ajccCenterId ?? undefined,
+        contactId: contact?.id,
+        status: 'REGISTERED',
+      },
+    });
+    await prisma.wioaStatusHistory.create({
+      data: { wioaCaseId: wioaCase.id, status: 'REGISTERED', changedBy: 'seed-demo-learners-script' },
+    });
+  }
+
+  // Walk the case forward to the funded threshold, logging one history row per step — same
+  // pattern as scripts/wioa-fast-forward-case.ts, just driven to a fixed target here.
+  const target: WioaCaseStatus = 'TUITION_APPROVED';
+  const fromIdx = WIOA_STATUS_ORDER.indexOf(wioaCase.status);
+  const toIdx = WIOA_STATUS_ORDER.indexOf(target);
+  if (toIdx > fromIdx) {
+    const steps = WIOA_STATUS_ORDER.slice(fromIdx + 1, toIdx + 1).filter(
+      (s) => s !== 'CLOSED_INELIGIBLE',
+    );
+    for (const status of steps) {
+      await prisma.wioaCase.update({ where: { id: wioaCase.id }, data: { status } });
+      await prisma.wioaStatusHistory.create({
+        data: { wioaCaseId: wioaCase.id, status, changedBy: 'seed-demo-learners-script' },
+      });
+    }
+  }
+
+  if (jurisdiction) {
+    const requirements = await prisma.wioaDocumentRequirement.findMany({
+      where: { workforceBoardId: jurisdiction.workforceBoardId, conditional: false },
+    });
+    for (const req of requirements) {
+      await prisma.wioaDocument.upsert({
+        where: { wioaCaseId_requirementId: { wioaCaseId: wioaCase.id, requirementId: req.id } },
+        update: {},
+        create: {
+          wioaCaseId: wioaCase.id,
+          requirementId: req.id,
+          fileName: `${req.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}.pdf`,
+          status: 'ACCEPTED',
+          uploadedAt: new Date(),
+          reviewedBy: 'seed-demo-learners-script',
+          reviewedAt: new Date(),
+        },
+      });
+    }
+  }
+
+  const fundingRequest = await prisma.etplFundingRequest.upsert({
+    where: { wioaCaseId: wioaCase.id },
+    update: {},
+    create: {
+      wioaCaseId: wioaCase.id,
+      trainingProgram: 'Tile Installation — NFCAP Flooring Apprenticeship',
+      etplProviderConfirmed: true,
+      submittedAt: new Date(Date.now() - 21 * 24 * 60 * 60 * 1000),
+      caseManagerNotifiedAt: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000),
+      fundingReviewStatus: 'Approved',
+      status: 'Approved',
+    },
+  });
+  await prisma.fundingAuthorization.upsert({
+    where: { fundingRequestId: fundingRequest.id },
+    update: {},
+    create: {
+      fundingRequestId: fundingRequest.id,
+      itaIssuedAt: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000),
+      approvedAmount: 4200,
+      approvalDate: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000),
+      trainingStartDate: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
+      status: 'Approved',
+    },
+  });
+
+  const hasAppointment = await prisma.appointment.findFirst({ where: { wioaCaseId: wioaCase.id } });
+  if (!hasAppointment) {
+    await prisma.appointment.create({
+      data: {
+        wioaCaseId: wioaCase.id,
+        type: 'FOLLOWUP',
+        scheduledAt: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000),
+        notes: 'Check in on training progress and tuition disbursement.',
+      },
+    });
+  }
+
+  const hasCommunication = await prisma.wioaCommunication.findFirst({
+    where: { learnerId, wioaCaseId: wioaCase.id },
+  });
+  if (!hasCommunication) {
+    await prisma.wioaCommunication.create({
+      data: {
+        learnerId,
+        courseId: course.id,
+        wioaCaseId: wioaCase.id,
+        contactId: contact?.id,
+        channel: 'EMAIL',
+        recipient: 'learner@nfcap.demo',
+        subject: 'Your WIOA funding has been approved',
+        body: 'Good news — your tuition for Tile Installation has been approved and training has started. Reach out with any questions.',
+        sentAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
+      },
+    });
   }
 }
 
@@ -253,6 +406,20 @@ async function main() {
     const learnerId = await upsertAuthUser(learner.email, learner.name);
     for (const courseEntry of learner.courses) {
       await seedLearnerCourse(learnerId, courseEntry);
+    }
+    if (learner.email === 'learner@nfcap.demo') {
+      await seedFundedWioaCase(learnerId);
+    } else {
+      await prisma.learnerProfile.upsert({
+        where: { learnerId },
+        create: {
+          learnerId,
+          city: 'Oakland',
+          state: 'CA',
+          fundingSource: 'SELF_PAY',
+        },
+        update: { fundingSource: 'SELF_PAY' },
+      });
     }
     console.log(`Seeded demo learner: ${learner.name} (${learner.email})`);
   }
