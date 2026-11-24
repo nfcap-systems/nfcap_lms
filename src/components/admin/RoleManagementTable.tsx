@@ -1,37 +1,16 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { updateUserRole } from '@/lib/actions/roles';
 import { setUserActive } from '@/lib/actions/users';
 import { ALL_ROLES, ROLE_DISPLAY_LABEL, type Role } from '@/lib/roles';
 import type { UserRecord } from '@/lib/data/users';
-import { Badge } from '@/components/admin-ui/badge';
-import { Button } from '@/components/admin-ui/button';
-import { Card } from '@/components/admin-ui/card';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/admin-ui/select';
+import { Icon } from '@/components/icons';
+import { Pagination } from '@/components/ui';
 
 type ActionMessage = { type: 'error' | 'success'; text: string } | null;
 
-function InlineMessage({ message }: { message: ActionMessage }) {
-  if (!message) return null;
-  return (
-    <p
-      className={
-        message.type === 'error'
-          ? 'text-xs text-destructive sm:basis-full'
-          : 'text-xs text-green-600 sm:basis-full'
-      }
-    >
-      {message.text}
-    </p>
-  );
-}
+const PAGE_SIZE = 20;
 
 function RoleRow({ user, isSelf }: { user: UserRecord; isSelf: boolean }) {
   const [role, setRole] = useState<Role | ''>(user.role ?? '');
@@ -43,6 +22,14 @@ function RoleRow({ user, isSelf }: { user: UserRecord; isSelf: boolean }) {
   const [activeMessage, setActiveMessage] = useState<ActionMessage>(null);
 
   const roleDirty = role !== (user.role ?? '');
+
+  async function handleRoleChange(nextRole: Role) {
+    setRole(nextRole);
+    setRoleMessage(null);
+    // The board implies an auto-saving role select with no separate confirmation step — a role
+    // change grants real permissions, so an explicit Save (below) stays as a deliberate safety
+    // choice, not a blind conform to the board's own simplified mockup.
+  }
 
   async function handleSaveRole() {
     if (!role) return;
@@ -75,56 +62,107 @@ function RoleRow({ user, isSelf }: { user: UserRecord; isSelf: boolean }) {
   }
 
   return (
-    <div className="flex flex-col gap-3 border-b p-4 last:border-b-0">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
-        <div className="min-w-0 flex-1">
-          <p className="flex items-center gap-2 truncate text-sm font-medium text-foreground">
-            {user.name}
-            {isSelf && <span className="text-xs font-normal text-muted-foreground">(you)</span>}
-            <Badge variant={active ? 'success' : 'outline'}>
-              {active ? 'Active' : 'Deactivated'}
-            </Badge>
-          </p>
-          <p className="truncate text-xs text-muted-foreground">{user.email}</p>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-2 sm:shrink-0">
-          <Select
+    <>
+      <tr style={!active ? { opacity: 0.55 } : undefined}>
+        <td className="tcol-check">
+          <span className="tcheck" aria-label="Select row" />
+        </td>
+        <td>
+          {user.name}
+          {isSelf && (
+            <span style={{ fontSize: 11.5, color: 'var(--ink-muted)', marginLeft: 6 }}>(you)</span>
+          )}
+        </td>
+        <td style={{ color: 'var(--ink-muted)' }}>{user.email}</td>
+        <td>
+          <select
+            className="field-select"
+            style={{ height: 34, width: 150 }}
             value={role || '__unassigned__'}
-            onValueChange={(v) => {
-              setRole(v === '__unassigned__' ? '' : (v as Role));
-              setRoleMessage(null);
+            onChange={(e) => {
+              const v = e.target.value;
+              handleRoleChange(v === '__unassigned__' ? ('' as Role) : (v as Role));
             }}
+            aria-label={`Role for ${user.name}`}
           >
-            <SelectTrigger className="h-9 w-44" aria-label={`Role for ${user.name}`}>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {!user.role && <SelectItem value="__unassigned__">Unassigned</SelectItem>}
-              {ALL_ROLES.map((r) => (
-                <SelectItem key={r} value={r}>
-                  {ROLE_DISPLAY_LABEL[r]}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Button size="sm" onClick={handleSaveRole} disabled={!roleDirty || rolePending || !role}>
-            {rolePending ? 'Saving…' : 'Save'}
-          </Button>
-          <Button
-            size="sm"
-            variant={active ? 'destructive' : 'outline'}
+            {!user.role && <option value="__unassigned__">Unassigned</option>}
+            {ALL_ROLES.map((r) => (
+              <option key={r} value={r}>
+                {ROLE_DISPLAY_LABEL[r]}
+              </option>
+            ))}
+          </select>
+          {roleDirty && (
+            <button
+              type="button"
+              className="btn-primary btn-sm"
+              style={{ marginLeft: 8 }}
+              onClick={handleSaveRole}
+              disabled={rolePending || !role}
+            >
+              {rolePending ? 'Saving…' : 'Save'}
+            </button>
+          )}
+        </td>
+        <td>
+          <span className={active ? 'badge-complete' : 'badge-neutral'}>
+            {active ? 'Active' : 'Deactivated'}
+          </span>
+        </td>
+        <td style={{ textAlign: 'right' }}>
+          <button
+            type="button"
             onClick={handleToggleActive}
             disabled={activePending}
+            style={{
+              fontSize: 12.5,
+              fontWeight: 600,
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              color: active ? 'var(--status-problem)' : 'var(--nfcap-accent)',
+            }}
           >
             {activePending ? 'Saving…' : active ? 'Deactivate' : 'Reactivate'}
-          </Button>
-        </div>
-      </div>
-
-      <InlineMessage message={roleMessage} />
-      <InlineMessage message={activeMessage} />
-    </div>
+          </button>
+        </td>
+      </tr>
+      {(roleMessage || activeMessage) && (
+        <tr>
+          <td />
+          <td colSpan={5} style={{ paddingTop: 0, paddingBottom: 10 }}>
+            {roleMessage && (
+              <p
+                style={{
+                  fontSize: 12,
+                  margin: 0,
+                  color:
+                    roleMessage.type === 'error'
+                      ? 'var(--status-problem)'
+                      : 'var(--status-complete)',
+                }}
+              >
+                {roleMessage.text}
+              </p>
+            )}
+            {activeMessage && (
+              <p
+                style={{
+                  fontSize: 12,
+                  margin: 0,
+                  color:
+                    activeMessage.type === 'error'
+                      ? 'var(--status-problem)'
+                      : 'var(--status-complete)',
+                }}
+              >
+                {activeMessage.text}
+              </p>
+            )}
+          </td>
+        </tr>
+      )}
+    </>
   );
 }
 
@@ -135,11 +173,79 @@ export function RoleManagementTable({
   users: UserRecord[];
   currentUserId: string;
 }) {
+  const [search, setSearch] = useState('');
+  const [page, setPage] = useState(1);
+
+  const filtered = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    if (!query) return users;
+    return users.filter(
+      (u) => u.name.toLowerCase().includes(query) || u.email.toLowerCase().includes(query),
+    );
+  }, [users, search]);
+
+  const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const pageRows = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
   return (
-    <Card className="py-0">
-      {users.map((user) => (
-        <RoleRow key={user.id} user={user} isSelf={user.id === currentUserId} />
-      ))}
-    </Card>
+    <div className="flex flex-col gap-4">
+      <div className="toolbar">
+        <div className="dtsearch" style={{ maxWidth: 320 }}>
+          <Icon name="search" className="h-3.5 w-3.5" />
+          <input
+            value={search}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(1);
+            }}
+            placeholder="Search name or email..."
+            aria-label="Search users"
+          />
+        </div>
+      </div>
+
+      <div className="panel" style={{ padding: 0, overflow: 'hidden' }}>
+        <table className="data-table">
+          <thead>
+            <tr>
+              <th className="tcol-check">
+                <span className="tcheck" aria-label="Select all" />
+              </th>
+              <th>User</th>
+              <th>Email</th>
+              <th>Role</th>
+              <th>Status</th>
+              <th />
+            </tr>
+          </thead>
+          <tbody>
+            {pageRows.length === 0 ? (
+              <tr>
+                <td
+                  colSpan={6}
+                  style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--ink-muted)' }}
+                >
+                  No users found.
+                </td>
+              </tr>
+            ) : (
+              pageRows.map((user) => (
+                <RoleRow key={user.id} user={user} isSelf={user.id === currentUserId} />
+              ))
+            )}
+          </tbody>
+        </table>
+        <div className="table-footer">
+          <span>
+            Showing {pageRows.length} of {filtered.length}
+          </span>
+          <span>
+            Rows per page: {PAGE_SIZE} · Page {page} of {pageCount}
+          </span>
+        </div>
+      </div>
+
+      {pageCount > 1 && <Pagination page={page} pageCount={pageCount} onPageChange={setPage} />}
+    </div>
   );
 }
