@@ -53,7 +53,7 @@ function StatusMessage({ children }: { children: string }) {
   return <p className="px-4 py-6 text-center text-sm text-[var(--ink-muted)]">{children}</p>;
 }
 
-export function GlobalSearch({ variant = 'icon' }: { variant?: 'icon' | 'pill' } = {}) {
+export function GlobalSearch({ variant = 'icon' }: { variant?: 'icon' | 'pill' | 'bar' } = {}) {
   const pathname = usePathname();
   const [prevPathname, setPrevPathname] = useState(pathname);
   const [query, setQuery] = useState('');
@@ -139,6 +139,21 @@ export function GlobalSearch({ variant = 'icon' }: { variant?: 'icon' | 'pill' }
         >
           <Icon name="search" className="h-4 w-4" />
           <span>Search…</span>
+        </button>
+      ) : variant === 'bar' ? (
+        <button
+          type="button"
+          onClick={() => setOpen((value) => !value)}
+          aria-haspopup="dialog"
+          aria-expanded={open}
+          aria-label="Search"
+          className="flex h-8 w-64 cursor-pointer items-center gap-2 rounded-md border border-border bg-muted/40 px-3 text-sm text-muted-foreground transition-colors hover:bg-muted/70"
+        >
+          <Icon name="search" className="h-3.5 w-3.5" />
+          <span className="flex-1 text-left">Search…</span>
+          <kbd className="rounded-sm border border-border bg-background px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">
+            ⌘K
+          </kbd>
         </button>
       ) : (
         <button

@@ -4,7 +4,9 @@ import { useEffect, useRef, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { Icon } from '@/components/icons';
 
-export function NotificationsMenu({ variant = 'icon' }: { variant?: 'icon' | 'plain' } = {}) {
+export function NotificationsMenu({
+  variant = 'icon',
+}: { variant?: 'icon' | 'plain' | 'ghost' } = {}) {
   const pathname = usePathname();
   const [prevPathname, setPrevPathname] = useState(pathname);
   const [open, setOpen] = useState(false);
@@ -42,10 +44,12 @@ export function NotificationsMenu({ variant = 'icon' }: { variant?: 'icon' | 'pl
         className={
           variant === 'plain'
             ? 'lhdr-iconbtn2'
-            : 'flex h-9 w-9 cursor-pointer items-center justify-center rounded-full bg-[var(--surface-muted)] text-[var(--ink-muted)] shadow-sm transition-colors hover:text-[var(--ink)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary'
+            : variant === 'ghost'
+              ? 'relative flex h-8 w-8 cursor-pointer items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground'
+              : 'flex h-9 w-9 cursor-pointer items-center justify-center rounded-full bg-[var(--surface-muted)] text-[var(--ink-muted)] shadow-sm transition-colors hover:text-[var(--ink)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary'
         }
       >
-        <Icon name="bell" className="h-4.5 w-4.5" />
+        <Icon name="bell" className={variant === 'ghost' ? 'h-4 w-4' : 'h-4.5 w-4.5'} />
       </button>
 
       {open && (

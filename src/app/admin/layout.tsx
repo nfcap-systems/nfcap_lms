@@ -7,14 +7,14 @@ import { getAuthUser } from '@/lib/supabase/server';
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const user = await getAuthUser();
   const userName = typeof user?.user_metadata?.name === 'string' ? user.user_metadata.name : '';
-  const firstName = userName.trim().split(' ')[0];
+  const userEmail = user?.email ?? '';
 
   return (
     <TooltipProvider>
       <SidebarProvider data-system="staff">
-        <AppSidebar userName={userName} userEmail={user?.email ?? ''} />
+        <AppSidebar userName={userName} userEmail={userEmail} />
         <SidebarInset>
-          <AdminHeader firstName={firstName} />
+          <AdminHeader userName={userName} userEmail={userEmail} />
           <div className="flex flex-1 flex-col gap-4 p-4 md:p-6">{children}</div>
         </SidebarInset>
       </SidebarProvider>
