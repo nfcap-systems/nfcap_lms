@@ -1171,10 +1171,19 @@
 .lhdr-row1 {
   height: 68px;
   border-bottom: 1px solid var(--nfcap-border);
+  box-sizing: border-box;
+}
+/* Inner content is capped at the same max-width/padding as .lshell-main (the body) so the
+   header's brand/nav/account line up with the page content's left/right edges at every viewport
+   width — the bar itself stays full-bleed, only its content is constrained. */
+.lhdr-row1-inner {
+  max-width: 1300px;
+  margin: 0 auto;
+  height: 100%;
   display: flex;
   align-items: center;
   gap: 20px;
-  padding: 0 28px;
+  padding: 0 24px;
   box-sizing: border-box;
 }
 .lhdr-logo {
@@ -1302,12 +1311,20 @@
 .lhdr-row2 {
   height: 46px;
   border-bottom: 1px solid var(--nfcap-border);
+  box-sizing: border-box;
+  overflow-x: auto;
+}
+.lhdr-row2-inner {
+  max-width: 1300px;
+  margin: 0 auto;
+  height: 100%;
   display: flex;
   align-items: center;
   gap: 26px;
-  padding: 0 28px;
+  padding: 0 24px;
   box-sizing: border-box;
-  overflow-x: auto;
+  width: fit-content;
+  min-width: 100%;
 }
 .toplink {
   font-size: 14px;
