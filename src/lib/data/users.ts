@@ -7,6 +7,7 @@ export type UserRecord = {
   email: string;
   role: Role | null;
   active: boolean;
+  emailConfirmed: boolean;
 };
 
 /** Supabase's `banned_until` is how this app represents "deactivated" (docs/client/
@@ -33,7 +34,14 @@ export async function getAllUsersWithRoles(): Promise<UserRecord[]> {
       const name =
         typeof u.user_metadata?.name === 'string' ? u.user_metadata.name : (u.email ?? 'Unnamed');
       const role = isRole(u.app_metadata?.role) ? u.app_metadata.role : null;
-      return { id: u.id, name, email: u.email ?? '', role, active: isUserActive(u) };
+      return {
+        id: u.id,
+        name,
+        email: u.email ?? '',
+        role,
+        active: isUserActive(u),
+        emailConfirmed: Boolean(u.email_confirmed_at),
+      };
     })
     .sort((a, b) => a.name.localeCompare(b.name));
 }
