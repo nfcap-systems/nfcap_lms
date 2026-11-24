@@ -175,6 +175,24 @@ async function seedLearnerCourse(learnerId: string, entry: DemoCourseProgress): 
     create: { learnerId, courseId: course.id },
   });
 
+  // A real learner only ever reaches this course's progress (lessons/quiz/evidence) through a
+  // real unlock — WIOA funding approval or an admin grant (CourseUnlock, granted alongside
+  // Enrollment in those flows). Without one here, the learner views in src/app/learner/* now
+  // correctly gate on `unlocked`, so a RESTRICTED course with seeded progress but no grant
+  // renders as Locked everywhere — including for courses already completed below.
+  if (course.access === 'RESTRICTED') {
+    await prisma.courseUnlock.upsert({
+      where: { learnerId_courseId: { learnerId, courseId: course.id } },
+      update: {},
+      create: {
+        learnerId,
+        courseId: course.id,
+        source: 'ADMIN_ASSIGNMENT',
+        grantedBy: 'seed-demo-learners-script',
+      },
+    });
+  }
+
   for (const lesson of lessonsToComplete) {
     await prisma.completedLesson.upsert({
       where: { enrollmentId_lessonId: { enrollmentId: enrollment.id, lessonId: lesson.id } },

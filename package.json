@@ -19,6 +19,8 @@
     "prisma:seed-wioa-documents": "tsx prisma/seed-wioa-documents.ts",
     "promote-role": "tsx scripts/promote-role.ts",
     "seed-admin": "tsx scripts/seed-admin.ts",
+    "seed-cohorts": "tsx scripts/seed-cohorts.ts",
+    "seed-review-queue": "tsx scripts/seed-review-queue.ts",
     "seed-demo-learners": "tsx scripts/seed-demo-learners.ts",
     "seed-wioa-staff": "tsx scripts/seed-wioa-staff.ts",
     "seed-wioa-learner": "tsx scripts/seed-wioa-learner.ts",

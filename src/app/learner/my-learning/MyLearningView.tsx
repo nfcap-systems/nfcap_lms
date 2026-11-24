@@ -192,10 +192,11 @@ export function MyLearningView({
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 16 }}>
           {pathway.map((course, index) => {
             const progress = progressMap[course.id];
+            // Same rule as CourseOverviewView's gate on `/learner/courses/[courseId]` — a stale
+            // Enrollment row from before this restriction existed must not make a restricted,
+            // not-yet-unlocked course render as a clickable card that dead-ends on that route.
             const locked =
-              !progress?.enrolled &&
-              course.access === 'restricted' &&
-              !unlockedCourseSlugs.includes(course.id);
+              course.access === 'restricted' && !unlockedCourseSlugs.includes(course.id);
             const status = getCourseStatus(course, progress);
             const total = courseLessonCount(course);
             const done = progress?.completedLessonIds.length ?? 0;
@@ -286,28 +287,48 @@ export function MyLearningView({
               No courses completed yet.
             </p>
           ) : (
-            completedCourses.map((course, index) => (
-              <button
-                key={course.id}
-                type="button"
-                className="lrn-mcard"
-                onClick={() => router.push(`/learner/courses/${course.id}`)}
-              >
-                <Image
-                  src={MODULE_PHOTOS[index % MODULE_PHOTOS.length]}
-                  alt=""
-                  width={300}
-                  height={112}
-                  className="thumb"
-                />
-                <div className="lrn-mcard-body">
-                  <div className="t">{course.title}</div>
-                  <Badge tone="success" style={{ width: 'fit-content' }}>
-                    Complete
-                  </Badge>
-                </div>
-              </button>
-            ))
+            completedCourses.map((course, index) => {
+              // Same rule as CourseOverviewView's gate on `/learner/courses/[courseId]` — a
+              // completed, certificated course can still be RESTRICTED-and-not-unlocked (unlock
+              // isn't granted by completion), so this card must not promise a route that dead-ends.
+              const locked =
+                course.access === 'restricted' && !unlockedCourseSlugs.includes(course.id);
+
+              return (
+                <button
+                  key={course.id}
+                  type="button"
+                  className="lrn-mcard"
+                  onClick={() =>
+                    locked
+                      ? setLockedCourse(course)
+                      : router.push(`/learner/courses/${course.id}`)
+                  }
+                >
+                  <Image
+                    src={MODULE_PHOTOS[index % MODULE_PHOTOS.length]}
+                    alt=""
+                    width={300}
+                    height={112}
+                    className="thumb"
+                  />
+                  <div className="lrn-mcard-body">
+                    <div className="t">{course.title}</div>
+                    <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                      <Badge tone="success" style={{ width: 'fit-content' }}>
+                        Complete
+                      </Badge>
+                      {locked && (
+                        <Badge tone="neutral" style={{ width: 'fit-content' }}>
+                          <Icon name="lock" className="h-3 w-3" />
+                          Locked
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                </button>
+              );
+            })
           )}
         </div>
       )}

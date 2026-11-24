@@ -74,9 +74,17 @@ export function HomeView({
     .filter((c) => progressMap[c.id]?.enrolled)
     .sort((a, b) => a.pathwayOrder - b.pathwayOrder);
 
+  // Same rule as CourseOverviewView's gate on `/learner/courses/[courseId]`: a restricted course
+  // the learner isn't unlocked for must not surface as an actionable card here, even if a stale
+  // Enrollment row makes it pass the `enrolled` filter above — otherwise Home offers a "Continue"
+  // CTA that the course page itself refuses.
+  const accessibleEnrolledCourses = enrolledCourses.filter(
+    (c) => c.access !== 'restricted' || unlockedCourseSlugs.includes(c.id),
+  );
+
   // Every enrolled course's next incomplete lesson, in pathway order — the first becomes the
   // Continue-Learning hero, the second (if any) the "Up next" row below it.
-  const upcomingItems = enrolledCourses
+  const upcomingItems = accessibleEnrolledCourses
     .map((course) => {
       const flat = flattenLessons(course);
       const completedLessonIds = progressMap[course.id]?.completedLessonIds ?? [];
@@ -102,7 +110,7 @@ export function HomeView({
 
   // "Needs a practical evidence submission": finished every lesson and passed the quiz, but
   // hasn't submitted evidence yet, or a prior submission was rejected.
-  const evidenceTaskCourse = enrolledCourses.find((course) => {
+  const evidenceTaskCourse = accessibleEnrolledCourses.find((course) => {
     const progress = progressMap[course.id];
     if (!progress) return false;
     if (progress.evidence?.status === 'rejected') return true;
@@ -114,7 +122,7 @@ export function HomeView({
   // Pending-review queue (board's "To be reviewed" panel) — real pending EvidenceSubmissions
   // only. There is no "pending quiz review" concept in the schema (quizzes are auto-graded), so
   // unlike the board's own example row, that item type is left out rather than invented.
-  const reviewItems = enrolledCourses.filter(
+  const reviewItems = accessibleEnrolledCourses.filter(
     (course) => progressMap[course.id]?.evidence?.status === 'pending',
   );
 
