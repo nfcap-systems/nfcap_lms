@@ -995,10 +995,10 @@ function CourseAccessCard({
   const [pending, startTransition] = useTransition();
   const [grantingId, setGrantingId] = useState<string | null>(null);
 
-  function grant(courseSlug: string) {
-    setGrantingId(courseSlug);
+  function grant(courseId: string) {
+    setGrantingId(courseId);
     startTransition(async () => {
-      await grantCourseUnlock(learnerId, courseSlug);
+      await grantCourseUnlock(learnerId, courseId);
       setGrantingId(null);
       router.refresh();
     });
@@ -1032,10 +1032,10 @@ function CourseAccessCard({
                 <AdminButton
                   size="sm"
                   variant="outline"
-                  disabled={pending && grantingId === course.slug}
-                  onClick={() => grant(course.slug)}
+                  disabled={pending && grantingId === course.id}
+                  onClick={() => grant(course.id)}
                 >
-                  {pending && grantingId === course.slug ? 'Granting…' : 'Grant access'}
+                  {pending && grantingId === course.id ? 'Granting…' : 'Grant access'}
                 </AdminButton>
               )}
             </div>
