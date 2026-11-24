@@ -18,18 +18,26 @@ export default async function AdminDashboardPage() {
   // docs/build/PERFORMANCE_PLAN.md §5.1).
   await connection();
   const admin = await requireAdmin();
-  const [courses, learners] = await Promise.all([getAllCourses(), getLearnerRoster()]);
   const viewer = { userId: admin.id, role: 'ADMIN' as const };
-  const [progressByLearner, upcomingAppointments, fundingStatusByLearner, fundedCaseCount] =
-    await Promise.all([
-      getProgressByLearner(learners.map((l) => l.id)),
-      getUpcomingWioaAppointments(viewer),
-      getFundingStatusForLearners(
-        viewer,
-        learners.map((l) => l.id),
-      ),
-      getFundedCaseCount(viewer),
-    ]);
+
+  // getUpcomingWioaAppointments/getFundedCaseCount don't need the learner roster at all, but were
+  // previously stuck in a second Promise.all batch gated entirely behind getLearnerRoster (a slow
+  // Supabase Auth listUsers() call, not a DB query) resolving — paying its full latency before
+  // even starting queries that had no real dependency on it. Only getProgressByLearner and
+  // getFundingStatusForLearners genuinely need learner ids, so only those wait for the roster.
+  const [courses, learners, upcomingAppointments, fundedCaseCount] = await Promise.all([
+    getAllCourses(),
+    getLearnerRoster(),
+    getUpcomingWioaAppointments(viewer),
+    getFundedCaseCount(viewer),
+  ]);
+  const [progressByLearner, fundingStatusByLearner] = await Promise.all([
+    getProgressByLearner(learners.map((l) => l.id)),
+    getFundingStatusForLearners(
+      viewer,
+      learners.map((l) => l.id),
+    ),
+  ]);
 
   const adminName =
     typeof admin.user_metadata?.name === 'string' ? admin.user_metadata.name : 'Admin';

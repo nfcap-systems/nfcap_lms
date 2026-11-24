@@ -7,13 +7,15 @@ import { PartnerRosterView, type PartnerRosterRow } from '@/components/wioa/Part
 
 export default async function PartnerPage() {
   const user = await requirePartnerStaff();
-  const cases = await getWioaCases(
-    { userId: user.id, role: 'PARTNER_STAFF' },
-    { assignedPartnerStaffId: user.id },
-  );
 
-  const [pathwayCourses, progressByLearner, cohortMembershipByLearner] = await Promise.all([
+  // getCoursePathwayList doesn't depend on `cases` at all, but was previously stuck waiting for
+  // it to resolve before even starting — the two run concurrently instead now.
+  const [cases, pathwayCourses] = await Promise.all([
+    getWioaCases({ userId: user.id, role: 'PARTNER_STAFF' }, { assignedPartnerStaffId: user.id }),
     getCoursePathwayList(),
+  ]);
+
+  const [progressByLearner, cohortMembershipByLearner] = await Promise.all([
     getProgressByLearner(cases.map((c) => c.learnerId)),
     getCohortMembershipsForLearners(cases.map((c) => c.learnerId)),
   ]);

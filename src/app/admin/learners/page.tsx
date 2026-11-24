@@ -13,15 +13,24 @@ export default async function AdminLearnersPage() {
   await connection();
   const admin = await requireAdmin();
   const viewer = { userId: admin.id, role: 'ADMIN' as const };
-  const [courses, learners] = await Promise.all([getAllCourses(), getLearnerRoster()]);
+
+  // getFundedCaseCount doesn't need the learner roster at all — see src/app/admin/page.tsx for
+  // the same fix. Running it alongside getLearnerRoster instead of gated behind it overlaps its
+  // RLS query with the roster's slow Supabase Auth listUsers() call instead of paying both in
+  // sequence.
+  const [courses, learners, fundedCaseCount] = await Promise.all([
+    getAllCourses(),
+    getLearnerRoster(),
+    getFundedCaseCount(viewer),
+  ]);
   const learnerIds = learners.map((l) => l.id);
-  const [progressByLearner, cohortMembershipByLearner, fundingStatusByLearner, fundedCaseCount] =
-    await Promise.all([
+  const [progressByLearner, cohortMembershipByLearner, fundingStatusByLearner] = await Promise.all(
+    [
       getProgressByLearner(learnerIds),
       getCohortMembershipsForLearners(learnerIds),
       getFundingStatusForLearners(viewer, learnerIds),
-      getFundedCaseCount(viewer),
-    ]);
+    ],
+  );
 
   return (
     <LearnersRosterView

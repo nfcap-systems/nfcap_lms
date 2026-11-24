@@ -16,6 +16,9 @@ export type LearnerHeaderProps = {
   learnerName: string;
   learnerEmail: string;
   learnerInitial: string;
+  /** Rendered after the mapped navItems — a Server Component slot (e.g. the Suspense-wrapped
+   * WioaNavLink) that resolves independently instead of blocking the rest of the header. */
+  extraNavSlot?: React.ReactNode;
 };
 
 // Ported literally from the design canvas's LearnerHeader.dc.html, which every learner board
@@ -28,6 +31,7 @@ export function LearnerHeader({
   learnerName,
   learnerEmail,
   learnerInitial,
+  extraNavSlot,
 }: LearnerHeaderProps) {
   const pathname = usePathname();
   const [prevPathname, setPrevPathname] = useState(pathname);
@@ -202,6 +206,7 @@ export function LearnerHeader({
               </Link>
             );
           })}
+          {extraNavSlot}
         </div>
       </nav>
     </header>

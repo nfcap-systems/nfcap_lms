@@ -4,10 +4,12 @@ import { AdminHeader } from '@/components/admin-shell/AdminHeader';
 import { SidebarInset, SidebarProvider } from '@/components/admin-ui/sidebar';
 import { TooltipProvider } from '@/components/admin-ui/tooltip';
 import { getAuthUser } from '@/lib/supabase/server';
-import { getPendingReviewCount } from '@/lib/data/progress';
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
-  const [user, pendingReviewCount] = await Promise.all([getAuthUser(), getPendingReviewCount()]);
+  // getPendingReviewCount moved into AppSidebar's own Suspense-wrapped PendingReviewBanner — it
+  // was previously awaited here alongside getAuthUser, which meant the whole shell (sidebar,
+  // header) waited on it even though it only affects one optional sidebar banner.
+  const user = await getAuthUser();
   const userName = typeof user?.user_metadata?.name === 'string' ? user.user_metadata.name : '';
   const userEmail = user?.email ?? '';
 
@@ -21,11 +23,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         data-system="staff"
         style={{ '--sidebar-width': 'calc(var(--spacing) * 68)' } as CSSProperties}
       >
-        <AppSidebar
-          userName={userName}
-          userEmail={userEmail}
-          pendingReviewCount={pendingReviewCount}
-        />
+        <AppSidebar userName={userName} userEmail={userEmail} showPendingReview />
         <SidebarInset>
           <AdminHeader userName={userName} userEmail={userEmail} />
           <div className="flex flex-1 flex-col gap-4 p-4 md:p-6">{children}</div>

@@ -15,13 +15,23 @@ export default async function LearnerHomePage() {
   // uses the full set so a learner already enrolled never loses access if Admin unpublishes it.
   const [allCourses, published] = await Promise.all([getAllCourses(), getPublishedCourses()]);
   const pathway = [...published].sort((a, b) => a.pathwayOrder - b.pathwayOrder);
-  const progressMap = user ? await getLearnerProgressMap(user.id) : {};
-  const unlockedCourseSlugs = user ? Object.keys(await getCourseUnlocksForLearner(user.id)) : [];
-  const credentials = user ? await getCredentialsForLearner(user.id, allCourses) : [];
-  const wioaCases = user
-    ? await getWioaCasesForLearner({ userId: user.id, role: getRole(user) ?? 'LEARNER' }, user.id)
-    : [];
-  const announcements = user ? await getActiveAnnouncementsForViewer(user.id, 'learner') : [];
+
+  // These five were previously five sequential awaits — none depend on each other (only on
+  // `user`/`allCourses`, already resolved above), so running them serially paid every query's
+  // full round-trip cost one after another instead of overlapping them. getWioaCasesForLearner in
+  // particular opens its own RLS transaction (src/lib/db/rls.ts's withRlsContext), whose comment
+  // documents ~1.7-2s baseline connection latency in this environment — batching lets that
+  // transaction run concurrently with the others instead of adding its full cost on top.
+  const [progressMap, courseUnlocks, credentials, wioaCases, announcements] = user
+    ? await Promise.all([
+        getLearnerProgressMap(user.id),
+        getCourseUnlocksForLearner(user.id),
+        getCredentialsForLearner(user.id, allCourses),
+        getWioaCasesForLearner({ userId: user.id, role: getRole(user) ?? 'LEARNER' }, user.id),
+        getActiveAnnouncementsForViewer(user.id, 'learner'),
+      ])
+    : [{}, {}, [], [], []];
+  const unlockedCourseSlugs = Object.keys(courseUnlocks);
 
   return (
     <HomeView
