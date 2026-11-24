@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 import Link from 'next/link';
 
 import { adminNav } from '@/lib/nav';
@@ -15,24 +16,25 @@ import {
 
 import { NavMain } from './NavMain';
 import { NavUser } from './NavUser';
-import { SidebarPromoBanner } from './SidebarPromoBanner';
+import { PendingReviewBanner } from './PendingReviewBanner';
 
 export function AppSidebar({
   basePath = '/admin',
   navItems = adminNav,
   showQuickCreate = true,
+  showPendingReview = false,
   userName,
   userEmail,
-  pendingReviewCount = 0,
 }: {
   /** Defaults to today's Admin values — other admin-ui-shell roles (coordinator, partner) pass
    * their own basePath/navItems to reuse this same sidebar rather than a duplicate copy. */
   basePath?: string;
   navItems?: NavEntry[];
   showQuickCreate?: boolean;
+  /** Only Admin has a Review Queue — coordinator/partner don't pass this. */
+  showPendingReview?: boolean;
   userName: string;
   userEmail: string;
-  pendingReviewCount?: number;
 }) {
   return (
     <Sidebar variant="sidebar" collapsible="icon">
@@ -54,13 +56,10 @@ export function AppSidebar({
         <NavMain items={navItems} showQuickCreate={showQuickCreate} />
       </SidebarContent>
       <SidebarFooter className="gap-3">
-        {pendingReviewCount > 0 && (
-          <SidebarPromoBanner
-            icon="check"
-            title={`${pendingReviewCount} submission${pendingReviewCount === 1 ? '' : 's'} waiting`}
-            description="Evidence is in your Review Queue, ready to go."
-            href="/admin/reviews"
-          />
+        {showPendingReview && (
+          <Suspense fallback={null}>
+            <PendingReviewBanner />
+          </Suspense>
         )}
         <NavUser name={userName} email={userEmail} accountHref={`${basePath}/account`} />
       </SidebarFooter>

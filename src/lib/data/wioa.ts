@@ -1,3 +1,4 @@
+import { cacheLife, cacheTag } from 'next/cache';
 import { getLearnerById } from '@/lib/data/learners';
 import type { WioaCaseStatus, WioaDocumentStatus, AppointmentType } from '@/generated/prisma/enums';
 import { WIOA_STATUS_PHASE, WIOA_UI_PHASES, type WioaUiPhase } from '@/lib/wioa/status';
@@ -296,10 +297,15 @@ export type UpcomingAppointment = {
  * Returns `learnerId`, not a resolved name — the Dashboard already fetches the full learner
  * roster for its other panels, so resolving names there reuses that data instead of adding a
  * per-row `getLearnerById` call here (CLAUDE.md's "no per-entity queries in a loop"). */
+/** Dashboard widget only — same short-cache reasoning as getFundingStatusForLearners above; an
+ * appointment scheduled/cancelled in the last ~30s can lag here without blocking any action. */
 export async function getUpcomingWioaAppointments(
   viewer: SessionContext,
   limit = 4,
 ): Promise<UpcomingAppointment[]> {
+  'use cache';
+  cacheLife({ stale: 30, revalidate: 30, expire: 120 });
+  cacheTag('wioa-upcoming-appointments');
   const appointments = await withRlsContext(viewer, (tx) =>
     tx.appointment.findMany({
       where: { scheduledAt: { gte: new Date() }, completedAt: null },
@@ -331,10 +337,18 @@ const FUNDED_CASE_STATUSES: WioaCaseStatus[] = [
  * CLAUDE.md's "no per-entity queries in a loop"). A learner's most recent open case decides their
  * status; a learner with no open case is 'self_pay' (the real default — not every learner has a
  * WIOA case at all). */
+/** Dashboard-only funding-status badge (Admin/Admin-learners) — not the case-management data
+ * itself (that stays live via getWioaCases), so a short cache here is low-risk: at worst a badge
+ * is up to ~30s stale after a case status change, not an action a coordinator/partner is blocked
+ * on. withRlsContext's own transaction is a per-viewer round trip this was previously paying on
+ * every dashboard load; see src/lib/db/rls.ts for its documented ~1.7-2s baseline latency. */
 export async function getFundingStatusForLearners(
   viewer: SessionContext,
   learnerIds: string[],
 ): Promise<Record<string, LearnerFundingStatus>> {
+  'use cache';
+  cacheLife({ stale: 30, revalidate: 30, expire: 120 });
+  cacheTag('wioa-funding-status');
   if (learnerIds.length === 0) return {};
   const cases = await withRlsContext(viewer, (tx) =>
     tx.wioaCase.findMany({
@@ -361,7 +375,11 @@ export async function getFundingStatusForLearners(
 
 /** Count of currently-open WIOA cases whose funding is actually approved — the Admin Dashboard's
  * "Funded Cases (WIOA)" KPI (ADM02). Counts cases, matching the board's own framing, not learners. */
+/** Dashboard KPI only — same short-cache reasoning as getFundingStatusForLearners above. */
 export async function getFundedCaseCount(viewer: SessionContext): Promise<number> {
+  'use cache';
+  cacheLife({ stale: 30, revalidate: 30, expire: 120 });
+  cacheTag('wioa-funded-case-count');
   return withRlsContext(viewer, (tx) =>
     tx.wioaCase.count({ where: { closedAt: null, status: { in: FUNDED_CASE_STATUSES } } }),
   );

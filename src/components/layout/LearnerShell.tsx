@@ -1,30 +1,31 @@
 import type { ReactNode } from 'react';
 import { LearnerFooter } from './LearnerFooter';
 import { LearnerHeader } from './LearnerHeader';
-import { learnerNav, wioaNavItem, type NavItem } from '@/lib/nav';
+import { learnerNav } from '@/lib/nav';
 
 export function LearnerShell({
   children,
   learnerName,
   learnerEmail,
   learnerInitial,
-  showWioaNav = false,
+  wioaNavSlot,
 }: {
   children: ReactNode;
   learnerName: string;
   learnerEmail: string;
   learnerInitial: string;
-  showWioaNav?: boolean;
+  /** Suspense-wrapped WioaNavLink from the layout — resolves independently of the rest of the
+   * shell instead of making the whole header wait on its RLS-backed query. */
+  wioaNavSlot?: ReactNode;
 }) {
-  const navItems: NavItem[] = showWioaNav ? [...learnerNav, wioaNavItem] : learnerNav;
-
   return (
     <div className="lshell-page" data-system="learner">
       <LearnerHeader
-        navItems={navItems}
+        navItems={learnerNav}
         learnerName={learnerName}
         learnerEmail={learnerEmail}
         learnerInitial={learnerInitial}
+        extraNavSlot={wioaNavSlot}
       />
       <main className="lshell-main">
         {children}
