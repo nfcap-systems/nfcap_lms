@@ -32,10 +32,12 @@ export const ROLE_LABEL: Record<Role, string> = {
   coordinator: 'WIOA Coordinator',
 };
 
+// Order matches the design canvas's LearnerHeader.dc.html nav strip exactly (Home, My Learning,
+// Course Catalog, Portfolio, Certificates, Funding) — not an arbitrary IA choice.
 export const learnerNav: NavItem[] = [
   { label: 'Home', href: '/learner', icon: 'home' },
-  { label: 'Course Catalog', href: '/learner/explore', icon: 'compass' },
   { label: 'My Learning', href: '/learner/my-learning', icon: 'book' },
+  { label: 'Course Catalog', href: '/learner/explore', icon: 'compass' },
   { label: 'Portfolio', href: '/learner/portfolio', icon: 'briefcase' },
   { label: 'Certificates', href: '/learner/certificates', icon: 'award' },
 ];

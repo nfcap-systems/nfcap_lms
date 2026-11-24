@@ -53,7 +53,7 @@ function StatusMessage({ children }: { children: string }) {
   return <p className="px-4 py-6 text-center text-sm text-[var(--ink-muted)]">{children}</p>;
 }
 
-export function GlobalSearch() {
+export function GlobalSearch({ variant = 'icon' }: { variant?: 'icon' | 'pill' } = {}) {
   const pathname = usePathname();
   const [prevPathname, setPrevPathname] = useState(pathname);
   const [query, setQuery] = useState('');
@@ -124,20 +124,39 @@ export function GlobalSearch() {
           : null;
 
   return (
-    <div ref={containerRef} className="relative">
-      <button
-        type="button"
-        onClick={() => setOpen((value) => !value)}
-        aria-haspopup="dialog"
-        aria-expanded={open}
-        aria-label="Search"
-        className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-full bg-[var(--surface-muted)] text-[var(--ink-muted)] shadow-sm transition-colors hover:text-[var(--ink)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
-      >
-        <Icon name="search" className="h-4.5 w-4.5" />
-      </button>
+    <div
+      ref={containerRef}
+      className={variant === 'pill' ? 'relative lhdr-search-wrap' : 'relative'}
+    >
+      {variant === 'pill' ? (
+        <button
+          type="button"
+          onClick={() => setOpen((value) => !value)}
+          aria-haspopup="dialog"
+          aria-expanded={open}
+          aria-label="Search"
+          className="lhdr-search"
+        >
+          <Icon name="search" className="h-4 w-4" />
+          <span>Search…</span>
+        </button>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setOpen((value) => !value)}
+          aria-haspopup="dialog"
+          aria-expanded={open}
+          aria-label="Search"
+          className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-full bg-[var(--surface-muted)] text-[var(--ink-muted)] shadow-sm transition-colors hover:text-[var(--ink)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
+        >
+          <Icon name="search" className="h-4.5 w-4.5" />
+        </button>
+      )}
 
       {open && (
-        <div className="absolute top-full right-0 mt-2 w-[min(22rem,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-[var(--nfcap-border)] bg-[var(--surface)] shadow-elevated">
+        <div
+          className={`absolute top-full mt-2 w-[min(22rem,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-[var(--nfcap-border)] bg-[var(--surface)] shadow-elevated ${variant === 'pill' ? 'left-0' : 'right-0'}`}
+        >
           <div className="relative border-b border-[var(--nfcap-border)] p-2">
             <Icon
               name="search"

@@ -44,7 +44,9 @@ export type IconName =
   | 'header'
   | 'download'
   | 'alert-circle'
-  | 'shield';
+  | 'shield'
+  | 'sparkles'
+  | 'message-circle';
 
 type IconProps = SVGProps<SVGSVGElement>;
 
@@ -318,6 +320,13 @@ const paths: Record<IconName, React.ReactNode> = {
     </>
   ),
   shield: <path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z" />,
+  sparkles: (
+    <>
+      <path d="M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5z" />
+      <path d="M19 15l.7 2.3L22 18l-2.3.7L19 21l-.7-2.3L16 18l2.3-.7z" />
+    </>
+  ),
+  'message-circle': <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />,
 };
 
 export function Icon({ name, ...props }: { name: IconName } & IconProps) {
