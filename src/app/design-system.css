@@ -722,6 +722,28 @@
   font-weight: 500;
   color: var(--ink-muted);
 }
+.pbadge.amber {
+  border-color: #fde68a;
+  background: #fef9e8;
+  color: #8a3d08;
+}
+.pbadge.solid {
+  border: none;
+  background: var(--status-complete);
+  color: #fff;
+  font-weight: 600;
+}
+.iconbtn-sm {
+  width: 30px;
+  height: 30px;
+  border: 1px solid var(--nfcap-border);
+  border-radius: var(--nfcap-radius-md);
+  background: var(--surface);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ink-muted);
+}
 .phdr-actions {
   display: flex;
   align-items: center;
