@@ -3,7 +3,7 @@ import type { E2eTestUser } from './supabase-test-user';
 
 export async function loginAs(page: Page, user: E2eTestUser): Promise<void> {
   await page.goto('/login');
-  await page.getByLabel('Email address').fill(user.email);
+  await page.getByLabel('Work email').fill(user.email);
   // exact: true — otherwise this also matches the "Show password" toggle button's aria-label,
   // which contains "password" as a case-insensitive substring.
   await page.getByLabel('Password', { exact: true }).fill(user.password);
