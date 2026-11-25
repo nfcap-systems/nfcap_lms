@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 import { Icon } from '@/components/icons';
 import { StateCard } from '@/components/ui';
 import type { EligibilityQuestion } from '@/lib/data/eligibility';
@@ -77,7 +78,9 @@ export function EligibilityCheckView({ questions }: { questions: EligibilityQues
         const outcome = await submitEligibilityCheck(answers);
         setResult(outcome);
       } catch {
-        setError('Something went wrong submitting your answers. Please try again.');
+        const message = 'Something went wrong submitting your answers. Please try again.';
+        setError(message);
+        toast.error(message);
       }
     });
   };

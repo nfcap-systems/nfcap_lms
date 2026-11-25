@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useTransition } from 'react';
+import { toast } from 'sonner';
 import { Drawer } from '@/components/ui';
 import { Icon } from '@/components/icons';
 import { generateCertificatePublicSlug, getCertificatePdfBase64 } from '@/lib/actions/credentials';
@@ -27,17 +28,26 @@ export function CertificateCard({
 
   function copyVerificationLink() {
     startTransition(async () => {
-      const slug = await generateCertificatePublicSlug(credential.rawId);
-      await navigator.clipboard.writeText(`${window.location.origin}/verify/${slug}`);
-      setCopyState('copied');
-      setTimeout(() => setCopyState('idle'), 2000);
+      try {
+        const slug = await generateCertificatePublicSlug(credential.rawId);
+        await navigator.clipboard.writeText(`${window.location.origin}/verify/${slug}`);
+        setCopyState('copied');
+        toast.success('Verification link copied to clipboard');
+        setTimeout(() => setCopyState('idle'), 2000);
+      } catch (e) {
+        toast.error(e instanceof Error ? e.message : 'Could not create the verification link.');
+      }
     });
   }
 
   function downloadPdf() {
     startDownload(async () => {
-      const { base64, filename } = await getCertificatePdfBase64(credential.rawId);
-      downloadBase64File(base64, filename, 'application/pdf');
+      try {
+        const { base64, filename } = await getCertificatePdfBase64(credential.rawId);
+        downloadBase64File(base64, filename, 'application/pdf');
+      } catch (e) {
+        toast.error(e instanceof Error ? e.message : 'Could not download the certificate.');
+      }
     });
   }
   // Pinned to 'en-US' — see the comment in src/app/admin/DashboardView.tsx: the environment's

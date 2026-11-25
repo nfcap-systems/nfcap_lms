@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 
 import {
   createWioaDocumentRequirement,
@@ -240,13 +241,19 @@ function RequirementForm({
                 conditional,
                 applicableRule: conditional ? applicableRule.trim() || null : null,
               };
-              if (existing) {
-                await updateWioaDocumentRequirement(existing.id, fields);
-              } else {
-                await createWioaDocumentRequirement(fields);
+              try {
+                if (existing) {
+                  await updateWioaDocumentRequirement(existing.id, fields);
+                } else {
+                  await createWioaDocumentRequirement(fields);
+                }
+                toast.success(existing ? 'Requirement updated' : 'Requirement added');
+                onSaved();
+              } catch (e) {
+                toast.error(e instanceof Error ? e.message : 'Could not save the requirement.');
+              } finally {
+                setSubmitting(false);
               }
-              setSubmitting(false);
-              onSaved();
             }}
           >
             {existing ? 'Save changes' : 'Add requirement'}

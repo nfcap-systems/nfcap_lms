@@ -734,7 +734,6 @@ function UpcomingAppointmentsCard({
                     {learnerNameById.get(a.learnerId) ?? 'Unknown learner'}
                   </div>
                   <div className="sub">
-                    {a.courseTitle} ·{' '}
                     {new Date(a.scheduledAt).toLocaleTimeString('en-US', {
                       hour: 'numeric',
                       minute: '2-digit',

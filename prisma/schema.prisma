@@ -80,7 +80,7 @@ model Course {
   assessmentCriteria AssessmentCriterion[]
   enrollments        Enrollment[]
   wioaCommunications WioaCommunication[]
-  wioaCases          WioaCase[]
+  wioaCourseCases    WioaCourseCase[]
   courseUnlocks      CourseUnlock[]
 }
 
@@ -365,11 +365,23 @@ enum CommunicationChannel {
   NOTE
 }
 
+/// Spec Section 19: "Every outgoing email must be logged with recipient, timestamp, and status"
+/// (docs/plans/wioa-spec-alignment-kickoff.md #7). NOTE-channel rows (never actually sent) are
+/// always SENT — the field only means something for EMAIL/CALL.
+enum CommunicationStatus {
+  SENT
+  FAILED
+}
+
 /// The 18 canonical statuses (docs/wioa/WIOA_Eligibility_Matching_App_Developer_Specification.pdf
 /// Section 7), grouped into 6 UI phases by src/lib/wioa/status.ts — this enum is the canonical
 /// list per docs/build/WIOA_BUILD_WORKFLOW.md "Open decisions". Order matches the spec's numbering,
 /// which is also the linear transition order (see WioaCase.status doc comment).
-enum WioaCaseStatus {
+/// The spec's eligibility pipeline (WIOA_Eligibility_Matching_App_Developer_Specification.pdf
+/// Section 7, steps 1-13 + Closed/Ineligible) — one-time per student, lives on the master
+/// `WioaCase` (docs/plans/wioa-spec-alignment-kickoff.md #1, full split). Replaces the old
+/// `WioaCaseStatus`, which bundled this with the per-course funding steps below.
+enum WioaEligibilityStatus {
   REGISTERED
   WORKFORCE_BOARD_MATCHED
   INITIAL_CONTACT_SENT
@@ -383,11 +395,20 @@ enum WioaCaseStatus {
   INTAKE_APPOINTMENT_SCHEDULED
   ELIGIBILITY_UNDER_REVIEW
   WIOA_ELIGIBLE
+  CLOSED_INELIGIBLE
+}
+
+/// The spec's funding/tuition pipeline (same spec, Section 14's 8 "track separately" milestones,
+/// condensed into status form the same way the old enum did) — per course, lives on
+/// `WioaCourseCase`, only reachable once the learner's master case is `WIOA_ELIGIBLE`.
+/// `FUNDING_DECLINED` replaces `CLOSED_INELIGIBLE` at this level — a specific course's funding not
+/// being approved is a different fact than the student being WIOA-ineligible.
+enum WioaFundingStatus {
   ETPL_TRAINING_REQUESTED
   TRAINING_AUTHORIZATION_PENDING
   TUITION_APPROVED
   APPRENTICESHIP_ENROLLMENT_COMPLETE
-  CLOSED_INELIGIBLE
+  FUNDING_DECLINED
 }
 
 enum AppointmentType {
@@ -451,7 +472,7 @@ model WorkforceBoard {
   ajccCenters          AjccCenter[]
   jurisdictions        WorkforceJurisdiction[]
   contacts             WorkforceContact[]
-  cases                WioaCase[]
+  masterCases          WioaCase[]
   documentRequirements WioaDocumentRequirement[]
 }
 
@@ -468,7 +489,7 @@ model AjccCenter {
 
   jurisdictions WorkforceJurisdiction[]
   contacts      WorkforceContact[]
-  cases         WioaCase[]
+  masterCases   WioaCase[]
 
   @@index([workforceBoardId])
 }
@@ -508,110 +529,172 @@ model WorkforceContact {
   lastVerifiedDate DateTime?
 
   communications WioaCommunication[]
-  cases          WioaCase[]
+  masterCases    WioaCase[]
 
   @@index([workforceBoardId])
 }
 
-/// Outreach log (WIOA_INTEGRATION_PLAN.md Section 6/11: real delivery is out of scope, generate
-/// -> review -> confirm-sent -> logged must be real). `wioaCaseId` is nullable because a Phase 1
-/// no-match communication (rare, but the schema allows it) has no case to attach to; Phase 2's
-/// confirm-send always sets it (see sendWioaOutreach).
+/// Outreach/follow-up log. Always tied to the learner's master case (`masterCaseId`) — every
+/// communication happens in the context of their one WIOA relationship. `courseCaseId` is set
+/// only when the communication is specifically about one course's funding request (e.g. a staff
+/// note on that course's progress, or a funding-approval notice) — the initial eligibility
+/// outreach email has neither a course nor a course-case, matching the spec's course-less
+/// eligibility flow (docs/plans/wioa-spec-alignment-kickoff.md #1, full split). `courseId` mirrors
+/// `courseCaseId`'s course when set, kept directly for display convenience.
 model WioaCommunication {
-  id         String               @id @default(cuid())
+  id            String               @id @default(cuid())
   /// Supabase auth.users.id — same app-enforced-FK pattern as Enrollment.learnerId.
-  learnerId  String
-  courseId   String
-  course     Course               @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  wioaCaseId String?
-  wioaCase   WioaCase?            @relation(fields: [wioaCaseId], references: [id])
-  contactId  String?
-  contact    WorkforceContact?    @relation(fields: [contactId], references: [id])
-  channel    CommunicationChannel @default(EMAIL)
-  recipient  String
-  subject    String?
-  body       String?
-  sentAt     DateTime             @default(now())
+  learnerId     String
+  masterCaseId  String
+  masterCase    WioaCase             @relation(fields: [masterCaseId], references: [id], onDelete: Cascade)
+  courseCaseId  String?
+  courseCase    WioaCourseCase?      @relation(fields: [courseCaseId], references: [id])
+  courseId      String?
+  course        Course?              @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  contactId     String?
+  contact       WorkforceContact?    @relation(fields: [contactId], references: [id])
+  channel       CommunicationChannel @default(EMAIL)
+  recipient     String
+  subject       String?
+  body          String?
+  status        CommunicationStatus  @default(SENT)
+  /// Set only when status is FAILED — the error sendEmail threw, for staff debugging/follow-up.
+  failureReason String?
+  sentAt        DateTime             @default(now())
 
   @@index([learnerId])
+  @@index([masterCaseId])
+  @@index([courseCaseId])
   @@index([courseId])
-  @@index([wioaCaseId])
 }
 
 // ---------------------------------------------------------------------------------------------
 // WIOA funding module — Phase 2 (Case + Documents). Additive only.
 // ---------------------------------------------------------------------------------------------
 
-/// One case per learner per restricted course (WIOA_INTEGRATION_PLAN.md Section 5 — case scope
-/// is per learner PER COURSE, not one case per learner). `workforceBoardId`/`ajccCenterId`/
-/// `contactId` are nullable for the no-match path (docs/build/WIOA_BUILD_WORKFLOW.md "Open decisions"):
-/// the case still opens, matching resolved by hand later. Uniqueness on (learnerId, courseId) is
-/// only meant to apply to the active (non-closed) case per the plan, but Postgres/Prisma can't
-/// express a partial unique index declaratively here — enforced in
-/// src/lib/actions/wioa.ts (createWioaCase checks for an existing open case) instead of the DB.
-/// `status` transitions are staff-driven, linear, not skippable/reversible except into
-/// CLOSED_INELIGIBLE (docs/build/WIOA_BUILD_WORKFLOW.md "Open decisions").
+/// The spec's singular "Master student WIOA case" (WIOA_Eligibility_Matching_App_Developer_
+/// Specification.pdf Section 11) — one row per learner. Holds everything that's genuinely
+/// one-time-per-student: board/AJCC/contact routing, Partner Staff assignment, and — as of the
+/// full spec-alignment split (docs/plans/wioa-spec-alignment-kickoff.md #1) — the eligibility
+/// pipeline itself (steps 1-13 of the spec's Section 7), the document checklist, and
+/// orientation/intake appointments. A learner only ever walks this once, no matter how many
+/// courses they later request funding for. Per-course funding progress lives separately on
+/// `WioaCourseCase`, reachable only once this case is `WIOA_ELIGIBLE` — that split is the one
+/// real architecture decision here; see the kickoff doc for the full reasoning.
 model WioaCase {
-  id                     String            @id @default(cuid())
-  /// Supabase auth.users.id — same app-enforced-FK pattern as Enrollment.learnerId.
-  learnerId              String
-  courseId               String
-  course                 Course            @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  id                     String                @id @default(cuid())
+  /// Supabase auth.users.id — same app-enforced-FK pattern as Enrollment.learnerId. Unique: one
+  /// master case per learner, enforced by the DB.
+  learnerId              String                @unique
   workforceBoardId       String?
-  workforceBoard         WorkforceBoard?   @relation(fields: [workforceBoardId], references: [id])
+  workforceBoard         WorkforceBoard?       @relation(fields: [workforceBoardId], references: [id])
   ajccCenterId           String?
-  ajccCenter             AjccCenter?       @relation(fields: [ajccCenterId], references: [id])
+  ajccCenter             AjccCenter?           @relation(fields: [ajccCenterId], references: [id])
   contactId              String?
-  contact                WorkforceContact? @relation(fields: [contactId], references: [id])
-  /// Set in Phase 3 when Admin/Coordinator assigns the case to a Partner Staff account — no
-  /// PARTNER_STAFF role exists yet, so this stays null until then.
+  contact                WorkforceContact?     @relation(fields: [contactId], references: [id])
   assignedPartnerStaffId String?
-  status                 WioaCaseStatus    @default(INITIAL_CONTACT_SENT)
+  status                 WioaEligibilityStatus @default(REGISTERED)
   closedAt               DateTime?
-  createdAt              DateTime          @default(now())
-  updatedAt              DateTime          @updatedAt
+  createdAt              DateTime              @default(now())
+  updatedAt              DateTime              @updatedAt
 
+  courseCases    WioaCourseCase[]
   statusHistory  WioaStatusHistory[]
   documents      WioaDocument[]
   appointments   Appointment[]
   communications WioaCommunication[]
-  fundingRequest EtplFundingRequest?
 
-  @@index([learnerId])
-  @@index([courseId])
   @@index([workforceBoardId])
 }
 
-/// Immutable log — a row is appended on every status change, never edited (WioaCase.status is
-/// the current value; this is the history behind it).
-model WioaStatusHistory {
-  id         String         @id @default(cuid())
-  wioaCaseId String
-  wioaCase   WioaCase       @relation(fields: [wioaCaseId], references: [id], onDelete: Cascade)
-  status     WioaCaseStatus
-  changedAt  DateTime       @default(now())
-  /// Supabase auth.users.id of the staff account that made the change (or the system, for the
-  /// case-creation row) — same app-enforced-FK pattern as Enrollment.learnerId.
-  changedBy  String
+/// One row per learner per course they've requested WIOA funding for
+/// (docs/plans/wioa-spec-alignment-kickoff.md #1) — only ever created once the learner's master
+/// case is `WIOA_ELIGIBLE` (spec: "Once eligible, track the ETPL apprenticeship training funding
+/// request"). Holds only the funding-stage pipeline; everything eligibility-related lives on
+/// `masterCase`. `learnerId` is denormalized from `masterCase.learnerId` — immutable once set (a
+/// course-case's learner never changes), unlike the board/contact/assignment fields the first
+/// version of this split denormalized here and which this full split removes: those are read
+/// through `masterCase` now, nothing to keep in sync.
+model WioaCourseCase {
+  id           String            @id @default(cuid())
+  /// Supabase auth.users.id — same app-enforced-FK pattern as Enrollment.learnerId.
+  learnerId    String
+  courseId     String
+  course       Course            @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  masterCaseId String
+  masterCase   WioaCase          @relation(fields: [masterCaseId], references: [id], onDelete: Cascade)
+  status       WioaFundingStatus @default(ETPL_TRAINING_REQUESTED)
+  closedAt     DateTime?
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
 
-  @@index([wioaCaseId, changedAt])
+  fundingStatusHistory WioaFundingStatusHistory[]
+  appointments         Appointment[]
+  communications       WioaCommunication[]
+  fundingRequest       EtplFundingRequest?
+
+  @@index([learnerId])
+  @@index([courseId])
+  @@index([masterCaseId])
 }
 
-/// Orientation/intake/follow-up scheduling data. `Appointment` is authoritative for date/time;
-/// the matching case status (e.g. ORIENTATION_SCHEDULED) is a derived label staff sets alongside
-/// creating this row in the same UI action — creating the appointment does not itself advance
-/// the status (docs/build/WIOA_BUILD_WORKFLOW.md "Open decisions").
-model Appointment {
-  id          String          @id @default(cuid())
-  wioaCaseId  String
-  wioaCase    WioaCase        @relation(fields: [wioaCaseId], references: [id], onDelete: Cascade)
-  type        AppointmentType
-  scheduledAt DateTime
-  completedAt DateTime?
-  notes       String?
-  createdAt   DateTime        @default(now())
+/// Immutable log of the master case's eligibility-pipeline progress — a row is appended on every
+/// status change, never edited (`WioaCase.status` is the current value; this is the history
+/// behind it).
+model WioaStatusHistory {
+  id           String                @id @default(cuid())
+  masterCaseId String
+  masterCase   WioaCase              @relation(fields: [masterCaseId], references: [id], onDelete: Cascade)
+  status       WioaEligibilityStatus
+  changedAt    DateTime              @default(now())
+  /// Supabase auth.users.id of the staff account that made the change (or the system, for the
+  /// case-creation row) — same app-enforced-FK pattern as Enrollment.learnerId.
+  changedBy    String
 
-  @@index([wioaCaseId])
+  @@index([masterCaseId, changedAt])
+}
+
+/// Same role as `WioaStatusHistory`, for a course-case's funding-stage progress instead of the
+/// master case's eligibility progress — split because the two track different enums
+/// (`WioaFundingStatus` vs `WioaEligibilityStatus`).
+model WioaFundingStatusHistory {
+  id           String            @id @default(cuid())
+  courseCaseId String
+  courseCase   WioaCourseCase    @relation(fields: [courseCaseId], references: [id], onDelete: Cascade)
+  status       WioaFundingStatus
+  changedAt    DateTime          @default(now())
+  /// Supabase auth.users.id of the staff account that made the change — same app-enforced-FK
+  /// pattern as Enrollment.learnerId.
+  changedBy    String
+
+  @@index([courseCaseId, changedAt])
+}
+
+/// Orientation/intake/follow-up scheduling data. Always tied to the master case (`masterCaseId`)
+/// — orientation and intake are one-time, eligibility-stage events. `courseCaseId` is set only
+/// for a FOLLOWUP appointment that's specifically about monitoring one course's funding progress
+/// (e.g. a tuition-disbursement check-in); ORIENTATION/INTAKE appointments never set it.
+/// `Appointment` is authoritative for date/time; the matching status (e.g. ORIENTATION_SCHEDULED)
+/// is a derived label staff sets alongside creating this row in the same UI action — creating the
+/// appointment does not itself advance the status (docs/build/WIOA_BUILD_WORKFLOW.md "Open
+/// decisions").
+model Appointment {
+  id           String          @id @default(cuid())
+  masterCaseId String
+  masterCase   WioaCase        @relation(fields: [masterCaseId], references: [id], onDelete: Cascade)
+  /// SET NULL, not CASCADE: this is just an optional tag ("this follow-up is about that course's
+  /// funding") on a row whose real ownership is `masterCaseId` — losing the course-case it tagged
+  /// must never delete the appointment itself.
+  courseCaseId String?
+  courseCase   WioaCourseCase? @relation(fields: [courseCaseId], references: [id], onDelete: SetNull)
+  type         AppointmentType
+  scheduledAt  DateTime
+  completedAt  DateTime?
+  notes        String?
+  createdAt    DateTime        @default(now())
+
+  @@index([masterCaseId])
+  @@index([courseCaseId])
 }
 
 /// Admin-configurable per board (WIOA_INTEGRATION_PLAN.md Section 5/spec Section 13/17) — no
@@ -639,13 +722,15 @@ model WioaDocumentRequirement {
   @@index([workforceBoardId])
 }
 
-/// One row per (case, requirement) — created MISSING when the case opens (for
-/// non-conditional/matching-conditional requirements), then updated through the upload/review
-/// lifecycle. Never deleted on re-upload after rejection — status moves back to UNDER_REVIEW.
+/// One row per (master case, requirement) — created MISSING when the master case is matched to a
+/// board (for non-conditional/matching-conditional requirements), then updated through the
+/// upload/review lifecycle. Never deleted on re-upload after rejection — status moves back to
+/// UNDER_REVIEW. Lives on the master case, not a course-case — eligibility documents are
+/// one-time-per-student (docs/plans/wioa-spec-alignment-kickoff.md #1, full split).
 model WioaDocument {
   id              String                  @id @default(cuid())
-  wioaCaseId      String
-  wioaCase        WioaCase                @relation(fields: [wioaCaseId], references: [id], onDelete: Cascade)
+  masterCaseId    String
+  masterCase      WioaCase                @relation(fields: [masterCaseId], references: [id], onDelete: Cascade)
   requirementId   String
   requirement     WioaDocumentRequirement @relation(fields: [requirementId], references: [id])
   fileName        String?
@@ -662,8 +747,8 @@ model WioaDocument {
   notes           String?
   versions        WioaDocumentVersion[]
 
-  @@unique([wioaCaseId, requirementId])
-  @@index([wioaCaseId])
+  @@unique([masterCaseId, requirementId])
+  @@index([masterCaseId])
 }
 
 /// Audit trail of every file a learner has ever uploaded for a WioaDocument, snapshotted right
@@ -696,19 +781,24 @@ model WioaDocumentVersion {
 /// separately", not as one generic status) as distinct fields rather than a status enum, per
 /// docs/build/WIOA_BUILD_WORKFLOW.md Phase 4. One per case — a case only ever requests funding once.
 model EtplFundingRequest {
-  id                    String    @id @default(cuid())
-  wioaCaseId            String    @unique
-  wioaCase              WioaCase  @relation(fields: [wioaCaseId], references: [id], onDelete: Cascade)
+  id                    String         @id @default(cuid())
+  wioaCaseId            String         @unique
+  wioaCase              WioaCourseCase @relation(fields: [wioaCaseId], references: [id], onDelete: Cascade)
   trainingProgram       String?
-  etplProviderConfirmed Boolean   @default(false)
+  etplProviderConfirmed Boolean        @default(false)
   submittedAt           DateTime?
   caseManagerNotifiedAt DateTime?
+  /// What NFCAP actually asked the workforce board for (Phase 5 Funding Impact Reporting — a
+  /// requested-vs-approved comparison needs both sides; FundingAuthorization.approvedAmount only
+  /// ever captured what was granted). Captured at request time, independent of whether/what gets
+  /// approved later.
+  requestedAmount       Float?
   /// Free-text milestone label (e.g. "Pending" / "Approved" / "Denied") — not a machine-checked
   /// enum, same prototype-scope call as WioaDocumentRequirement.applicableRule.
   fundingReviewStatus   String?
   status                String?
-  createdAt             DateTime  @default(now())
-  updatedAt             DateTime  @updatedAt
+  createdAt             DateTime       @default(now())
+  updatedAt             DateTime       @updatedAt
 
   authorization FundingAuthorization?
 }

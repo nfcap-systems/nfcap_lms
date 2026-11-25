@@ -19,8 +19,6 @@ const PHASE_TONE: Record<WioaUiPhase, StatusTone> = {
   Matching: 'neutral',
   Contact: 'pending',
   'Eligibility Process': 'pending',
-  'Funding Request': 'info',
-  Enrollment: 'success',
   Closed: 'danger',
 };
 

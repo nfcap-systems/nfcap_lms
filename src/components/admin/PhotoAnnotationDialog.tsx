@@ -8,6 +8,7 @@ import {
   type PointerEvent as ReactPointerEvent,
   type ReactNode,
 } from 'react';
+import { toast } from 'sonner';
 import { Dialog } from '@/components/ui';
 import { getCriterionFileUrl } from '@/lib/actions/progress';
 import { saveCriterionAnnotation } from '@/lib/actions/criterionReview';
@@ -198,7 +199,10 @@ export function PhotoAnnotationDialog({
     startTransition(async () => {
       try {
         await saveCriterionAnnotation(criterionAssessmentId, marks, note);
+        toast.success('Annotation saved');
         onClose();
+      } catch (e) {
+        toast.error(e instanceof Error ? e.message : 'Could not save the annotation.');
       } finally {
         setSaving(false);
       }

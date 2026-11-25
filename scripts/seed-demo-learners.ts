@@ -4,8 +4,7 @@ import { PrismaClient } from '../src/generated/prisma/client';
 import { EvidenceStatus as PrismaEvidenceStatus } from '../src/generated/prisma/enums';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { Pool } from 'pg';
-import { WIOA_STATUS_ORDER } from '../src/lib/wioa/status';
-import type { WioaCaseStatus } from '../src/generated/prisma/enums';
+import { WIOA_ELIGIBILITY_STATUS_ORDER, WIOA_FUNDING_STATUS_ORDER } from '../src/lib/wioa/status';
 
 // Two realistic demo learners for presentations — a WIOA-funded one and a self-pay one, each
 // with enough real course/evidence/funding data to look like an actual trainee rather than a
@@ -286,38 +285,29 @@ async function seedFundedWioaCase(learnerId: string): Promise<void> {
     update: { fundingSource: 'WIOA_PENDING' },
   });
 
-  let wioaCase = await prisma.wioaCase.findFirst({
-    where: { learnerId, courseId: course.id, closedAt: null },
+  // Master case first (docs/plans/wioa-spec-alignment-kickoff.md #1) — mirrors
+  // findOrCreateMasterCase in src/lib/actions/wioa.ts.
+  const masterCase = await prisma.wioaCase.upsert({
+    where: { learnerId },
+    create: {
+      learnerId,
+      workforceBoardId: jurisdiction?.workforceBoardId,
+      ajccCenterId: jurisdiction?.ajccCenterId ?? undefined,
+      contactId: contact?.id,
+    },
+    update: {},
   });
-  if (!wioaCase) {
-    wioaCase = await prisma.wioaCase.create({
-      data: {
-        learnerId,
-        courseId: course.id,
-        workforceBoardId: jurisdiction?.workforceBoardId,
-        ajccCenterId: jurisdiction?.ajccCenterId ?? undefined,
-        contactId: contact?.id,
-        status: 'REGISTERED',
-      },
-    });
-    await prisma.wioaStatusHistory.create({
-      data: { wioaCaseId: wioaCase.id, status: 'REGISTERED', changedBy: 'seed-demo-learners-script' },
-    });
-  }
 
-  // Walk the case forward to the funded threshold, logging one history row per step — same
-  // pattern as scripts/wioa-fast-forward-case.ts, just driven to a fixed target here.
-  const target: WioaCaseStatus = 'TUITION_APPROVED';
-  const fromIdx = WIOA_STATUS_ORDER.indexOf(wioaCase.status);
-  const toIdx = WIOA_STATUS_ORDER.indexOf(target);
-  if (toIdx > fromIdx) {
-    const steps = WIOA_STATUS_ORDER.slice(fromIdx + 1, toIdx + 1).filter(
-      (s) => s !== 'CLOSED_INELIGIBLE',
-    );
+  // Walk the master case's eligibility pipeline to WIOA_ELIGIBLE, logging one history row per
+  // step (docs/plans/wioa-spec-alignment-kickoff.md #1, full split).
+  const eligibilityFromIdx = WIOA_ELIGIBILITY_STATUS_ORDER.indexOf(masterCase.status);
+  const eligibilityToIdx = WIOA_ELIGIBILITY_STATUS_ORDER.indexOf('WIOA_ELIGIBLE');
+  if (eligibilityToIdx > eligibilityFromIdx) {
+    const steps = WIOA_ELIGIBILITY_STATUS_ORDER.slice(eligibilityFromIdx + 1, eligibilityToIdx + 1);
     for (const status of steps) {
-      await prisma.wioaCase.update({ where: { id: wioaCase.id }, data: { status } });
+      await prisma.wioaCase.update({ where: { id: masterCase.id }, data: { status } });
       await prisma.wioaStatusHistory.create({
-        data: { wioaCaseId: wioaCase.id, status, changedBy: 'seed-demo-learners-script' },
+        data: { masterCaseId: masterCase.id, status, changedBy: 'seed-demo-learners-script' },
       });
     }
   }
@@ -328,10 +318,10 @@ async function seedFundedWioaCase(learnerId: string): Promise<void> {
     });
     for (const req of requirements) {
       await prisma.wioaDocument.upsert({
-        where: { wioaCaseId_requirementId: { wioaCaseId: wioaCase.id, requirementId: req.id } },
+        where: { masterCaseId_requirementId: { masterCaseId: masterCase.id, requirementId: req.id } },
         update: {},
         create: {
-          wioaCaseId: wioaCase.id,
+          masterCaseId: masterCase.id,
           requirementId: req.id,
           fileName: `${req.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}.pdf`,
           status: 'ACCEPTED',
@@ -343,11 +333,42 @@ async function seedFundedWioaCase(learnerId: string): Promise<void> {
     }
   }
 
+  let courseCase = await prisma.wioaCourseCase.findFirst({
+    where: { learnerId, courseId: course.id, closedAt: null },
+  });
+  if (!courseCase) {
+    courseCase = await prisma.wioaCourseCase.create({
+      data: { learnerId, courseId: course.id, masterCaseId: masterCase.id },
+    });
+    await prisma.wioaFundingStatusHistory.create({
+      data: {
+        courseCaseId: courseCase.id,
+        status: 'ETPL_TRAINING_REQUESTED',
+        changedBy: 'seed-demo-learners-script',
+      },
+    });
+  }
+
+  // Walk the course-case forward to the funded threshold, logging one history row per step.
+  const fundingFromIdx = WIOA_FUNDING_STATUS_ORDER.indexOf(courseCase.status);
+  const fundingToIdx = WIOA_FUNDING_STATUS_ORDER.indexOf('TUITION_APPROVED');
+  if (fundingToIdx > fundingFromIdx) {
+    const steps = WIOA_FUNDING_STATUS_ORDER.slice(fundingFromIdx + 1, fundingToIdx + 1).filter(
+      (s) => s !== 'FUNDING_DECLINED',
+    );
+    for (const status of steps) {
+      await prisma.wioaCourseCase.update({ where: { id: courseCase.id }, data: { status } });
+      await prisma.wioaFundingStatusHistory.create({
+        data: { courseCaseId: courseCase.id, status, changedBy: 'seed-demo-learners-script' },
+      });
+    }
+  }
+
   const fundingRequest = await prisma.etplFundingRequest.upsert({
-    where: { wioaCaseId: wioaCase.id },
+    where: { wioaCaseId: courseCase.id },
     update: {},
     create: {
-      wioaCaseId: wioaCase.id,
+      wioaCaseId: courseCase.id,
       trainingProgram: 'Tile Installation — NFCAP Flooring Apprenticeship',
       etplProviderConfirmed: true,
       submittedAt: new Date(Date.now() - 21 * 24 * 60 * 60 * 1000),
@@ -369,11 +390,14 @@ async function seedFundedWioaCase(learnerId: string): Promise<void> {
     },
   });
 
-  const hasAppointment = await prisma.appointment.findFirst({ where: { wioaCaseId: wioaCase.id } });
+  const hasAppointment = await prisma.appointment.findFirst({
+    where: { courseCaseId: courseCase.id },
+  });
   if (!hasAppointment) {
     await prisma.appointment.create({
       data: {
-        wioaCaseId: wioaCase.id,
+        masterCaseId: masterCase.id,
+        courseCaseId: courseCase.id,
         type: 'FOLLOWUP',
         scheduledAt: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000),
         notes: 'Check in on training progress and tuition disbursement.',
@@ -382,14 +406,15 @@ async function seedFundedWioaCase(learnerId: string): Promise<void> {
   }
 
   const hasCommunication = await prisma.wioaCommunication.findFirst({
-    where: { learnerId, wioaCaseId: wioaCase.id },
+    where: { learnerId, courseCaseId: courseCase.id },
   });
   if (!hasCommunication) {
     await prisma.wioaCommunication.create({
       data: {
         learnerId,
+        masterCaseId: masterCase.id,
+        courseCaseId: courseCase.id,
         courseId: course.id,
-        wioaCaseId: wioaCase.id,
         contactId: contact?.id,
         channel: 'EMAIL',
         recipient: 'learner@nfcap.demo',

@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 import {
   Badge,
   DataTableCard,
@@ -59,7 +60,7 @@ function toCsv(rows: PartnerRosterRow[]): string {
   const csvRows = rows.map((r) => [
     r.learnerName,
     r.learnerEmail,
-    r.courseTitle,
+    r.courseTitle ?? '',
     r.cohortName ?? '',
     `${r.enrolledCount} of ${r.totalCourseCount} enrolled`,
     String(r.missingDocumentCount),
@@ -83,7 +84,11 @@ export function PartnerRosterView({ rows }: { rows: PartnerRosterRow[] }) {
     return rows.filter((r) => {
       if (docFilter === 'missing' && r.missingDocumentCount === 0) return false;
       if (docFilter === 'on_track' && r.missingDocumentCount > 0) return false;
-      if (q && !r.learnerName.toLowerCase().includes(q) && !r.courseTitle.toLowerCase().includes(q))
+      if (
+        q &&
+        !r.learnerName.toLowerCase().includes(q) &&
+        !(r.courseTitle?.toLowerCase().includes(q) ?? false)
+      )
         return false;
       return true;
     });
@@ -106,6 +111,7 @@ export function PartnerRosterView({ rows }: { rows: PartnerRosterRow[] }) {
     setSendingReminderId(row.id);
     sendWioaCaseReminder(row.id)
       .then(() => router.refresh())
+      .catch((err) => toast.error(err instanceof Error ? err.message : 'Could not send reminder.'))
       .finally(() => setSendingReminderId(null));
   }
 

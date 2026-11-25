@@ -1,6 +1,7 @@
 'use client';
 
 import { useRef, useState } from 'react';
+import { toast } from 'sonner';
 import {
   bulkEnrollLearners,
   exportEvidenceReviewHistoryCsv,
@@ -141,9 +142,19 @@ export function DataIoView() {
                 disabled={enrolling}
                 onClick={async () => {
                   setEnrolling(true);
-                  const outcome = await bulkEnrollLearners(rows);
-                  setResult(outcome);
-                  setEnrolling(false);
+                  try {
+                    const outcome = await bulkEnrollLearners(rows);
+                    setResult(outcome);
+                    toast.success(
+                      `Enrolled ${outcome.enrolledCount} learner${outcome.enrolledCount === 1 ? '' : 's'}${
+                        outcome.notFoundCount > 0 ? ` · ${outcome.notFoundCount} flagged` : ''
+                      }`,
+                    );
+                  } catch (e) {
+                    toast.error(e instanceof Error ? e.message : 'Bulk enroll failed.');
+                  } finally {
+                    setEnrolling(false);
+                  }
                 }}
               >
                 Enroll {rows.length} learner{rows.length === 1 ? '' : 's'}
@@ -211,9 +222,15 @@ export function DataIoView() {
                   disabled={exportingKey === exp.key}
                   onClick={async () => {
                     setExportingKey(exp.key);
-                    const csv = await exp.run();
-                    downloadText(exp.filename, csv);
-                    setExportingKey(null);
+                    try {
+                      const csv = await exp.run();
+                      downloadText(exp.filename, csv);
+                      toast.success(`${exp.title} downloaded`);
+                    } catch (e) {
+                      toast.error(e instanceof Error ? e.message : 'Export failed.');
+                    } finally {
+                      setExportingKey(null);
+                    }
                   }}
                 >
                   {exportingKey === exp.key ? 'Exporting…' : 'Export'}

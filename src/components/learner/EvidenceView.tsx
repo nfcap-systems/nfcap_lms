@@ -2,6 +2,7 @@
 
 import { useRef, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 import { Badge, Button, Field, Textarea } from '@/components/ui';
 import { Icon } from '@/components/icons';
 import { submitEvidence, getEvidenceFileUrl } from '@/lib/actions/progress';
@@ -113,8 +114,12 @@ export function EvidenceView({
               type="button"
               onClick={() => {
                 startTransition(async () => {
-                  const url = await getEvidenceFileUrl(evidence.id);
-                  window.open(url, '_blank', 'noopener,noreferrer');
+                  try {
+                    const url = await getEvidenceFileUrl(evidence.id);
+                    window.open(url, '_blank', 'noopener,noreferrer');
+                  } catch (e) {
+                    toast.error(e instanceof Error ? e.message : 'Could not open the attachment.');
+                  }
                 });
               }}
               className="flex items-center gap-2 rounded-lg border border-[var(--nfcap-border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--ink-muted)] hover:text-[var(--ink)]"
@@ -228,8 +233,13 @@ export function EvidenceView({
             const desc = description.trim();
             const attachment = file;
             startTransition(async () => {
-              await submitEvidence(course.id, desc, attachment);
-              router.refresh();
+              try {
+                await submitEvidence(course.id, desc, attachment);
+                toast.success(evidence ? 'Evidence resubmitted' : 'Evidence submitted');
+                router.refresh();
+              } catch (e) {
+                toast.error(e instanceof Error ? e.message : 'Could not submit evidence.');
+              }
             });
             setResubmitting(false);
           }}

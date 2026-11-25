@@ -171,6 +171,26 @@ export function WioaReportsView({
                 </div>
               </div>
 
+              {fundingImpact.totalRequestedAmount > 0 && (
+                <div className="panel" style={{ marginBottom: 16 }}>
+                  <div
+                    style={{
+                      fontWeight: 600,
+                      fontSize: 14.5,
+                      marginBottom: 4,
+                      color: 'var(--ink)',
+                    }}
+                  >
+                    Requested vs. approved
+                  </div>
+                  <div style={{ fontSize: 13, color: 'var(--ink-muted)' }}>
+                    {formatCurrency(fundingImpact.totalApprovedAmount)} approved of{' '}
+                    {formatCurrency(fundingImpact.totalRequestedAmount)} requested (
+                    {formatPercent(fundingImpact.approvalRateByAmount)} of requested dollar value)
+                  </div>
+                </div>
+              )}
+
               {fundingImpact.totalApprovedAmount > 0 && (
                 <div className="panel" style={{ marginBottom: 16 }}>
                   <div
@@ -225,6 +245,7 @@ export function WioaReportsView({
                       <th>Cases funded</th>
                       <th>Approval rate</th>
                       <th>Avg time to approval</th>
+                      <th>Total requested</th>
                       <th>Total approved</th>
                     </tr>
                   </thead>
@@ -235,6 +256,11 @@ export function WioaReportsView({
                         <td>{b.fundedCases}</td>
                         <td>{formatPercent(b.fundingConversionRate)}</td>
                         <td>{formatDays(b.avgDaysToApproval)}</td>
+                        <td>
+                          {b.totalRequestedAmount > 0
+                            ? formatCurrency(b.totalRequestedAmount)
+                            : '—'}
+                        </td>
                         <td>{formatCurrency(b.totalApprovedAmount)}</td>
                       </tr>
                     ))}

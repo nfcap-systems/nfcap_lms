@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 import { Plus } from 'lucide-react';
 
 import {
@@ -23,7 +24,7 @@ import type {
   WorkforceJurisdictionRecord,
   WorkforceContactRecord,
 } from '@/lib/data/wioa-boards';
-import type { ContactType, WioaCaseStatus } from '@/generated/prisma/enums';
+import type { ContactType, WioaEligibilityStatus } from '@/generated/prisma/enums';
 import { Icon } from '@/components/icons';
 import { WIOA_STATUS_LABEL } from '@/lib/wioa/status';
 import { Badge } from '@/components/admin-ui/badge';
@@ -48,12 +49,23 @@ import {
 } from '@/components/admin-ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/admin-ui/tabs';
 
+/** Spec Section 17: "flag stale contacts for review" (docs/plans/wioa-spec-alignment-kickoff.md
+ * #5). 180 days is a prototype default, same as the 14-day stalled-case threshold elsewhere in
+ * this module — not a value the client has confirmed, just a sane one until they do. A contact
+ * that's never been verified at all is stale by definition. */
+const STALE_CONTACT_DAYS = 180;
+function isContactStale(lastVerifiedDate: Date | null): boolean {
+  if (!lastVerifiedDate) return true;
+  const days = (Date.now() - new Date(lastVerifiedDate).getTime()) / 86_400_000;
+  return days >= STALE_CONTACT_DAYS;
+}
+
 export function BoardDetailView({
   board,
   activeCases,
 }: {
   board: WorkforceBoardDetail;
-  activeCases: { id: string; learnerName: string; status: WioaCaseStatus }[];
+  activeCases: { id: string; learnerName: string; status: WioaEligibilityStatus }[];
 }) {
   const router = useRouter();
 
@@ -103,26 +115,38 @@ function BoardFieldsTab({ board, onSaved }: { board: WorkforceBoardDetail; onSav
 
   async function save() {
     setSaving(true);
-    await updateWorkforceBoard(board.id, {
-      name: name.trim(),
-      county: county.trim(),
-      serviceArea: serviceArea.trim(),
-      phone: phone.trim(),
-      email: email.trim(),
-      website: website.trim() || null,
-      address: address.trim(),
-      orientationUrl: orientationUrl.trim() || null,
-      applicationUrl: applicationUrl.trim() || null,
-    });
-    setSaving(false);
-    onSaved();
+    try {
+      await updateWorkforceBoard(board.id, {
+        name: name.trim(),
+        county: county.trim(),
+        serviceArea: serviceArea.trim(),
+        phone: phone.trim(),
+        email: email.trim(),
+        website: website.trim() || null,
+        address: address.trim(),
+        orientationUrl: orientationUrl.trim() || null,
+        applicationUrl: applicationUrl.trim() || null,
+      });
+      toast.success('Board details saved');
+      onSaved();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Could not save board details.');
+    } finally {
+      setSaving(false);
+    }
   }
 
   async function toggleActive() {
     setSaving(true);
-    await setWorkforceBoardActive(board.id, !board.active);
-    setSaving(false);
-    onSaved();
+    try {
+      await setWorkforceBoardActive(board.id, !board.active);
+      toast.success(board.active ? 'Board deactivated' : 'Board activated');
+      onSaved();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Could not update the board.');
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
@@ -234,8 +258,13 @@ function AjccTab({ board, onChanged }: { board: WorkforceBoardDetail; onChanged:
                     size="sm"
                     variant="ghost"
                     onClick={async () => {
-                      await setAjccCenterActive(board.id, a.id, !a.active);
-                      onChanged();
+                      try {
+                        await setAjccCenterActive(board.id, a.id, !a.active);
+                        toast.success(a.active ? 'AJCC center deactivated' : 'AJCC center activated');
+                        onChanged();
+                      } catch (e) {
+                        toast.error(e instanceof Error ? e.message : 'Could not update the center.');
+                      }
                     }}
                   >
                     {a.active ? 'Deactivate' : 'Activate'}
@@ -324,14 +353,20 @@ function AjccDialog({
                 website: website.trim() || null,
                 intakeInstructions: intakeInstructions.trim() || null,
               };
-              if (existing) {
-                await updateAjccCenter(boardId, existing.id, fields);
-              } else {
-                await createAjccCenter(boardId, fields);
+              try {
+                if (existing) {
+                  await updateAjccCenter(boardId, existing.id, fields);
+                } else {
+                  await createAjccCenter(boardId, fields);
+                }
+                toast.success(existing ? 'AJCC center updated' : 'AJCC center added');
+                onOpenChange(false);
+                onSaved();
+              } catch (e) {
+                toast.error(e instanceof Error ? e.message : 'Could not save the center.');
+              } finally {
+                setSubmitting(false);
               }
-              setSubmitting(false);
-              onOpenChange(false);
-              onSaved();
             }}
           >
             {existing ? 'Save changes' : 'Add center'}
@@ -388,8 +423,13 @@ function JurisdictionTab({
                     size="sm"
                     variant="ghost"
                     onClick={async () => {
-                      await setWorkforceJurisdictionActive(board.id, j.id, !j.active);
-                      onChanged();
+                      try {
+                        await setWorkforceJurisdictionActive(board.id, j.id, !j.active);
+                        toast.success(j.active ? 'ZIP deactivated' : 'ZIP activated');
+                        onChanged();
+                      } catch (e) {
+                        toast.error(e instanceof Error ? e.message : 'Could not update the ZIP.');
+                      }
                     }}
                   >
                     {j.active ? 'Deactivate' : 'Activate'}
@@ -486,14 +526,20 @@ function JurisdictionDialog({
                 county: county.trim(),
                 ajccCenterId: ajccCenterId || null,
               };
-              if (existing) {
-                await updateWorkforceJurisdiction(boardId, existing.id, fields);
-              } else {
-                await createWorkforceJurisdiction(boardId, fields);
+              try {
+                if (existing) {
+                  await updateWorkforceJurisdiction(boardId, existing.id, fields);
+                } else {
+                  await createWorkforceJurisdiction(boardId, fields);
+                }
+                toast.success(existing ? 'ZIP jurisdiction updated' : 'ZIP jurisdiction added');
+                onOpenChange(false);
+                onSaved();
+              } catch (e) {
+                toast.error(e instanceof Error ? e.message : 'Could not save the jurisdiction.');
+              } finally {
+                setSubmitting(false);
               }
-              setSubmitting(false);
-              onOpenChange(false);
-              onSaved();
             }}
           >
             {existing ? 'Save changes' : 'Add ZIP'}
@@ -534,12 +580,18 @@ function ContactTab({ board, onChanged }: { board: WorkforceBoardDetail; onChang
                   <p className="text-xs text-muted-foreground">
                     {c.email} · {c.phone} · {ajccName(c.ajccCenterId) ?? 'Board-level'}
                   </p>
+                  <p className="text-xs text-muted-foreground">
+                    {c.lastVerifiedDate
+                      ? `Last verified ${new Date(c.lastVerifiedDate).toLocaleDateString()}`
+                      : 'Never verified'}
+                  </p>
                 </div>
                 <div className="flex items-center gap-2">
                   <Badge variant="outline">{c.contactType}</Badge>
                   <Badge variant={c.active ? 'success' : 'outline'}>
                     {c.active ? 'Active' : 'Inactive'}
                   </Badge>
+                  {isContactStale(c.lastVerifiedDate) && <Badge variant="warning">Stale</Badge>}
                   <Button size="sm" variant="outline" onClick={() => setEditing(c)}>
                     Edit
                   </Button>
@@ -547,8 +599,13 @@ function ContactTab({ board, onChanged }: { board: WorkforceBoardDetail; onChang
                     size="sm"
                     variant="ghost"
                     onClick={async () => {
-                      await setWorkforceContactActive(board.id, c.id, !c.active);
-                      onChanged();
+                      try {
+                        await setWorkforceContactActive(board.id, c.id, !c.active);
+                        toast.success(c.active ? 'Contact deactivated' : 'Contact activated');
+                        onChanged();
+                      } catch (e) {
+                        toast.error(e instanceof Error ? e.message : 'Could not update the contact.');
+                      }
                     }}
                   >
                     {c.active ? 'Deactivate' : 'Activate'}
@@ -683,14 +740,20 @@ function ContactDialog({
                 priority,
                 ajccCenterId: ajccCenterId || null,
               };
-              if (existing) {
-                await updateWorkforceContact(boardId, existing.id, fields);
-              } else {
-                await createWorkforceContact(boardId, fields);
+              try {
+                if (existing) {
+                  await updateWorkforceContact(boardId, existing.id, fields);
+                } else {
+                  await createWorkforceContact(boardId, fields);
+                }
+                toast.success(existing ? 'Contact updated' : 'Contact added');
+                onOpenChange(false);
+                onSaved();
+              } catch (e) {
+                toast.error(e instanceof Error ? e.message : 'Could not save the contact.');
+              } finally {
+                setSubmitting(false);
               }
-              setSubmitting(false);
-              onOpenChange(false);
-              onSaved();
             }}
           >
             {existing ? 'Save changes' : 'Add contact'}
@@ -701,10 +764,7 @@ function ContactDialog({
   );
 }
 
-const FUNDED_CASE_STATUSES: WioaCaseStatus[] = [
-  'TUITION_APPROVED',
-  'APPRENTICESHIP_ENROLLMENT_COMPLETE',
-];
+const FUNDED_CASE_STATUSES: WioaEligibilityStatus[] = ['WIOA_ELIGIBLE'];
 
 const CASES_PAGE_SIZE = 10;
 
@@ -714,7 +774,7 @@ const CASES_PAGE_SIZE = 10;
 function ActiveCasesPanel({
   cases,
 }: {
-  cases: { id: string; learnerName: string; status: WioaCaseStatus }[];
+  cases: { id: string; learnerName: string; status: WioaEligibilityStatus }[];
 }) {
   const [page, setPage] = useState(1);
   const pageCount = Math.max(1, Math.ceil(cases.length / CASES_PAGE_SIZE));

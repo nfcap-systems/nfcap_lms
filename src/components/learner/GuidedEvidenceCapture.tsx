@@ -2,6 +2,7 @@
 
 import { useMemo, useRef, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 import { Badge, Button, Field, Textarea } from '@/components/ui';
 import { Icon } from '@/components/icons';
 import { submitGuidedEvidence, getCriterionFileUrl } from '@/lib/actions/progress';
@@ -92,11 +93,14 @@ export function GuidedEvidenceCapture({
     startTransition(async () => {
       try {
         await submitGuidedEvidence(course.id, captures);
+        toast.success(resubmission ? 'Evidence resubmitted' : 'Evidence submitted');
         setDrafts({});
         onSubmitted?.();
         router.refresh();
       } catch (e) {
-        setError(e instanceof Error ? e.message : 'Something went wrong.');
+        const message = e instanceof Error ? e.message : 'Something went wrong.';
+        setError(message);
+        toast.error(message);
       } finally {
         setSubmitting(false);
       }
@@ -324,8 +328,12 @@ function CriteriaSummary({
   function viewFile(criterionAssessmentId: string | undefined) {
     if (!criterionAssessmentId) return;
     startTransition(async () => {
-      const url = await getCriterionFileUrl(criterionAssessmentId);
-      window.open(url, '_blank', 'noopener,noreferrer');
+      try {
+        const url = await getCriterionFileUrl(criterionAssessmentId);
+        window.open(url, '_blank', 'noopener,noreferrer');
+      } catch (e) {
+        toast.error(e instanceof Error ? e.message : 'Could not open the photo.');
+      }
     });
   }
 

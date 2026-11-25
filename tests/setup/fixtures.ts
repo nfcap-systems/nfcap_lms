@@ -93,20 +93,44 @@ export async function createDocumentRequirement(workforceBoardId: string, name =
   });
 }
 
-export async function createWioaCase(params: {
+/** Creates (or reuses) the learner's master WioaCase at a given eligibility status
+ * (docs/plans/wioa-spec-alignment-kickoff.md #1). */
+export async function createWioaMasterCase(params: {
   learnerId: string;
-  courseId: string;
   workforceBoardId?: string;
-  status?: import('@/generated/prisma/enums').WioaCaseStatus;
+  status?: import('@/generated/prisma/enums').WioaEligibilityStatus;
   assignedPartnerStaffId?: string;
 }) {
-  return prisma.wioaCase.create({
+  return prisma.wioaCase.upsert({
+    where: { learnerId: params.learnerId },
+    create: {
+      learnerId: params.learnerId,
+      workforceBoardId: params.workforceBoardId,
+      assignedPartnerStaffId: params.assignedPartnerStaffId,
+      status: params.status ?? 'REGISTERED',
+    },
+    update: {
+      workforceBoardId: params.workforceBoardId,
+      assignedPartnerStaffId: params.assignedPartnerStaffId,
+      status: params.status ?? 'REGISTERED',
+    },
+  });
+}
+
+/** Creates a WioaCourseCase (funding request) under an already-WIOA_ELIGIBLE master case, at a
+ * given funding status. */
+export async function createWioaCourseCase(params: {
+  learnerId: string;
+  courseId: string;
+  masterCaseId: string;
+  status?: import('@/generated/prisma/enums').WioaFundingStatus;
+}) {
+  return prisma.wioaCourseCase.create({
     data: {
       learnerId: params.learnerId,
       courseId: params.courseId,
-      workforceBoardId: params.workforceBoardId,
-      status: params.status ?? 'INITIAL_CONTACT_SENT',
-      assignedPartnerStaffId: params.assignedPartnerStaffId,
+      masterCaseId: params.masterCaseId,
+      status: params.status ?? 'ETPL_TRAINING_REQUESTED',
     },
   });
 }

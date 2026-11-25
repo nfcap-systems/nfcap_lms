@@ -1,6 +1,11 @@
 import { getAuthUser, getRole } from '@/lib/supabase/server';
 import { getAllCourses } from '@/lib/data/courses';
-import { getLearnerProfile, getWioaCommunications, getWioaCasesForLearner } from '@/lib/data/wioa';
+import {
+  getLearnerProfile,
+  getWioaCommunications,
+  getWioaCasesForLearner,
+  getWioaCourseFundingForLearner,
+} from '@/lib/data/wioa';
 import { getWioaEmailTemplate } from '@/lib/data/wioa-email-template';
 import { matchWorkforceOffice } from '@/lib/wioa/matching';
 import { FundingView } from './FundingView';
@@ -10,11 +15,12 @@ export default async function FundingPage() {
   if (!user) return null;
   const viewer = { userId: user.id, role: getRole(user) ?? 'LEARNER' };
 
-  const [profile, courses, communications, cases, emailTemplate] = await Promise.all([
+  const [profile, courses, communications, cases, fundingRequests, emailTemplate] = await Promise.all([
     getLearnerProfile(viewer, user.id),
     getAllCourses(),
     getWioaCommunications(viewer, user.id),
     getWioaCasesForLearner(viewer, user.id),
+    getWioaCourseFundingForLearner(viewer, user.id),
     getWioaEmailTemplate(),
   ]);
 
@@ -48,6 +54,7 @@ export default async function FundingPage() {
         restrictedCourses={restrictedCourses}
         communications={communications}
         cases={cases}
+        fundingRequests={fundingRequests}
         learnerName={name}
         learnerEmail={learnerEmail}
         emailTemplate={emailTemplate}

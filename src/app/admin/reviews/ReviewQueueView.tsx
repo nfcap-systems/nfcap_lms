@@ -3,6 +3,7 @@
 import { useMemo, useState, useTransition } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 import { Pagination, StateCard } from '@/components/ui';
 import { Icon } from '@/components/icons';
 import { bulkApproveEvidence } from '@/lib/actions/progress';
@@ -89,10 +90,9 @@ export function ReviewQueueView({
         const result = await bulkApproveEvidence(items);
         setSelected(new Set());
         if (result.skipped.length === 0) {
-          setNotice({
-            tone: 'ok',
-            text: `Approved ${result.approved} submission${result.approved === 1 ? '' : 's'}.`,
-          });
+          const text = `Approved ${result.approved} submission${result.approved === 1 ? '' : 's'}.`;
+          setNotice({ tone: 'ok', text });
+          toast.success(text);
         } else {
           const names = result.skipped
             .map((s) => {
@@ -102,19 +102,17 @@ export function ReviewQueueView({
               return row ? `${row.learnerName} — ${row.courseTitle}` : s.courseSlug;
             })
             .join('; ');
-          setNotice({
-            tone: 'warn',
-            text:
-              `Approved ${result.approved} of ${items.length}. ` +
-              `Needs per-criterion review before it can be certified: ${names}.`,
-          });
+          const text =
+            `Approved ${result.approved} of ${items.length}. ` +
+            `Needs per-criterion review before it can be certified: ${names}.`;
+          setNotice({ tone: 'warn', text });
+          toast.warning(text);
         }
         router.refresh();
       } catch (e) {
-        setNotice({
-          tone: 'warn',
-          text: e instanceof Error ? e.message : 'Bulk approve failed.',
-        });
+        const text = e instanceof Error ? e.message : 'Bulk approve failed.';
+        setNotice({ tone: 'warn', text });
+        toast.error(text);
       }
     });
   }

@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 import {
   Badge,
   Button,
@@ -21,7 +22,7 @@ import {
 import { Icon } from '@/components/icons';
 import {
   setWioaDocumentStatus,
-  advanceWioaCaseStatus,
+  advanceWioaEligibilityStatus,
   getWioaDocumentUrl,
   getWioaDocumentVersions,
   getWioaDocumentVersionUrl,
@@ -32,8 +33,12 @@ import {
 } from '@/lib/actions/wioa';
 import type { WioaCaseDetail, WioaDocumentRecord } from '@/lib/data/wioa';
 import type { LearnerRecord } from '@/lib/data/learners';
-import type { WioaCaseStatus, AppointmentType } from '@/generated/prisma/enums';
-import { WIOA_STATUS_LABEL, WIOA_STATUS_PHASE, nextStatusOptions } from '@/lib/wioa/status';
+import type { WioaEligibilityStatus, AppointmentType } from '@/generated/prisma/enums';
+import {
+  WIOA_STATUS_LABEL,
+  WIOA_STATUS_PHASE,
+  nextStatusOptions,
+} from '@/lib/wioa/status';
 
 const docStatusTone: Record<
   WioaDocumentRecord['status'],
@@ -68,7 +73,7 @@ const COMMUNICATION_ICON: Record<'EMAIL' | 'CALL' | 'NOTE', 'mail' | 'phone' | '
 // Only these two next-statuses ever pair with scheduling an Appointment in the same action
 // (docs/build/WIOA_BUILD_WORKFLOW.md "Open decisions" — Appointment is authoritative for the date,
 // the case status is a derived label staff sets alongside creating it).
-const APPOINTMENT_STATUS_TYPE: Partial<Record<WioaCaseStatus, AppointmentType>> = {
+const APPOINTMENT_STATUS_TYPE: Partial<Record<WioaEligibilityStatus, AppointmentType>> = {
   ORIENTATION_SCHEDULED: 'ORIENTATION',
   INTAKE_APPOINTMENT_SCHEDULED: 'INTAKE',
 };
@@ -108,12 +113,15 @@ export function WioaCaseDetailView({
   const nextAppointment = wioaCase.appointments.find(
     (a) => !a.completedAt && new Date(a.scheduledAt) >= new Date(),
   );
-  const pathwayPercent =
-    wioaCase.status === 'APPRENTICESHIP_ENROLLMENT_COMPLETE'
-      ? 100
-      : wioaCase.status === 'CLOSED_INELIGIBLE'
-        ? 0
-        : 50;
+  // Funding enrollment-complete is now a per-course fact, not an eligibility-case one
+  // (docs/plans/wioa-spec-alignment-kickoff.md #1) — 100% once any funding request reaches it.
+  const pathwayPercent = wioaCase.fundingRequests?.some(
+    (f) => f.status === 'APPRENTICESHIP_ENROLLMENT_COMPLETE',
+  )
+    ? 100
+    : wioaCase.status === 'CLOSED_INELIGIBLE'
+      ? 0
+      : 50;
 
   return (
     <div className="flex flex-col gap-5">
@@ -442,13 +450,21 @@ function DocumentReviewRow({
   const [loadingHistory, setLoadingHistory] = useState(false);
 
   async function viewFile() {
-    const url = await getWioaDocumentUrl(doc.id);
-    window.open(url, '_blank', 'noopener,noreferrer');
+    try {
+      const url = await getWioaDocumentUrl(doc.id);
+      window.open(url, '_blank', 'noopener,noreferrer');
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Could not open the document.');
+    }
   }
 
   async function viewVersion(versionId: string) {
-    const url = await getWioaDocumentVersionUrl(versionId);
-    window.open(url, '_blank', 'noopener,noreferrer');
+    try {
+      const url = await getWioaDocumentVersionUrl(versionId);
+      window.open(url, '_blank', 'noopener,noreferrer');
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Could not open the document.');
+    }
   }
 
   async function toggleHistory() {
@@ -459,6 +475,8 @@ function DocumentReviewRow({
     setLoadingHistory(true);
     try {
       setHistory(await getWioaDocumentVersions(doc.id));
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Could not load document history.');
     } finally {
       setLoadingHistory(false);
     }
@@ -466,10 +484,15 @@ function DocumentReviewRow({
 
   function review(status: 'ACCEPTED' | 'REJECTED') {
     startTransition(async () => {
-      await setWioaDocumentStatus(doc.id, status, status === 'REJECTED' ? reason : undefined);
-      setReviewing(false);
-      setReason('');
-      router.refresh();
+      try {
+        await setWioaDocumentStatus(doc.id, status, status === 'REJECTED' ? reason : undefined);
+        toast.success(status === 'ACCEPTED' ? 'Document accepted' : 'Document rejected');
+        setReviewing(false);
+        setReason('');
+        router.refresh();
+      } catch (e) {
+        toast.error(e instanceof Error ? e.message : 'Could not update the document.');
+      }
     });
   }
 
@@ -600,8 +623,13 @@ function AssignmentControl({
 
   function assign(partnerStaffId: string) {
     startTransition(async () => {
-      await assignWioaCasePartnerStaff(wioaCase.id, partnerStaffId || null);
-      router.refresh();
+      try {
+        await assignWioaCasePartnerStaff(wioaCase.id, partnerStaffId || null);
+        toast.success(partnerStaffId ? 'Case assigned' : 'Case unassigned');
+        router.refresh();
+      } catch (e) {
+        toast.error(e instanceof Error ? e.message : 'Could not update the assignment.');
+      }
     });
   }
 
@@ -654,6 +682,9 @@ function FundingCard({ wioaCase }: { wioaCase: WioaCaseDetail }) {
   const [caseManagerNotifiedAt, setCaseManagerNotifiedAt] = useState(
     toDatetimeLocal(funding?.caseManagerNotifiedAt),
   );
+  const [requestedAmount, setRequestedAmount] = useState(
+    funding?.requestedAmount != null ? String(funding.requestedAmount) : '',
+  );
   const [fundingReviewStatus, setFundingReviewStatus] = useState(
     funding?.fundingReviewStatus ?? '',
   );
@@ -665,13 +696,16 @@ function FundingCard({ wioaCase }: { wioaCase: WioaCaseDetail }) {
   const [approvalDate, setApprovalDate] = useState(toDateInput(auth?.approvalDate));
   const [trainingStartDate, setTrainingStartDate] = useState(toDateInput(auth?.trainingStartDate));
   const [authorizationStatus, setAuthorizationStatus] = useState(auth?.status ?? '');
+  const [error, setError] = useState<string | null>(null);
 
   function save() {
+    setError(null);
     const fields: WioaFundingFields = {
       trainingProgram: trainingProgram || undefined,
       etplProviderConfirmed,
       submittedAt: submittedAt || undefined,
       caseManagerNotifiedAt: caseManagerNotifiedAt || undefined,
+      requestedAmount: requestedAmount ? Number(requestedAmount) : undefined,
       fundingReviewStatus: fundingReviewStatus || undefined,
       requestStatus: requestStatus || undefined,
       itaIssuedAt: itaIssuedAt || undefined,
@@ -680,9 +714,21 @@ function FundingCard({ wioaCase }: { wioaCase: WioaCaseDetail }) {
       trainingStartDate: trainingStartDate || undefined,
       authorizationStatus: authorizationStatus || undefined,
     };
+    const courseCaseId = wioaCase.fundingRequests?.[0]?.id;
+    if (!courseCaseId) {
+      setError('No course funding request exists yet for this case.');
+      return;
+    }
     startTransition(async () => {
-      await updateWioaFunding(wioaCase.id, fields);
-      router.refresh();
+      try {
+        await updateWioaFunding(courseCaseId, fields);
+        toast.success('Funding details saved');
+        router.refresh();
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Could not save funding details.';
+        setError(message);
+        toast.error(message);
+      }
     });
   }
 
@@ -723,6 +769,20 @@ function FundingCard({ wioaCase }: { wioaCase: WioaCaseDetail }) {
             type="datetime-local"
             value={caseManagerNotifiedAt}
             onChange={(e) => setCaseManagerNotifiedAt(e.target.value)}
+          />
+        </Field>
+        <Field
+          label="Requested amount"
+          htmlFor="requestedAmount"
+          hint="What was asked for, before the board's own approved amount below"
+        >
+          <Input
+            id="requestedAmount"
+            type="number"
+            min="0"
+            step="0.01"
+            value={requestedAmount}
+            onChange={(e) => setRequestedAmount(e.target.value)}
           />
         </Field>
         <Field label="Funding review status" htmlFor="fundingReviewStatus">
@@ -788,6 +848,8 @@ function FundingCard({ wioaCase }: { wioaCase: WioaCaseDetail }) {
           </div>
         </div>
 
+        {error && <p className="text-xs text-[var(--status-problem)]">{error}</p>}
+
         <Button size="sm" disabled={pending} onClick={save} className="w-fit">
           {pending ? 'Saving…' : 'Save funding details'}
         </Button>
@@ -800,7 +862,7 @@ function StatusCard({ wioaCase }: { wioaCase: WioaCaseDetail }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const options = nextStatusOptions(wioaCase.status);
-  const [nextStatus, setNextStatus] = useState<WioaCaseStatus | ''>('');
+  const [nextStatus, setNextStatus] = useState<WioaEligibilityStatus | ''>('');
   const [scheduledAt, setScheduledAt] = useState('');
   const [notes, setNotes] = useState('');
   const [error, setError] = useState('');
@@ -814,19 +876,22 @@ function StatusCard({ wioaCase }: { wioaCase: WioaCaseDetail }) {
     setError('');
     startTransition(async () => {
       try {
-        await advanceWioaCaseStatus(
+        await advanceWioaEligibilityStatus(
           wioaCase.id,
           nextStatus,
           appointmentType && scheduledAt
             ? { type: appointmentType, scheduledAt, notes: notes || undefined }
             : undefined,
         );
+        toast.success('Case status updated');
         setNextStatus('');
         setScheduledAt('');
         setNotes('');
         router.refresh();
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Could not advance this case.');
+        const message = err instanceof Error ? err.message : 'Could not advance this case.';
+        setError(message);
+        toast.error(message);
       }
     });
   }
@@ -845,7 +910,7 @@ function StatusCard({ wioaCase }: { wioaCase: WioaCaseDetail }) {
             value={nextStatus}
             onChange={(e) => {
               setError('');
-              setNextStatus(e.target.value as WioaCaseStatus);
+              setNextStatus(e.target.value as WioaEligibilityStatus);
             }}
           >
             <option value="">Select next status</option>

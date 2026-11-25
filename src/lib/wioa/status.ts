@@ -1,21 +1,12 @@
-import type { WioaCaseStatus } from '@/generated/prisma/enums';
+import type { WioaEligibilityStatus, WioaFundingStatus } from '@/generated/prisma/enums';
 
-/** The 18 canonical statuses in transition order (spec Section 7), grouped into the 6 UI phases
- * the reference visual and WIOA_INTEGRATION_PLAN.md Section 7/8 use for the student-facing
- * progress display. CLOSED_INELIGIBLE is reachable from any open status (not part of the linear
- * order) and is rendered as its own terminal phase, not folded into "Enrollment". */
-export const WIOA_UI_PHASES = [
-  'Registration',
-  'Matching',
-  'Contact',
-  'Eligibility Process',
-  'Funding Request',
-  'Enrollment',
-] as const;
+/** The eligibility pipeline's UI phases (spec Section 7, steps 1-13) — one-time per student, on
+ * the master case. Funding/enrollment are their own, separate phase set below (per course). */
+export const WIOA_UI_PHASES = ['Registration', 'Matching', 'Contact', 'Eligibility Process'] as const;
 
 export type WioaUiPhase = (typeof WIOA_UI_PHASES)[number] | 'Closed';
 
-export const WIOA_STATUS_ORDER: WioaCaseStatus[] = [
+export const WIOA_ELIGIBILITY_STATUS_ORDER: WioaEligibilityStatus[] = [
   'REGISTERED',
   'WORKFORCE_BOARD_MATCHED',
   'INITIAL_CONTACT_SENT',
@@ -29,14 +20,10 @@ export const WIOA_STATUS_ORDER: WioaCaseStatus[] = [
   'INTAKE_APPOINTMENT_SCHEDULED',
   'ELIGIBILITY_UNDER_REVIEW',
   'WIOA_ELIGIBLE',
-  'ETPL_TRAINING_REQUESTED',
-  'TRAINING_AUTHORIZATION_PENDING',
-  'TUITION_APPROVED',
-  'APPRENTICESHIP_ENROLLMENT_COMPLETE',
   'CLOSED_INELIGIBLE',
 ];
 
-export const WIOA_STATUS_LABEL: Record<WioaCaseStatus, string> = {
+export const WIOA_ELIGIBILITY_STATUS_LABEL: Record<WioaEligibilityStatus, string> = {
   REGISTERED: 'Registered',
   WORKFORCE_BOARD_MATCHED: 'Workforce Board Matched',
   INITIAL_CONTACT_SENT: 'Initial Contact Sent',
@@ -50,14 +37,10 @@ export const WIOA_STATUS_LABEL: Record<WioaCaseStatus, string> = {
   INTAKE_APPOINTMENT_SCHEDULED: 'Intake Appointment Scheduled',
   ELIGIBILITY_UNDER_REVIEW: 'Eligibility Under Review',
   WIOA_ELIGIBLE: 'WIOA Eligible',
-  ETPL_TRAINING_REQUESTED: 'ETPL Training Requested',
-  TRAINING_AUTHORIZATION_PENDING: 'Training Authorization Pending',
-  TUITION_APPROVED: 'Tuition Approved',
-  APPRENTICESHIP_ENROLLMENT_COMPLETE: 'Apprenticeship Enrollment Complete',
   CLOSED_INELIGIBLE: 'Closed / Ineligible',
 };
 
-export const WIOA_STATUS_PHASE: Record<WioaCaseStatus, WioaUiPhase> = {
+export const WIOA_ELIGIBILITY_STATUS_PHASE: Record<WioaEligibilityStatus, WioaUiPhase> = {
   REGISTERED: 'Registration',
   WORKFORCE_BOARD_MATCHED: 'Matching',
   INITIAL_CONTACT_SENT: 'Contact',
@@ -71,16 +54,11 @@ export const WIOA_STATUS_PHASE: Record<WioaCaseStatus, WioaUiPhase> = {
   INTAKE_APPOINTMENT_SCHEDULED: 'Eligibility Process',
   ELIGIBILITY_UNDER_REVIEW: 'Eligibility Process',
   WIOA_ELIGIBLE: 'Eligibility Process',
-  ETPL_TRAINING_REQUESTED: 'Funding Request',
-  TRAINING_AUTHORIZATION_PENDING: 'Funding Request',
-  TUITION_APPROVED: 'Funding Request',
-  APPRENTICESHIP_ENROLLMENT_COMPLETE: 'Enrollment',
   CLOSED_INELIGIBLE: 'Closed',
 };
 
-/** Next-step guidance text for the learner activity feed (WIOA_INTEGRATION_PLAN.md Section 7 —
- * "next-step guidance (derived from WioaCase.status)"). */
-export const WIOA_STATUS_NEXT_STEP: Record<WioaCaseStatus, string> = {
+/** Next-step guidance text for the learner activity feed (master-case, eligibility-stage). */
+export const WIOA_ELIGIBILITY_STATUS_NEXT_STEP: Record<WioaEligibilityStatus, string> = {
   REGISTERED: 'Your profile is set up — next, we match you to a workforce board.',
   WORKFORCE_BOARD_MATCHED:
     "You're matched — send outreach to your workforce office to open your case.",
@@ -100,24 +78,67 @@ export const WIOA_STATUS_NEXT_STEP: Record<WioaCaseStatus, string> = {
   INTAKE_APPOINTMENT_SCHEDULED:
     'Your intake appointment is scheduled — check the appointment details below.',
   ELIGIBILITY_UNDER_REVIEW: 'Your eligibility is under review by your workforce office.',
-  WIOA_ELIGIBLE: "You're WIOA eligible! Staff will request ETPL training funding next.",
-  ETPL_TRAINING_REQUESTED: 'Training funding has been requested for your apprenticeship program.',
-  TRAINING_AUTHORIZATION_PENDING: 'Your training authorization is pending approval.',
-  TUITION_APPROVED: 'Tuition approved! Your restricted course is now unlocked.',
-  APPRENTICESHIP_ENROLLMENT_COMPLETE: 'Enrollment complete — your WIOA case is closed.',
+  WIOA_ELIGIBLE: "You're WIOA eligible! Pick a course to request training funding.",
   CLOSED_INELIGIBLE: 'This case is closed. Contact NFCAP staff with any questions.',
 };
 
-/** Statuses staff can select as the next transition from a given status — linear, one step
- * forward, except CLOSED_INELIGIBLE which is reachable from any open status
+/** Statuses staff can select as the next transition from a given eligibility status — linear, one
+ * step forward, except CLOSED_INELIGIBLE which is reachable from any open status
  * (docs/build/WIOA_BUILD_WORKFLOW.md "Open decisions"). */
-export function nextStatusOptions(current: WioaCaseStatus): WioaCaseStatus[] {
-  if (current === 'CLOSED_INELIGIBLE' || current === 'APPRENTICESHIP_ENROLLMENT_COMPLETE')
-    return [];
-  const idx = WIOA_STATUS_ORDER.indexOf(current);
-  const forward = WIOA_STATUS_ORDER[idx + 1];
-  const options: WioaCaseStatus[] = [];
+export function nextEligibilityStatusOptions(
+  current: WioaEligibilityStatus,
+): WioaEligibilityStatus[] {
+  if (current === 'CLOSED_INELIGIBLE' || current === 'WIOA_ELIGIBLE') return [];
+  const idx = WIOA_ELIGIBILITY_STATUS_ORDER.indexOf(current);
+  const forward = WIOA_ELIGIBILITY_STATUS_ORDER[idx + 1];
+  const options: WioaEligibilityStatus[] = [];
   if (forward && forward !== 'CLOSED_INELIGIBLE') options.push(forward);
   options.push('CLOSED_INELIGIBLE');
   return options;
 }
+
+/// Funding/tuition pipeline (spec Section 14) — per course, only reachable once the learner's
+/// master case is WIOA_ELIGIBLE.
+export const WIOA_FUNDING_STATUS_ORDER: WioaFundingStatus[] = [
+  'ETPL_TRAINING_REQUESTED',
+  'TRAINING_AUTHORIZATION_PENDING',
+  'TUITION_APPROVED',
+  'APPRENTICESHIP_ENROLLMENT_COMPLETE',
+  'FUNDING_DECLINED',
+];
+
+export const WIOA_FUNDING_STATUS_LABEL: Record<WioaFundingStatus, string> = {
+  ETPL_TRAINING_REQUESTED: 'ETPL Training Requested',
+  TRAINING_AUTHORIZATION_PENDING: 'Training Authorization Pending',
+  TUITION_APPROVED: 'Tuition Approved',
+  APPRENTICESHIP_ENROLLMENT_COMPLETE: 'Apprenticeship Enrollment Complete',
+  FUNDING_DECLINED: 'Funding Declined',
+};
+
+export const WIOA_FUNDING_STATUS_NEXT_STEP: Record<WioaFundingStatus, string> = {
+  ETPL_TRAINING_REQUESTED: 'Training funding has been requested for this course.',
+  TRAINING_AUTHORIZATION_PENDING: 'Your training authorization is pending approval.',
+  TUITION_APPROVED: 'Tuition approved! This course is now unlocked.',
+  APPRENTICESHIP_ENROLLMENT_COMPLETE: 'Enrollment complete — this funding request is closed.',
+  FUNDING_DECLINED: 'Funding was not approved for this course. Contact NFCAP staff with questions.',
+};
+
+export function nextFundingStatusOptions(current: WioaFundingStatus): WioaFundingStatus[] {
+  if (current === 'FUNDING_DECLINED' || current === 'APPRENTICESHIP_ENROLLMENT_COMPLETE') return [];
+  const idx = WIOA_FUNDING_STATUS_ORDER.indexOf(current);
+  const forward = WIOA_FUNDING_STATUS_ORDER[idx + 1];
+  const options: WioaFundingStatus[] = [];
+  if (forward && forward !== 'FUNDING_DECLINED') options.push(forward);
+  options.push('FUNDING_DECLINED');
+  return options;
+}
+
+/// Back-compat aliases (eligibility side) for UI call sites not yet reworked for the full
+/// master/course split (docs/plans/wioa-spec-alignment-kickoff.md #1) — a real UX pass (per
+/// DEV-APPROACH.md's mockup-first gate) still needs to separate eligibility vs. funding-stage
+/// controls in the Coordinator/Partner case views; these aliases only keep the app compiling and
+/// showing the eligibility side correctly in the meantime.
+export const WIOA_STATUS_LABEL = WIOA_ELIGIBILITY_STATUS_LABEL;
+export const WIOA_STATUS_PHASE = WIOA_ELIGIBILITY_STATUS_PHASE;
+export const WIOA_STATUS_NEXT_STEP = WIOA_ELIGIBILITY_STATUS_NEXT_STEP;
+export const nextStatusOptions = nextEligibilityStatusOptions;

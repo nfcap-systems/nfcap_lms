@@ -36,6 +36,26 @@ export type MatchedOffice = {
  * falling back to GENERAL, matching WIOA_INTEGRATION_PLAN.md Section 5's escalation. Returns null
  * only when neither ZIP nor city matches anything — the caller shows the no-match recovery
  * screen. */
+/** Real 3-tier contact escalation (spec Section 5, page 4: "Contact unavailable -> Secondary
+ * contact; Secondary unavailable -> General WIOA/AJCC intake route") —
+ * docs/plans/wioa-spec-alignment-kickoff.md #2. The function this replaced picked one
+ * `priority`-sorted active contact and stopped, which only happened to match this when a board's
+ * data was clean (exactly one active contact per type, in order); a board with no PRIMARY, or
+ * multiple contacts sharing a priority, didn't actually escalate. */
+async function matchBoardContact(
+  workforceBoardId: string,
+): Promise<Awaited<ReturnType<typeof prisma.workforceContact.findFirst>>> {
+  const tiers: Array<'PRIMARY' | 'SECONDARY' | 'GENERAL'> = ['PRIMARY', 'SECONDARY', 'GENERAL'];
+  for (const contactType of tiers) {
+    const contact = await prisma.workforceContact.findFirst({
+      where: { workforceBoardId, active: true, contactType },
+      orderBy: { priority: 'asc' },
+    });
+    if (contact) return contact;
+  }
+  return null;
+}
+
 export async function matchWorkforceOffice(
   zip: string,
   city?: string | null,
@@ -59,10 +79,7 @@ export async function matchWorkforceOffice(
       : null);
   if (!jurisdiction) return null;
 
-  const contact = await prisma.workforceContact.findFirst({
-    where: { workforceBoardId: jurisdiction.workforceBoardId, active: true },
-    orderBy: { priority: 'asc' },
-  });
+  const contact = await matchBoardContact(jurisdiction.workforceBoardId);
 
   return {
     board: {

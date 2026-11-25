@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import NextLink from 'next/link';
 import Image from 'next/image';
 import { Center } from '@astryxdesign/core/Center';
-import { VStack } from '@astryxdesign/core/Layout';
+import { VStack, HStack } from '@astryxdesign/core/Layout';
 import { Card } from '@astryxdesign/core/Card';
 import { Text } from '@astryxdesign/core/Text';
 import { TextInput } from '@astryxdesign/core/TextInput';
@@ -14,6 +14,7 @@ import { DateInput } from '@astryxdesign/core/DateInput';
 import type { ISODateString } from '@astryxdesign/core/Calendar';
 import { Button } from '@astryxdesign/core/Button';
 import { Link } from '@astryxdesign/core/Link';
+import { Divider } from '@astryxdesign/core/Divider';
 import { signup, type AuthFormState } from '@/lib/actions/auth';
 import { SIGNUP_STEP1_KEY, type SignupStep1 } from '../signup-step1-storage';
 
@@ -40,6 +41,50 @@ const UI_STATUS_OPTIONS = [
 ];
 
 const initialState: AuthFormState = {};
+
+const twoColGridStyle: CSSProperties = {
+  display: 'grid',
+  gridTemplateColumns: '1fr 1fr',
+  gap: 12,
+};
+
+const threeColGridStyle: CSSProperties = {
+  display: 'grid',
+  gridTemplateColumns: '1.4fr 0.8fr 1fr',
+  gap: 12,
+};
+
+/** Groups Step 2's fields into the 3 numbered sections (Option B from
+ * temp_ss/mockups/wioa-signup-form-comparison.html) instead of one long flat list — same fields,
+ * same validation, just shorter on screen. */
+function FormSection({
+  step,
+  title,
+  isLast,
+  children,
+}: {
+  step: number;
+  title: string;
+  isLast?: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <VStack gap={3} style={isLast ? undefined : { marginBottom: 4 }}>
+      <VStack gap={2}>
+        <HStack gap={2} vAlign="center">
+          <Text type="body" weight="bold" size="sm">
+            {step}
+          </Text>
+          <Text type="body" weight="bold" size="sm">
+            {title}
+          </Text>
+        </HStack>
+        <Divider />
+      </VStack>
+      {children}
+    </VStack>
+  );
+}
 
 /** LRN-Signup Step 2 of 2 — the WIOA profile fields, reached only from Step 1
  * (SignupAstryx.tsx) checking "pursuing WIOA." Submits the SAME `signup` server action as Step 1
@@ -85,7 +130,7 @@ export function SignupWioaAstryx() {
 
   return (
     <Center role="main" axis="both" padding={6} style={pageStyle}>
-      <Card padding={8} width="100%" maxWidth={440}>
+      <Card padding={8} width="100%" maxWidth={560}>
         <form action={formAction}>
           <input type="hidden" name="name" value={step1.name} />
           <input type="hidden" name="email" value={step1.email} />
@@ -106,94 +151,124 @@ export function SignupWioaAstryx() {
               </VStack>
             </VStack>
 
-            <VStack gap={3}>
-              <DateInput
-                label="Date of birth"
-                isRequired
-                value={dateOfBirth}
-                onChange={setDateOfBirth}
-              />
+            <FormSection step={1} title="Personal & contact">
+              <div style={twoColGridStyle}>
+                <DateInput
+                  label="Date of birth"
+                  isRequired
+                  width="100%"
+                  value={dateOfBirth}
+                  onChange={setDateOfBirth}
+                />
+
+                <TextInput
+                  label="Mobile phone"
+                  htmlName="mobilePhone"
+                  type="tel"
+                  autoComplete="tel"
+                  isRequired
+                  width="100%"
+                  value={mobilePhone}
+                  onChange={setMobilePhone}
+                />
+              </div>
 
               <TextInput
-                label="Mobile phone"
-                htmlName="mobilePhone"
-                type="tel"
-                autoComplete="tel"
-                isRequired
-                value={mobilePhone}
-                onChange={setMobilePhone}
+                label="Preferred language"
+                htmlName="preferredLanguage"
+                width="100%"
+                value={preferredLanguage}
+                onChange={setPreferredLanguage}
               />
+            </FormSection>
 
+            <FormSection step={2} title="Address">
               <TextInput
                 label="Street address"
                 htmlName="streetAddress"
                 autoComplete="address-line1"
                 isRequired
+                width="100%"
                 value={streetAddress}
                 onChange={setStreetAddress}
               />
 
-              <TextInput
-                label="City"
-                htmlName="city"
-                autoComplete="address-level2"
-                isRequired
-                value={city}
-                onChange={setCity}
-              />
-              <TextInput
-                label="State"
-                htmlName="state"
-                autoComplete="address-level1"
-                isRequired
-                value={state2}
-                onChange={setState2}
-              />
-              <TextInput
-                label="ZIP code"
-                htmlName="zip"
-                inputMode="numeric"
-                autoComplete="postal-code"
-                isRequired
-                value={zip}
-                onChange={setZip}
-              />
+              <div style={threeColGridStyle}>
+                <TextInput
+                  label="City"
+                  htmlName="city"
+                  autoComplete="address-level2"
+                  isRequired
+                  width="100%"
+                  value={city}
+                  onChange={setCity}
+                />
+                <TextInput
+                  label="State"
+                  htmlName="state"
+                  autoComplete="address-level1"
+                  isRequired
+                  width="100%"
+                  value={state2}
+                  onChange={setState2}
+                />
+                <TextInput
+                  label="ZIP code"
+                  htmlName="zip"
+                  inputMode="numeric"
+                  autoComplete="postal-code"
+                  isRequired
+                  width="100%"
+                  value={zip}
+                  onChange={setZip}
+                />
+              </div>
+            </FormSection>
 
-              <TextInput
-                label="Preferred language"
-                htmlName="preferredLanguage"
-                value={preferredLanguage}
-                onChange={setPreferredLanguage}
-              />
+            <FormSection step={3} title="Employment & training" isLast>
+              {/* Both Selectors now carry label + control only, nothing else — that's what kept
+                  label row 1 / control row 2 lined up across the two columns (the earlier
+                  bottom-align fix matched the select boxes but pushed "Employment status"'s own
+                  label out of line with "Unemployment insurance status"'s). The UI-status
+                  clarification moves to a shared caption below the row instead of living inside
+                  one Selector's `description`, which is what broke the row height in the first
+                  place. */}
+              <div style={twoColGridStyle}>
+                <Selector
+                  label="Employment status"
+                  htmlName="employmentStatus"
+                  width="100%"
+                  options={EMPLOYMENT_OPTIONS}
+                  placeholder="Select one"
+                  value={employmentStatus}
+                  onChange={(v) => setEmploymentStatus(v ?? '')}
+                />
 
-              <Selector
-                label="Employment status"
-                htmlName="employmentStatus"
-                options={EMPLOYMENT_OPTIONS}
-                placeholder="Select one"
-                value={employmentStatus}
-                onChange={(v) => setEmploymentStatus(v ?? '')}
-              />
-
-              <Selector
-                label="Unemployment insurance status"
-                htmlName="unemploymentInsuranceStatus"
-                description="Have you filed for, received, or exhausted UI in the last 6 months?"
-                options={UI_STATUS_OPTIONS}
-                placeholder="Select one"
-                value={unemploymentInsuranceStatus}
-                onChange={(v) => setUnemploymentInsuranceStatus(v ?? '')}
-              />
+                <Selector
+                  label="Unemployment insurance status"
+                  htmlName="unemploymentInsuranceStatus"
+                  width="100%"
+                  options={UI_STATUS_OPTIONS}
+                  placeholder="Select one"
+                  value={unemploymentInsuranceStatus}
+                  onChange={(v) => setUnemploymentInsuranceStatus(v ?? '')}
+                />
+              </div>
+              <Text type="supporting" color="secondary" size="sm">
+                Unemployment insurance status: have you filed for, received, or exhausted UI in
+                the last 6 months?
+              </Text>
 
               <TextInput
                 label="Training / apprenticeship interest"
                 htmlName="trainingApprenticeshipInterest"
                 placeholder="e.g. Flooring & Tile Apprenticeship"
                 isRequired
+                width="100%"
                 value={trainingInterest}
                 onChange={setTrainingInterest}
               />
-            </VStack>
+            </FormSection>
 
             {state.error && (
               <Text type="supporting" color="primary">
