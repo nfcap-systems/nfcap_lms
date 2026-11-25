@@ -94,7 +94,7 @@ export function EvidenceView({
           <Badge tone={status.tone}>{status.label}</Badge>
           <p className="text-sm text-[var(--ink-muted)]">
             Submitted{' '}
-            {new Date(evidence.submittedAt).toLocaleDateString(undefined, {
+            {new Date(evidence.submittedAt).toLocaleDateString('en-US', {
               month: 'short',
               day: 'numeric',
               year: 'numeric',

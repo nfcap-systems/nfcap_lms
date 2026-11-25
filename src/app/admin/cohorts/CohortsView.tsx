@@ -8,7 +8,10 @@ import { Button } from '@/components/admin-ui/button';
 import { NewCohortDialog } from '@/components/admin-shell/quick-create/NewCohortDialog';
 
 function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString(undefined, {
+  // Pinned to 'en-US' — see the comment in src/app/admin/DashboardView.tsx: the environment's
+  // default locale (`undefined`) can differ between server and browser, causing a real
+  // SSR/hydration mismatch (React error #418).
+  return new Date(iso).toLocaleDateString('en-US', {
     month: 'short',
     day: 'numeric',
     year: 'numeric',

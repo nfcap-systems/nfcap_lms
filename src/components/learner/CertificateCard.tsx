@@ -40,7 +40,10 @@ export function CertificateCard({
       downloadBase64File(base64, filename, 'application/pdf');
     });
   }
-  const issuedDate = new Date(credential.issuedAt).toLocaleDateString(undefined, {
+  // Pinned to 'en-US' — see the comment in src/app/admin/DashboardView.tsx: the environment's
+  // default locale (`undefined`) can differ between server and browser, causing a real
+  // SSR/hydration mismatch (React error #418).
+  const issuedDate = new Date(credential.issuedAt).toLocaleDateString('en-US', {
     month: 'short',
     day: 'numeric',
     year: 'numeric',

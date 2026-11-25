@@ -1,18 +1,19 @@
-import type { CSSProperties } from 'react';
+import { Suspense, type CSSProperties } from 'react';
 import { AppSidebar } from '@/components/admin-shell/AppSidebar';
 import { AdminHeader } from '@/components/admin-shell/AdminHeader';
+import { ResolvedAccountMenu } from '@/components/admin-shell/ResolvedAccountMenu';
+import { AccountMenuSkeleton } from '@/components/admin-shell/HeaderAccountMenu';
 import { SidebarInset, SidebarProvider } from '@/components/admin-ui/sidebar';
 import { TooltipProvider } from '@/components/admin-ui/tooltip';
-import { getAuthUser } from '@/lib/supabase/server';
 
-export default async function AdminLayout({ children }: { children: React.ReactNode }) {
-  // getPendingReviewCount moved into AppSidebar's own Suspense-wrapped PendingReviewBanner — it
-  // was previously awaited here alongside getAuthUser, which meant the whole shell (sidebar,
-  // header) waited on it even though it only affects one optional sidebar banner.
-  const user = await getAuthUser();
-  const userName = typeof user?.user_metadata?.name === 'string' ? user.user_metadata.name : '';
-  const userEmail = user?.email ?? '';
-
+// Deliberately NOT an async function awaiting getAuthUser() here. That used to make Next's
+// Partial Prerendering treat the whole shell (sidebar nav, Quick Create, every border) as one
+// dynamic unit tied to the per-user auth fetch — which could cache an incomplete first-request
+// render and serve it to everyone until the next revalidation, intermittently dropping the
+// sidebar border/Quick Create button on first load. getAuthUser() now only happens inside
+// ResolvedAccountMenu/ResolvedNavUser, each under its own <Suspense>, so only the account
+// name/avatar is dynamic — see the comment on AdminHeader's `accountMenu` prop.
+export default function AdminLayout({ children }: { children: React.ReactNode }) {
   return (
     <TooltipProvider>
       {/* 272px (17rem), matching Sidebar.dc.html's own width and the reference template's
@@ -23,9 +24,15 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         data-system="staff"
         style={{ '--sidebar-width': 'calc(var(--spacing) * 68)' } as CSSProperties}
       >
-        <AppSidebar userName={userName} userEmail={userEmail} showPendingReview />
+        <AppSidebar showPendingReview />
         <SidebarInset>
-          <AdminHeader userName={userName} userEmail={userEmail} />
+          <AdminHeader
+            accountMenu={
+              <Suspense fallback={<AccountMenuSkeleton />}>
+                <ResolvedAccountMenu accountHref="/admin/account" />
+              </Suspense>
+            }
+          />
           <div className="flex flex-1 flex-col gap-4 p-4 md:p-6">{children}</div>
         </SidebarInset>
       </SidebarProvider>

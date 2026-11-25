@@ -11,20 +11,19 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarMenuSkeleton,
   SidebarRail,
 } from '@/components/admin-ui/sidebar';
 
 import { NavMain } from './NavMain';
-import { NavUser } from './NavUser';
 import { PendingReviewBanner } from './PendingReviewBanner';
+import { ResolvedNavUser } from './ResolvedNavUser';
 
 export function AppSidebar({
   basePath = '/admin',
   navItems = adminNav,
   showQuickCreate = true,
   showPendingReview = false,
-  userName,
-  userEmail,
 }: {
   /** Defaults to today's Admin values — other admin-ui-shell roles (coordinator, partner) pass
    * their own basePath/navItems to reuse this same sidebar rather than a duplicate copy. */
@@ -33,8 +32,6 @@ export function AppSidebar({
   showQuickCreate?: boolean;
   /** Only Admin has a Review Queue — coordinator/partner don't pass this. */
   showPendingReview?: boolean;
-  userName: string;
-  userEmail: string;
 }) {
   return (
     <Sidebar variant="sidebar" collapsible="icon">
@@ -61,9 +58,24 @@ export function AppSidebar({
             <PendingReviewBanner />
           </Suspense>
         )}
-        <NavUser name={userName} email={userEmail} accountHref={`${basePath}/account`} />
+        {/* ResolvedNavUser does its own `getAuthUser()` fetch under this Suspense boundary so
+            that fetch's dynamic/postponed status stays scoped to just the footer's name/email —
+            see the comment on AdminHeader's `accountMenu` prop for why this matters. */}
+        <Suspense fallback={<NavUserSkeleton />}>
+          <ResolvedNavUser accountHref={`${basePath}/account`} />
+        </Suspense>
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>
+  );
+}
+
+function NavUserSkeleton() {
+  return (
+    <SidebarMenu>
+      <SidebarMenuItem>
+        <SidebarMenuSkeleton showIcon />
+      </SidebarMenuItem>
+    </SidebarMenu>
   );
 }

@@ -27,13 +27,18 @@ export default async function FundingPage() {
   const name = typeof user.user_metadata?.name === 'string' ? user.user_metadata.name : 'You';
   const learnerEmail = user.email ?? '';
 
+  // Matches FundingView's own default course selection (restrictedCourses[0]) so the header
+  // names the right course on first render, per LRN10-FundingStatus's "Your WIOA funding" +
+  // course-subtitle pattern — not generic boilerplate regardless of which case is active.
+  const defaultCourseTitle = restrictedCourses[0]?.title ?? null;
+
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="text-xl font-semibold text-[var(--ink)]">WIOA Funding</h1>
+        <h1 className="text-xl font-semibold text-[var(--ink)]">Your WIOA funding</h1>
         <p className="mt-1 text-sm text-[var(--ink-muted)]">
-          Match to your local workforce board and start the WIOA eligibility process for
-          apprenticeship tuition funding.
+          {defaultCourseTitle ??
+            'Match to your local workforce board and start the WIOA eligibility process for apprenticeship tuition funding.'}
         </p>
       </div>
 

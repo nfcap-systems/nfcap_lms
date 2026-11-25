@@ -779,7 +779,7 @@ export function HomeView({
                       <div className="lrn-review-title">{credential.course.title}</div>
                       <div className="lrn-review-meta">
                         Earned{' '}
-                        {new Date(credential.issuedAt).toLocaleDateString(undefined, {
+                        {new Date(credential.issuedAt).toLocaleDateString('en-US', {
                           year: 'numeric',
                           month: 'short',
                           day: 'numeric',

@@ -1,6 +1,6 @@
 'use client';
 
-import { useActionState, useState, type CSSProperties } from 'react';
+import { useActionState, useEffect, useState, type CSSProperties } from 'react';
 import { useSearchParams } from 'next/navigation';
 import NextLink from 'next/link';
 import Image from 'next/image';
@@ -37,6 +37,14 @@ export function LoginAstryx() {
   const [state, formAction, pending] = useActionState(login, initialState);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+
+  // A full browser navigation, not router.push — see the comment on login() in
+  // src/lib/actions/auth.ts for why: a client-side/RSC transition into /admin (or
+  // /coordinator, /partner) could intermittently commit before that route's own CSS finished
+  // loading, painting the shell with its classes present but unstyled.
+  useEffect(() => {
+    if (state.next) window.location.href = state.next;
+  }, [state.next]);
 
   return (
     <Center role="main" axis="both" padding={6} style={pageStyle}>

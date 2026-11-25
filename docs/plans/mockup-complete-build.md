@@ -261,7 +261,7 @@ Board-backed work remaining, by phase. Hours from the scope doc, not estimated h
 | Phase | Total | Already shipped | Board-backed remaining |
 | --- | ---: | --- | ---: |
 | 3 — Evidence & Competency | 260h | **COMPLETE** — all 11 engineering features merged (PRs #13–#22) | **0h** (only #5, 12h of NFCAP trade-expert sessions, is non-engineering — confirm with the client whether it's considered delivered) |
-| 4 — Credential Integrity | 80h | — | **80h** |
+| 4 — Credential Integrity | 80h | PDF Certificate (20h), Public Verification (20h, scope-reduced — QR dropped), Shareable Portfolio (18h) — 58h shipped, merged to `stage` via PR #24. Expiry & Renewal Reminders (22h) dropped by decision, not outstanding — see `docs/build/PHASE_4_PROGRESS.md` | **0h — functionally complete**, pending client sign-off on both dropped-scope decisions |
 | 5 — Funding Productisation | 130h | part of Funding Impact Reporting | **~130h** |
 | 6 — Communication & Operations | 184h | — | **184h** |
 | **Board-backed total** | | | **~394h** |
@@ -301,7 +301,11 @@ with this ledger as the roadmap.
 5. **Media delivery** — Cloudflare Stream vs Mux (scope doc puts this decision in Phase 3).
 6. **Cohort intake model** — how does NFCAP actually run intakes? (scope doc flags this against
    Cohorts & Deadlines).
-7. **Credential expiry / portfolio sharing** — the Phase 4 open questions.
+7. **Credential expiry** — the remaining Phase 4 open question (portfolio sharing is built, see
+   `docs/build/PHASE_4_PROGRESS.md`).
+7b. **QR code dropped, 2026-11-25** — user decision: the `/verify/[slug]` link itself is the
+   verification mechanism, no QR graphic will be built. Client scope doc still names a QR code;
+   needs client sign-off, see `docs/build/PHASE_4_PROGRESS.md`.
 8. **`SET01-AdminSettings` content** — still has no product decision.
 
 ---
