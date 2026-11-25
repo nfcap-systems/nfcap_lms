@@ -1,5 +1,5 @@
 import { withRlsContext } from '@/lib/db/rls';
-import type { WioaCaseStatus } from '@/generated/prisma/enums';
+import type { WioaEligibilityStatus } from '@/generated/prisma/enums';
 
 /** Stalled-Case Detection (docs/build/LAYER1_DATA_MODEL_DESIGN.md decision #5 — computed, not
  * stored, because it's entirely derivable from WioaCase.updatedAt + status, and a stored flag
@@ -11,16 +11,13 @@ import type { WioaCaseStatus } from '@/generated/prisma/enums';
  * ("3 cases with no movement in 14+ days", Sidebar.dc.html's banner copy) used as a literal
  * default until the client says otherwise; callers may override it. No UI wired to this yet
  * (CRD05-StalledCases is not built, Layer 3C). */
-const TERMINAL_STATUSES: WioaCaseStatus[] = [
-  'CLOSED_INELIGIBLE',
-  'APPRENTICESHIP_ENROLLMENT_COMPLETE',
-];
+const TERMINAL_STATUSES: WioaEligibilityStatus[] = ['CLOSED_INELIGIBLE', 'WIOA_ELIGIBLE'];
 const DEFAULT_STALLED_DAYS = 14;
 
 export type StalledCase = {
   id: string;
   learnerId: string;
-  status: WioaCaseStatus;
+  status: WioaEligibilityStatus;
   daysSinceLastMovement: number;
 };
 

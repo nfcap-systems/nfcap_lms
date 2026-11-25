@@ -76,7 +76,11 @@ export function SignupAstryx() {
             <VStack gap={3} hAlign="center">
               <Image src="/nfcap-logo.png" alt="NFCAP" width={160} height={18} priority />
               <VStack gap={1} hAlign="center">
-                <Text type="display-1" as="h1">
+                {/* display-1 (the same type Login/ForgotPassword/ResetPassword use) wraps
+                    "Create your account" onto two lines inside this 440px card — it's the
+                    longest heading of the auth flow. display-2 keeps it prominent but fits one
+                    line, matching how the shorter headings on those other screens render. */}
+                <Text type="display-2" as="h1">
                   Create your account
                 </Text>
                 <Text type="body" color="secondary" size="sm">

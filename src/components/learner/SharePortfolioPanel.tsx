@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useTransition } from 'react';
+import { toast } from 'sonner';
 import { Icon } from '@/components/icons';
 import { generatePortfolioShareToken, revokePortfolioShareToken } from '@/lib/actions/portfolio';
 
@@ -16,18 +17,28 @@ export function SharePortfolioPanel({ initialToken }: { initialToken: string | n
 
   function copyLink() {
     startTransition(async () => {
-      const nextToken = token ?? (await generatePortfolioShareToken());
-      setToken(nextToken);
-      await navigator.clipboard.writeText(`${window.location.origin}/portfolio/${nextToken}`);
-      setState('copied');
-      setTimeout(() => setState('idle'), 2000);
+      try {
+        const nextToken = token ?? (await generatePortfolioShareToken());
+        setToken(nextToken);
+        await navigator.clipboard.writeText(`${window.location.origin}/portfolio/${nextToken}`);
+        setState('copied');
+        toast.success('Share link copied to clipboard');
+        setTimeout(() => setState('idle'), 2000);
+      } catch (e) {
+        toast.error(e instanceof Error ? e.message : 'Could not create the share link.');
+      }
     });
   }
 
   function stopSharing() {
     startTransition(async () => {
-      await revokePortfolioShareToken();
-      setToken(null);
+      try {
+        await revokePortfolioShareToken();
+        setToken(null);
+        toast.success('Portfolio sharing turned off');
+      } catch (e) {
+        toast.error(e instanceof Error ? e.message : 'Could not turn off sharing.');
+      }
     });
   }
 

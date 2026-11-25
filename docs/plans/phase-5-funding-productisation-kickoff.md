@@ -53,6 +53,16 @@ being marked done — not rebuilt.
 4. Document Upload Limits (#6) — small, no open product question blocking it.
 5. Funding Impact Reporting (#5) — only once the `requestedAmount` question is answered.
 
+## Session update, 2026-11-25 — paused for a spec-alignment check
+
+All 7 features above got real work (see `docs/build/PHASE_5_PROGRESS.md` for the per-feature
+breakdown) — #1/#2/#4 verified, #3/#5/#6/#7 built. **None of it is committed.** Mid-session the
+user supplied the formal spec this module should have been built against
+(`docs/wioa/WIOA_Eligibility_Matching_App_Developer_Specification.pdf`) and asked for an alignment
+check, which found a real architecture gap (case-per-course vs. the spec's case-per-student) plus
+six smaller ones. Full detail and the resume plan: `docs/plans/wioa-spec-alignment-kickoff.md`.
+Next session starts there, not back in this worklist.
+
 ## Also recorded here, out of scope for this branch
 
 The same verification pass found Phase 6 is materially further along than its "Not Started" label

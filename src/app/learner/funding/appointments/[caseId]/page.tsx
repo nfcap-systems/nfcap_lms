@@ -17,7 +17,5 @@ export default async function AppointmentsPage({
   const wioaCase = cases.find((c) => c.id === caseId);
   if (!wioaCase) notFound();
 
-  return (
-    <AppointmentsView courseTitle={wioaCase.courseTitle} appointments={wioaCase.appointments} />
-  );
+  return <AppointmentsView courseTitle="" appointments={wioaCase.appointments} />;
 }

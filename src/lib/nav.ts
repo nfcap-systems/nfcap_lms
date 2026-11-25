@@ -89,6 +89,7 @@ export const partnerNav: NavItem[] = [
 // (WIOA_INTEGRATION_PLAN.md Section 5a) — funding section is a placeholder until Phase 4.
 export const coordinatorNav: NavItem[] = [
   { label: 'All Cases', href: '/coordinator', icon: 'clipboard' },
+  { label: 'Stalled Cases', href: '/coordinator/stalled', icon: 'alert-circle' },
   { label: 'Reports', href: '/coordinator/reports', icon: 'bar-chart' },
 ];
 

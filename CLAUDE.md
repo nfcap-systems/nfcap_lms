@@ -21,8 +21,10 @@ Read `docs/HANDOFF.md` first — it is the onboarding entry point. Then, by ques
 | Phase 3 execution status — what's done, what's open, why | `docs/build/PHASE_3_PROGRESS.md` |
 | **Active:** Phase 3 build + the design-system migration it depends on, started without Plane connected — branch/PR naming, progress log, deliberate deviations from `DEV-APPROACH.md`, and the exact backfill-into-Plane steps | `docs/plans/phase-3-and-design-migration-kickoff.md` |
 | **Active:** Phase 5 kickoff — corrected worklist after the 2026-11-25 code audit, open product questions, process decisions | `docs/plans/phase-5-funding-productisation-kickoff.md` |
+| **Active, supersedes the Phase 5 worklist for now:** WIOA module spec-alignment gaps found 2026-11-25 against the formal developer spec — the per-course-vs-per-student case-structure question and six smaller gaps, with the resume plan | `docs/plans/wioa-spec-alignment-kickoff.md` |
 | What the 2026-11-25 code-level audit actually found per feature in Phases 5–8 (and re-checked Phase 0/3/4 open items), with file:line evidence | `docs/build/CODE_VERIFICATION_AUDIT_2026-11-25.md` |
 | WIOA module shape and closed decisions | `docs/wioa/WIOA_INTEGRATION_PLAN.md`, `docs/build/WIOA_BUILD_WORKFLOW.md` |
+| The formal WIOA developer spec this module should align to (not previously cross-checked — see the spec-alignment row above) | `docs/wioa/WIOA_Eligibility_Matching_App_Developer_Specification.pdf` |
 | Design system / tokens | `docs/design/NFCAP_DESIGN_SYSTEM.md` |
 
 Do not reopen decisions already closed in `PRODUCT_CONTEXT.md` or the client scope doc.
@@ -107,6 +109,26 @@ Do not reopen decisions already closed in `PRODUCT_CONTEXT.md` or the client sco
   `docs/build/CODE_VERIFICATION_AUDIT_2026-11-25.md`. Corrected Phase 5 worklist and the
   Phase-6 regression this surfaced (quiz answers leak on every result screen, `QuizFlow.tsx`):
   `docs/plans/phase-5-funding-productisation-kickoff.md`.
+- **WIOA spec-alignment: 6 of 7 gaps resolved, 2026-11-25 (same day as the original audit).** The
+  original audit found a real architecture gap — `WioaCase` was built per learner-per-course; the
+  spec's data model calls it a "Master student WIOA case," singular per student — plus six
+  smaller, independent gaps. That architecture gap is now fully resolved: `WioaCase` is a genuine
+  per-student master case (eligibility pipeline, documents, appointments, board/contact/staff
+  assignment), with a new `WioaCourseCase` holding just the per-course funding pipeline, only
+  reachable once the master is `WIOA_ELIGIBLE`. Two migrations applied to staging and verified
+  against real (previously duplicated) data; RLS redesigned around the split; every consumer in
+  `src/lib/actions/wioa.ts`/`src/lib/data/wioa.ts`/`src/lib/wioa/status.ts` and every WIOA UI
+  component rewritten; live-verified end-to-end as Learner, Coordinator, and Partner Staff
+  (including the Reports page's funding aggregation — the highest-risk rewrite — and the
+  Coordinator-assigns-Partner-Staff flow). The five smaller gaps (matching's fallback chain,
+  Age 18+ check, upload audit logging, stale-contact flagging, failed-email logging) are all
+  fixed too, the last via its own small migration. Only automation triggers (dashboard-only, one
+  missing entirely) remain open, paused on a product decision (dashboard-only-with-fixes vs. real
+  notifications). **Still nothing is committed or pushed** — this is all uncommitted working-tree
+  changes on `feature/phase5-funding-productisation`, verified by building/`tsc`/`eslint`/live
+  browser walkthroughs, not yet through code review or CI. Full evidence, what changed, and the
+  resume plan: `docs/plans/wioa-spec-alignment-kickoff.md`; Phase 5's own feature-by-feature
+  status against the new architecture: `docs/build/PHASE_5_PROGRESS.md`.
 - **Deployment: self-hosted, VPS + Docker.** Supabase is retained for database and object storage.
   Deploy target was decided 2026-11-01 (VPS + Docker). Replica count is still undecided but isn't a
   blocker — **build for 2+ instances** is already the working assumption everything is built

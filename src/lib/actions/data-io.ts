@@ -91,7 +91,7 @@ export async function exportWioaCasesCsv(): Promise<string> {
   const cases = await getWioaCases({ userId: admin.id, role: 'ADMIN' });
   const rows = cases.map((c) => [
     c.learnerName,
-    c.courseTitle,
+    c.courseTitle ?? '',
     c.status,
     c.boardName ?? '',
     c.createdAt.toISOString(),

@@ -10,10 +10,26 @@ import { Resend } from 'resend';
  * email until a real NFCAP sending subdomain is verified. Swap EMAIL_FROM once that's done — no
  * code change needed. */
 
+const MAX_SEND_ATTEMPTS = 3;
+const RETRY_DELAY_MS = 500;
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/** Outreach Email Delivery & Deliverability (docs/client/NFCAP_LMS_Feature_Detail_Client.md: "with
+ * delivery failures surfaced rather than silent"). Resend's own errors don't distinguish
+ * transient (rate limit, timeout) from permanent (invalid address, account issue) failures in a
+ * machine-checkable way here, so this retries every failure a bounded number of times with a
+ * short fixed delay rather than trying to classify them — cheap, and still bounded so a genuinely
+ * permanent failure fails fast instead of hanging the caller. */
 export async function sendEmail(params: {
   to: string;
   subject: string;
   html: string;
+  /** Where a human reply should land — e.g. the learner's own address on a workforce-board
+   * outreach email sent from NFCAP's address, so a reply reaches the student, not NFCAP. */
+  replyTo?: string;
 }): Promise<void> {
   if (!process.env.RESEND_API_KEY) {
     console.warn(
@@ -28,13 +44,19 @@ export async function sendEmail(params: {
   // called.
   const resend = new Resend(process.env.RESEND_API_KEY);
   const from = process.env.EMAIL_FROM || 'NFCAP <onboarding@resend.dev>';
-  const { error } = await resend.emails.send({
-    from,
-    to: params.to,
-    subject: params.subject,
-    html: params.html,
-  });
-  if (error) {
-    throw new Error(`Failed to send email: ${error.message}`);
+
+  let lastMessage = 'Unknown error';
+  for (let attempt = 1; attempt <= MAX_SEND_ATTEMPTS; attempt++) {
+    const { error } = await resend.emails.send({
+      from,
+      to: params.to,
+      subject: params.subject,
+      html: params.html,
+      replyTo: params.replyTo,
+    });
+    if (!error) return;
+    lastMessage = error.message;
+    if (attempt < MAX_SEND_ATTEMPTS) await sleep(RETRY_DELAY_MS * attempt);
   }
+  throw new Error(`Failed to send email after ${MAX_SEND_ATTEMPTS} attempts: ${lastMessage}`);
 }

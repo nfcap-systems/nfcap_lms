@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 import { Badge, Button } from '@/components/ui';
 import { Icon } from '@/components/icons';
 import { cn } from '@/lib/cn';
@@ -73,7 +74,9 @@ export function QuizFlow({
         setStep('result');
         router.refresh();
       } catch (error) {
-        setSubmitError(error instanceof Error ? error.message : 'Could not submit the quiz.');
+        const message = error instanceof Error ? error.message : 'Could not submit the quiz.';
+        setSubmitError(message);
+        toast.error(message);
         setStep('result');
       }
     });

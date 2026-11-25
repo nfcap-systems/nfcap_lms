@@ -32,7 +32,7 @@ async function main() {
 
   let learnerId: string;
   if (!arg) {
-    const c = await prisma.wioaCase.findFirstOrThrow({
+    const c = await prisma.wioaCourseCase.findFirstOrThrow({
       where: { closedAt: null },
       orderBy: { createdAt: 'desc' },
     });

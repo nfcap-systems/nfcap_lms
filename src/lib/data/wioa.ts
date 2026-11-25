@@ -1,7 +1,16 @@
 import { cacheLife, cacheTag } from 'next/cache';
 import { getLearnerById } from '@/lib/data/learners';
-import type { WioaCaseStatus, WioaDocumentStatus, AppointmentType } from '@/generated/prisma/enums';
-import { WIOA_STATUS_PHASE, WIOA_UI_PHASES, type WioaUiPhase } from '@/lib/wioa/status';
+import type {
+  WioaEligibilityStatus,
+  WioaFundingStatus,
+  WioaDocumentStatus,
+  AppointmentType,
+} from '@/generated/prisma/enums';
+import {
+  WIOA_ELIGIBILITY_STATUS_PHASE,
+  WIOA_UI_PHASES,
+  type WioaUiPhase,
+} from '@/lib/wioa/status';
 import { withRlsContext, type SessionContext } from '@/lib/db/rls';
 
 export type LearnerProfile = {
@@ -28,11 +37,15 @@ export async function getLearnerProfile(
 
 export type WioaCommunicationRecord = {
   id: string;
-  courseId: string;
+  /** Null for the general eligibility outreach — a communication only has a course when it's
+   * specifically about one course's funding request
+   * (docs/plans/wioa-spec-alignment-kickoff.md #1, full split). */
+  courseId: string | null;
   channel: 'EMAIL' | 'CALL' | 'NOTE';
   recipient: string;
   subject: string | null;
   body: string | null;
+  status: 'SENT' | 'FAILED';
   sentAt: Date;
 };
 
@@ -71,13 +84,9 @@ export type WioaAppointmentRecord = {
   notes: string | null;
 };
 
-export type WioaCaseRecord = {
+export type WioaEligibilityCaseRecord = {
   id: string;
-  /** The course's readable slug (matching `getAllCourses()`'s `id`), not the Prisma cuid — this
-   * is what the learner Funding view keys its active-case lookup on. */
-  courseId: string;
-  courseTitle: string;
-  status: WioaCaseStatus;
+  status: WioaEligibilityStatus;
   createdAt: Date;
   closedAt: Date | null;
   boardName: string | null;
@@ -86,22 +95,20 @@ export type WioaCaseRecord = {
   documents: WioaDocumentRecord[];
   appointments: WioaAppointmentRecord[];
   /** Oldest to most recent — feeds the learner-facing phase timeline (LRN10-FundingStatus). */
-  statusHistory: { status: WioaCaseStatus; changedAt: Date }[];
+  statusHistory: { status: WioaEligibilityStatus; changedAt: Date }[];
 };
 
-/** Every WIOA case for a learner, one per restricted course they've started outreach for
- * (WIOA_INTEGRATION_PLAN.md Section 5 — case scope is per learner per course). Feeds the
- * learner-facing consolidated activity feed (Section 7). */
-export async function getWioaCasesForLearner(
+/** The learner's one master WIOA case — eligibility pipeline, document checklist, orientation/
+ * intake appointments (docs/plans/wioa-spec-alignment-kickoff.md #1, full split). Null if they've
+ * never started outreach. */
+export async function getWioaEligibilityCaseForLearner(
   viewer: SessionContext,
   learnerId: string,
-): Promise<WioaCaseRecord[]> {
-  const cases = await withRlsContext(viewer, (tx) =>
-    tx.wioaCase.findMany({
+): Promise<WioaEligibilityCaseRecord | null> {
+  const c = await withRlsContext(viewer, (tx) =>
+    tx.wioaCase.findUnique({
       where: { learnerId },
-      orderBy: { createdAt: 'desc' },
       include: {
-        course: { select: { slug: true, title: true } },
         workforceBoard: { select: { name: true } },
         ajccCenter: { select: { name: true } },
         contact: { select: { name: true } },
@@ -111,11 +118,10 @@ export async function getWioaCasesForLearner(
       },
     }),
   );
+  if (!c) return null;
 
-  return cases.map((c) => ({
+  return {
     id: c.id,
-    courseId: c.course.slug,
-    courseTitle: c.course.title,
     status: c.status,
     createdAt: c.createdAt,
     closedAt: c.closedAt,
@@ -135,25 +141,79 @@ export async function getWioaCasesForLearner(
     })),
     appointments: c.appointments,
     statusHistory: c.statusHistory.map((h) => ({ status: h.status, changedAt: h.changedAt })),
-  }));
+  };
+}
+
+/// Back-compat aliases for UI call sites not yet reworked for the full master/course split
+/// (docs/plans/wioa-spec-alignment-kickoff.md #1) — a real UX pass still needs to show funding
+/// requests as their own list rather than folding into one "case." These keep the app compiling
+/// and showing the eligibility case (the learner's one master case) in the meantime.
+export type WioaCaseRecord = WioaEligibilityCaseRecord;
+
+export async function getWioaCasesForLearner(
+  viewer: SessionContext,
+  learnerId: string,
+): Promise<WioaCaseRecord[]> {
+  const c = await getWioaEligibilityCaseForLearner(viewer, learnerId);
+  return c ? [c] : [];
 }
 
 export async function getWioaCaseForLearnerAndCourse(
   viewer: SessionContext,
   learnerId: string,
-  courseId: string,
+  _courseId: string,
 ): Promise<WioaCaseRecord | null> {
-  const cases = await getWioaCasesForLearner(viewer, learnerId);
-  return cases.find((c) => c.courseId === courseId && !c.closedAt) ?? null;
+  return getWioaEligibilityCaseForLearner(viewer, learnerId);
+}
+
+export type WioaCourseFundingRecord = {
+  id: string;
+  courseId: string;
+  courseTitle: string;
+  status: WioaFundingStatus;
+  createdAt: Date;
+  closedAt: Date | null;
+  fundingStatusHistory: { status: WioaFundingStatus; changedAt: Date }[];
+};
+
+/** Every course the learner has requested WIOA funding for, independent of each other — the
+ * learner Funding page's course-level funding list (docs/plans/wioa-spec-alignment-kickoff.md #1,
+ * full split). Only ever non-empty once the learner's master case is WIOA_ELIGIBLE. */
+export async function getWioaCourseFundingForLearner(
+  viewer: SessionContext,
+  learnerId: string,
+): Promise<WioaCourseFundingRecord[]> {
+  const cases = await withRlsContext(viewer, (tx) =>
+    tx.wioaCourseCase.findMany({
+      where: { learnerId },
+      orderBy: { createdAt: 'desc' },
+      include: {
+        course: { select: { slug: true, title: true } },
+        fundingStatusHistory: { orderBy: { changedAt: 'asc' } },
+      },
+    }),
+  );
+  return cases.map((c) => ({
+    id: c.id,
+    courseId: c.course.slug,
+    courseTitle: c.course.title,
+    status: c.status,
+    createdAt: c.createdAt,
+    closedAt: c.closedAt,
+    fundingStatusHistory: c.fundingStatusHistory.map((h) => ({
+      status: h.status,
+      changedAt: h.changedAt,
+    })),
+  }));
 }
 
 export type WioaCaseSummary = {
+  /** Master case id. */
   id: string;
   learnerId: string;
   learnerName: string;
   learnerEmail: string;
-  courseTitle: string;
-  status: WioaCaseStatus;
+  status: WioaEligibilityStatus;
   boardName: string | null;
   createdAt: Date;
   /** Most recent WioaStatusHistory row's timestamp, or createdAt if the case has no history yet
@@ -170,12 +230,19 @@ export type WioaCaseSummary = {
   assignedPartnerStaffId: string | null;
   assignedPartnerStaffName: string | null;
   nextAppointment: { type: string; scheduledAt: Date } | null;
+  /** Each course this learner has requested funding for and its current status — the funding side
+   * doesn't duplicate into its own staff-list row, it's a nested summary on the one case that
+   * actually represents this learner now (docs/plans/wioa-spec-alignment-kickoff.md #1). */
+  fundingRequests: { courseCaseId: string; courseTitle: string; status: WioaFundingStatus }[];
+  /// Back-compat for UI call sites not yet reworked to show the funding-requests list
+  /// (docs/plans/wioa-spec-alignment-kickoff.md #1) — the first course this learner requested
+  /// funding for, or null if none yet. A learner with more than one funding request loses
+  /// information here; `fundingRequests` is the real, complete list.
+  courseTitle: string | null;
 };
 
-/** Staff case list — every case by default (Coordinator), or filtered to one Partner Staff
- * account's assigned cases (docs/build/WIOA_BUILD_WORKFLOW.md Phase 3 — replaces the Phase 2
- * /admin/wioa stepping stone's getAllWioaCases). No pagination — prototype scale, same
- * assumption getLearnerRoster already makes. */
+/** Staff case list — one row per learner (master case), every case by default (Coordinator), or
+ * filtered to one Partner Staff account's assigned cases. No pagination — prototype scale. */
 export async function getWioaCases(
   viewer: SessionContext,
   opts?: {
@@ -183,9 +250,8 @@ export async function getWioaCases(
   },
 ): Promise<WioaCaseSummary[]> {
   // The RLS read is just the one findMany — the name lookups below hit the Supabase Auth Admin
-  // API per case (src/lib/data/learners.ts), which must not run inside the transaction
-  // withRlsContext opens (CLAUDE.md performance conventions — never hold a pooler slot across a
-  // network call).
+  // API per case, which must not run inside the transaction withRlsContext opens (CLAUDE.md
+  // performance conventions — never hold a pooler slot across a network call).
   const cases = await withRlsContext(viewer, (tx) =>
     tx.wioaCase.findMany({
       where: opts?.assignedPartnerStaffId
@@ -193,7 +259,6 @@ export async function getWioaCases(
         : undefined,
       orderBy: { createdAt: 'desc' },
       include: {
-        course: { select: { title: true } },
         workforceBoard: { select: { name: true } },
         documents: { select: { status: true } },
         appointments: {
@@ -203,6 +268,7 @@ export async function getWioaCases(
         },
         communications: { orderBy: { sentAt: 'desc' }, take: 1 },
         statusHistory: { orderBy: { changedAt: 'desc' }, take: 1 },
+        courseCases: { include: { course: { select: { title: true } } } },
       },
     }),
   );
@@ -225,7 +291,6 @@ export async function getWioaCases(
       learnerId: c.learnerId,
       learnerName: learner.name,
       learnerEmail: learner.email,
-      courseTitle: c.course.title,
       status: c.status,
       boardName: c.workforceBoard?.name ?? null,
       createdAt: c.createdAt,
@@ -248,26 +313,32 @@ export async function getWioaCases(
       nextAppointment: c.appointments[0]
         ? { type: c.appointments[0].type, scheduledAt: c.appointments[0].scheduledAt }
         : null,
+      fundingRequests: c.courseCases.map((cc) => ({
+        courseCaseId: cc.id,
+        courseTitle: cc.course.title,
+        status: cc.status,
+      })),
+      courseTitle: c.courseCases[0]?.course.title ?? null,
     });
   }
   return result;
 }
 
-const STALL_LIKELY_CAUSE: Partial<Record<WioaCaseStatus, string>> = {
+const ELIGIBILITY_STALL_LIKELY_CAUSE: Partial<Record<WioaEligibilityStatus, string>> = {
   AWAITING_RESPONSE: 'No reply from board contact to outreach email',
   DOCUMENTS_PENDING: 'Required documents not yet uploaded by trainee',
   CLOSED_INELIGIBLE: 'Closed / Ineligible — no action expected',
   ELIGIBILITY_UNDER_REVIEW: 'Awaiting board eligibility determination',
   INTAKE_APPOINTMENT_SCHEDULED: 'Awaiting the scheduled intake appointment',
-  TRAINING_AUTHORIZATION_PENDING: 'Awaiting board training authorization',
 };
 
 export type StalledCase = WioaCaseSummary & { daysStalled: number; likelyCause: string };
 
-/** CRD05-StalledCases — a pre-filtered view of getWioaCases, not a separate dataset, matching
- * the board's own "dtcard-desc" framing. A case counts as stalled at `thresholdDays` with no
- * status change, open or closed (a closed case can still show up — "no action expected" is
- * itself a valid likely-cause row, per the board's own third example row). */
+/** CRD05-StalledCases — a pre-filtered view of getWioaCases, not a separate dataset. A case
+ * counts as stalled at `thresholdDays` with no eligibility status change, open or closed.
+ * Covers eligibility-stage stalls only (the master case) — a funding request that's stalled
+ * without the eligibility case itself being stale isn't surfaced here yet; that's a known gap
+ * left for a follow-up pass (docs/plans/wioa-spec-alignment-kickoff.md #1). */
 export async function getStalledCases(
   viewer: SessionContext,
   thresholdDays = 14,
@@ -279,30 +350,30 @@ export async function getStalledCases(
     .map((c) => ({
       ...c,
       daysStalled: Math.floor((Date.now() - c.lastStatusChangeAt.getTime()) / 86_400_000),
-      likelyCause: STALL_LIKELY_CAUSE[c.status] ?? 'No status change recorded',
+      likelyCause: ELIGIBILITY_STALL_LIKELY_CAUSE[c.status] ?? 'No status change recorded',
     }))
     .sort((a, b) => b.daysStalled - a.daysStalled);
 }
 
 export type UpcomingAppointment = {
   id: string;
+  /** Master case id. */
   caseId: string;
   /** Resolved by the caller from an already-fetched learner roster, not looked up here — see
    * note below. */
   learnerId: string;
-  courseTitle: string;
   type: AppointmentType;
   scheduledAt: Date;
 };
 
 /** Soonest N upcoming appointments across every WIOA case (not scoped to one case) — Admin
- * Dashboard's "Upcoming WIOA Appointments" panel (ADM02-Dashboard). Reuses getWioaCases'
- * per-case "next appointment" query shape, just without the per-case/per-staff scoping.
- * Returns `learnerId`, not a resolved name — the Dashboard already fetches the full learner
- * roster for its other panels, so resolving names there reuses that data instead of adding a
- * per-row `getLearnerById` call here (CLAUDE.md's "no per-entity queries in a loop"). */
-/** Dashboard widget only — same short-cache reasoning as getFundingStatusForLearners above; an
- * appointment scheduled/cancelled in the last ~30s can lag here without blocking any action. */
+ * Dashboard's "Upcoming WIOA Appointments" panel (ADM02-Dashboard). Shows the learner, not a
+ * course — appointments are a master-case (eligibility-stage) concept now
+ * (docs/plans/wioa-spec-alignment-kickoff.md #1, full split), not tied to any one course even
+ * when `courseCaseId` happens to be set. Returns `learnerId`, not a resolved name — the Dashboard
+ * already fetches the full learner roster for its other panels (CLAUDE.md's "no per-entity
+ * queries in a loop"). Short cache — an appointment scheduled/cancelled in the last ~30s can lag
+ * here without blocking any action. */
 export async function getUpcomingWioaAppointments(
   viewer: SessionContext,
   limit = 4,
@@ -315,15 +386,14 @@ export async function getUpcomingWioaAppointments(
       where: { scheduledAt: { gte: new Date() }, completedAt: null },
       orderBy: { scheduledAt: 'asc' },
       take: limit,
-      include: { wioaCase: { include: { course: { select: { title: true } } } } },
+      include: { masterCase: { select: { learnerId: true } } },
     }),
   );
 
   return appointments.map((a) => ({
     id: a.id,
-    caseId: a.wioaCaseId,
-    learnerId: a.wioaCase.learnerId,
-    courseTitle: a.wioaCase.course.title,
+    caseId: a.masterCaseId,
+    learnerId: a.masterCase.learnerId,
     type: a.type,
     scheduledAt: a.scheduledAt,
   }));
@@ -331,21 +401,17 @@ export async function getUpcomingWioaAppointments(
 
 export type LearnerFundingStatus = 'funded' | 'pending' | 'self_pay';
 
-const FUNDED_CASE_STATUSES: WioaCaseStatus[] = [
+const FUNDED_COURSE_STATUSES: WioaFundingStatus[] = [
   'TUITION_APPROVED',
   'APPRENTICESHIP_ENROLLMENT_COMPLETE',
 ];
 
-/** Per-learner funding status for the Admin Dashboard's and Learners roster's "Status" column
- * (ADM02/ADM03) — batched (one query for every learnerId requested, not a per-row lookup, per
- * CLAUDE.md's "no per-entity queries in a loop"). A learner's most recent open case decides their
- * status; a learner with no open case is 'self_pay' (the real default — not every learner has a
- * WIOA case at all). */
-/** Dashboard-only funding-status badge (Admin/Admin-learners) — not the case-management data
- * itself (that stays live via getWioaCases), so a short cache here is low-risk: at worst a badge
- * is up to ~30s stale after a case status change, not an action a coordinator/partner is blocked
- * on. withRlsContext's own transaction is a per-viewer round trip this was previously paying on
- * every dashboard load; see src/lib/db/rls.ts for its documented ~1.7-2s baseline latency. */
+/** Per-learner funding status for the Admin Dashboard's and Learners roster's "Status" column —
+ * batched (one query per table, not a per-row lookup, per CLAUDE.md's "no per-entity queries in a
+ * loop"). 'funded' if any open course-case has reached TUITION_APPROVED+; 'pending' if they have
+ * a master case open but no course funded yet; 'self_pay' if they've never started WIOA outreach
+ * at all. Dashboard-only badge — not the case-management data itself, so a short cache is
+ * low-risk. */
 export async function getFundingStatusForLearners(
   viewer: SessionContext,
   learnerIds: string[],
@@ -354,38 +420,39 @@ export async function getFundingStatusForLearners(
   cacheLife({ stale: 30, revalidate: 30, expire: 120 });
   cacheTag('wioa-funding-status');
   if (learnerIds.length === 0) return {};
-  const cases = await withRlsContext(viewer, (tx) =>
-    tx.wioaCase.findMany({
-      where: { learnerId: { in: learnerIds }, closedAt: null },
-      orderBy: { createdAt: 'desc' },
-      select: { learnerId: true, status: true },
-    }),
+  const [courseCases, masterCases] = await withRlsContext(viewer, (tx) =>
+    Promise.all([
+      tx.wioaCourseCase.findMany({
+        where: { learnerId: { in: learnerIds }, closedAt: null },
+        select: { learnerId: true, status: true },
+      }),
+      tx.wioaCase.findMany({
+        where: { learnerId: { in: learnerIds } },
+        select: { learnerId: true },
+      }),
+    ]),
   );
-  const latestByLearner = new Map<string, WioaCaseStatus>();
-  for (const c of cases) {
-    if (!latestByLearner.has(c.learnerId)) latestByLearner.set(c.learnerId, c.status);
-  }
+  const fundedLearners = new Set(
+    courseCases.filter((c) => FUNDED_COURSE_STATUSES.includes(c.status)).map((c) => c.learnerId),
+  );
+  const hasMasterCase = new Set(masterCases.map((c) => c.learnerId));
+
   const result: Record<string, LearnerFundingStatus> = {};
   for (const id of learnerIds) {
-    const status = latestByLearner.get(id);
-    result[id] = !status
-      ? 'self_pay'
-      : FUNDED_CASE_STATUSES.includes(status)
-        ? 'funded'
-        : 'pending';
+    result[id] = fundedLearners.has(id) ? 'funded' : hasMasterCase.has(id) ? 'pending' : 'self_pay';
   }
   return result;
 }
 
-/** Count of currently-open WIOA cases whose funding is actually approved — the Admin Dashboard's
- * "Funded Cases (WIOA)" KPI (ADM02). Counts cases, matching the board's own framing, not learners. */
-/** Dashboard KPI only — same short-cache reasoning as getFundingStatusForLearners above. */
+/** Count of currently-open course-cases whose funding is actually approved — the Admin
+ * Dashboard's "Funded Cases (WIOA)" KPI (ADM02). Counts funding requests, matching the board's
+ * own framing, not learners. */
 export async function getFundedCaseCount(viewer: SessionContext): Promise<number> {
   'use cache';
   cacheLife({ stale: 30, revalidate: 30, expire: 120 });
   cacheTag('wioa-funded-case-count');
   return withRlsContext(viewer, (tx) =>
-    tx.wioaCase.count({ where: { closedAt: null, status: { in: FUNDED_CASE_STATUSES } } }),
+    tx.wioaCourseCase.count({ where: { closedAt: null, status: { in: FUNDED_COURSE_STATUSES } } }),
   );
 }
 
@@ -395,6 +462,7 @@ export type WioaFundingRecord = {
   etplProviderConfirmed: boolean;
   submittedAt: Date | null;
   caseManagerNotifiedAt: Date | null;
+  requestedAmount: number | null;
   fundingReviewStatus: string | null;
   status: string | null;
   authorization: {
@@ -407,7 +475,7 @@ export type WioaFundingRecord = {
   } | null;
 };
 
-export type WioaCaseDetail = WioaCaseRecord & {
+export type WioaCaseDetail = WioaEligibilityCaseRecord & {
   learnerId: string;
   learnerName: string;
   learnerEmail: string;
@@ -415,31 +483,34 @@ export type WioaCaseDetail = WioaCaseRecord & {
   assignedPartnerStaffName: string | null;
   statusHistory: {
     id: string;
-    status: WioaCaseStatus;
+    status: WioaEligibilityStatus;
     changedAt: Date;
     changedBy: string;
     changedByName: string;
   }[];
   communications: WioaCommunicationRecord[];
-  /** Only populated when `includeFunding` is passed (Coordinator dashboard) — Partner Staff's
-   * fetch never requests it, so funding data never reaches the client bundle for that role
-   * (docs/build/WIOA_BUILD_WORKFLOW.md Phase 3 — "excludes funding data entirely", not just display). */
-  funding?: WioaFundingRecord | null;
+  /** Every course this learner has an open or closed funding request for — only populated when
+   * `includeFunding` is passed (Coordinator dashboard); Partner Staff's fetch never requests it,
+   * so funding data never reaches the client bundle for that role. */
+  fundingRequests?: (WioaCourseFundingRecord & { funding: WioaFundingRecord | null })[];
+  /// Back-compat for UI call sites not yet reworked for the full master/course split
+  /// (docs/plans/wioa-spec-alignment-kickoff.md #1) — the first funding request's course/funding
+  /// data, or null. `fundingRequests` above is the real, complete list.
+  courseTitle: string | null;
+  funding: WioaFundingRecord | null;
 };
 
+/** Staff detail view for one learner's master WIOA case, with their funding requests nested
+ * (docs/plans/wioa-spec-alignment-kickoff.md #1, full split). `caseId` is the master case id. */
 export async function getWioaCaseDetail(
   viewer: SessionContext,
   caseId: string,
   opts?: { includeFunding?: boolean },
 ): Promise<WioaCaseDetail | null> {
-  // `findUnique` returns null for a case this viewer can't see under app_can_access_case, same
-  // as a case that doesn't exist at all — callers already treat both as not-found (see
-  // src/app/partner/[caseId]/page.tsx's notFound() check), so this isn't a behavior change.
   const c = await withRlsContext(viewer, (tx) =>
     tx.wioaCase.findUnique({
       where: { id: caseId },
       include: {
-        course: { select: { slug: true, title: true } },
         workforceBoard: { select: { name: true } },
         ajccCenter: { select: { name: true } },
         contact: { select: { name: true } },
@@ -447,7 +518,17 @@ export async function getWioaCaseDetail(
         appointments: { orderBy: { scheduledAt: 'asc' } },
         statusHistory: { orderBy: { changedAt: 'asc' } },
         communications: { orderBy: { sentAt: 'desc' } },
-        fundingRequest: { include: { authorization: true } },
+        // Always fetched (prototype scale — a handful of course-cases per learner at most);
+        // `opts?.includeFunding` only controls whether it's returned below, same visibility
+        // boundary as before (Partner Staff's fetch never requests it, so funding data never
+        // reaches that role's client bundle).
+        courseCases: {
+          include: {
+            course: { select: { slug: true, title: true } },
+            fundingStatusHistory: { orderBy: { changedAt: 'asc' } },
+            fundingRequest: { include: { authorization: true } },
+          },
+        },
       },
     }),
   );
@@ -468,8 +549,6 @@ export async function getWioaCaseDetail(
 
   return {
     id: c.id,
-    courseId: c.course.slug,
-    courseTitle: c.course.title,
     status: c.status,
     createdAt: c.createdAt,
     closedAt: c.closedAt,
@@ -504,42 +583,74 @@ export async function getWioaCaseDetail(
       recipient: comm.recipient,
       subject: comm.subject,
       body: comm.body,
+      status: comm.status,
       sentAt: comm.sentAt,
     })),
-    funding: opts?.includeFunding
-      ? c.fundingRequest
+    courseTitle: opts?.includeFunding && c.courseCases ? c.courseCases[0]?.course.title ?? null : null,
+    funding:
+      opts?.includeFunding && c.courseCases && c.courseCases[0]?.fundingRequest
         ? {
-            id: c.fundingRequest.id,
-            trainingProgram: c.fundingRequest.trainingProgram,
-            etplProviderConfirmed: c.fundingRequest.etplProviderConfirmed,
-            submittedAt: c.fundingRequest.submittedAt,
-            caseManagerNotifiedAt: c.fundingRequest.caseManagerNotifiedAt,
-            fundingReviewStatus: c.fundingRequest.fundingReviewStatus,
-            status: c.fundingRequest.status,
-            authorization: c.fundingRequest.authorization
+            id: c.courseCases[0].fundingRequest.id,
+            trainingProgram: c.courseCases[0].fundingRequest.trainingProgram,
+            etplProviderConfirmed: c.courseCases[0].fundingRequest.etplProviderConfirmed,
+            submittedAt: c.courseCases[0].fundingRequest.submittedAt,
+            caseManagerNotifiedAt: c.courseCases[0].fundingRequest.caseManagerNotifiedAt,
+            requestedAmount: c.courseCases[0].fundingRequest.requestedAmount,
+            fundingReviewStatus: c.courseCases[0].fundingRequest.fundingReviewStatus,
+            status: c.courseCases[0].fundingRequest.status,
+            authorization: c.courseCases[0].fundingRequest.authorization
               ? {
-                  id: c.fundingRequest.authorization.id,
-                  itaIssuedAt: c.fundingRequest.authorization.itaIssuedAt,
-                  approvedAmount: c.fundingRequest.authorization.approvedAmount,
-                  approvalDate: c.fundingRequest.authorization.approvalDate,
-                  trainingStartDate: c.fundingRequest.authorization.trainingStartDate,
-                  status: c.fundingRequest.authorization.status,
+                  id: c.courseCases[0].fundingRequest.authorization.id,
+                  itaIssuedAt: c.courseCases[0].fundingRequest.authorization.itaIssuedAt,
+                  approvedAmount: c.courseCases[0].fundingRequest.authorization.approvedAmount,
+                  approvalDate: c.courseCases[0].fundingRequest.authorization.approvalDate,
+                  trainingStartDate: c.courseCases[0].fundingRequest.authorization.trainingStartDate,
+                  status: c.courseCases[0].fundingRequest.authorization.status,
                 }
               : null,
           }
-        : null
-      : undefined,
+        : null,
+    fundingRequests:
+      opts?.includeFunding && c.courseCases
+        ? c.courseCases.map((cc) => ({
+            id: cc.id,
+            courseId: cc.course.slug,
+            courseTitle: cc.course.title,
+            status: cc.status,
+            createdAt: cc.createdAt,
+            closedAt: cc.closedAt,
+            fundingStatusHistory: cc.fundingStatusHistory.map((h) => ({
+              status: h.status,
+              changedAt: h.changedAt,
+            })),
+            funding: cc.fundingRequest
+              ? {
+                  id: cc.fundingRequest.id,
+                  trainingProgram: cc.fundingRequest.trainingProgram,
+                  etplProviderConfirmed: cc.fundingRequest.etplProviderConfirmed,
+                  submittedAt: cc.fundingRequest.submittedAt,
+                  caseManagerNotifiedAt: cc.fundingRequest.caseManagerNotifiedAt,
+                  requestedAmount: cc.fundingRequest.requestedAmount,
+                  fundingReviewStatus: cc.fundingRequest.fundingReviewStatus,
+                  status: cc.fundingRequest.status,
+                  authorization: cc.fundingRequest.authorization
+                    ? {
+                        id: cc.fundingRequest.authorization.id,
+                        itaIssuedAt: cc.fundingRequest.authorization.itaIssuedAt,
+                        approvedAmount: cc.fundingRequest.authorization.approvedAmount,
+                        approvalDate: cc.fundingRequest.authorization.approvalDate,
+                        trainingStartDate: cc.fundingRequest.authorization.trainingStartDate,
+                        status: cc.fundingRequest.authorization.status,
+                      }
+                    : null,
+                }
+              : null,
+          }))
+        : undefined,
   };
 }
 
-const WIOA_ELIGIBLE_OR_LATER: WioaCaseStatus[] = [
-  'WIOA_ELIGIBLE',
-  'ETPL_TRAINING_REQUESTED',
-  'TRAINING_AUTHORIZATION_PENDING',
-  'TUITION_APPROVED',
-  'APPRENTICESHIP_ENROLLMENT_COMPLETE',
-];
-const WIOA_TUITION_APPROVED_OR_LATER: WioaCaseStatus[] = [
+const WIOA_TUITION_APPROVED_OR_LATER: WioaFundingStatus[] = [
   'TUITION_APPROVED',
   'APPRENTICESHIP_ENROLLMENT_COMPLETE',
 ];
@@ -555,10 +666,13 @@ export type WioaDocumentReadiness = {
 export type WioaFollowUpItem = {
   caseId: string;
   learnerName: string;
-  courseTitle: string;
-  status: WioaCaseStatus;
+  status: WioaEligibilityStatus;
   reason: string;
+  /// Back-compat: always null — eligibility-stage follow-up items aren't about one course
+  /// (docs/plans/wioa-spec-alignment-kickoff.md #1). Kept only so existing UI call sites compile.
+  courseTitle: null;
 };
+
 
 export type WioaBoardPerformance = {
   boardName: string;
@@ -568,10 +682,11 @@ export type WioaBoardPerformance = {
   approvalRate: number | null;
   avgDaysToEligibility: number | null;
   fundingConversionRate: number | null;
-  /** Sum of FundingAuthorization.approvedAmount for this board's funded cases. Real figure —
-   * there is no "requested amount" anywhere in the schema, so this only ever shows what was
-   * actually approved, never a requested-vs-approved comparison. */
+  /** Sum of FundingAuthorization.approvedAmount for this board's funded course-cases. */
   totalApprovedAmount: number;
+  /** Sum of EtplFundingRequest.requestedAmount for this board's course-cases — what NFCAP asked
+   * for, independent of what was granted. */
+  totalRequestedAmount: number;
   fundedCases: number;
   avgDaysToApproval: number | null;
 };
@@ -580,6 +695,8 @@ export type WioaBoardPerformance = {
  * Impact report section. Only computed when includeFunding is requested. */
 export type WioaFundingImpact = {
   totalApprovedAmount: number;
+  totalRequestedAmount: number;
+  approvalRateByAmount: number | null;
   fundedCases: number;
   fundingRequestsSubmitted: number;
   approvalRate: number | null;
@@ -591,17 +708,17 @@ export type WioaReportingSummary = {
   phaseCounts: Record<WioaUiPhase, number>;
   documentReadiness: WioaDocumentReadiness;
   followUpQueue: WioaFollowUpItem[];
-  /** Only populated when `includeFunding` is requested (Coordinator) — Partner Staff's report
-   * never sees board approval/funding numbers, same visibility split as getWioaCaseDetail. */
   boardPerformance: WioaBoardPerformance[] | null;
   fundingImpact: WioaFundingImpact | null;
 };
 
-/** Reporting/analytics aggregates for the Coordinator and Partner Staff dashboards (spec §16 —
- * cohort pipeline, document readiness, follow-up queue, board performance). Computed in JS over
- * the full case list rather than SQL aggregation — prototype scale, same no-pagination assumption
- * as getWioaCases. Follow-up reasons reuse the exact triggers from spec §18 (Automation & Follow-Up
- * Rules) so this reporting view and any future automation agree on what "needs follow-up" means. */
+/** Reporting/analytics aggregates for the Coordinator and Partner Staff dashboards (spec §16).
+ * Eligibility metrics (phaseCounts, avgDaysToEligibility, approvalRate) are computed once per
+ * learner (master case) — not once per course — so a learner with multiple funding requests no
+ * longer inflates them (the bug the per-course case model had before
+ * docs/plans/wioa-spec-alignment-kickoff.md #1's full split). Funding metrics
+ * (fundingConversionRate, totalApprovedAmount, avgDaysToApproval) are computed per course-case,
+ * matched to a board through its master case. */
 export async function getWioaReportingSummary(
   viewer: SessionContext,
   opts?: {
@@ -609,30 +726,37 @@ export async function getWioaReportingSummary(
     includeFunding?: boolean;
   },
 ): Promise<WioaReportingSummary> {
-  // Same ordering rule as getWioaCases — only the findMany runs inside the RLS transaction; the
-  // nameOf() loop below hits the Supabase Auth Admin API per case and must run after it closes.
-  const cases = await withRlsContext(viewer, (tx) =>
-    tx.wioaCase.findMany({
-      where: opts?.assignedPartnerStaffId
-        ? { assignedPartnerStaffId: opts.assignedPartnerStaffId }
-        : undefined,
-      include: {
-        course: { select: { title: true } },
-        workforceBoard: { select: { name: true } },
-        documents: { select: { status: true } },
-        statusHistory: {
-          select: { status: true, changedAt: true },
-          orderBy: { changedAt: 'asc' },
+  const masterWhere = opts?.assignedPartnerStaffId
+    ? { assignedPartnerStaffId: opts.assignedPartnerStaffId }
+    : undefined;
+
+  const [masterCases, courseCases] = await withRlsContext(viewer, (tx) =>
+    Promise.all([
+      tx.wioaCase.findMany({
+        where: masterWhere,
+        include: {
+          workforceBoard: { select: { name: true } },
+          documents: { select: { status: true } },
+          statusHistory: { select: { status: true, changedAt: true }, orderBy: { changedAt: 'asc' } },
+          courseCases: { select: { id: true } },
         },
-        fundingRequest: {
-          select: {
-            id: true,
-            submittedAt: true,
-            authorization: { select: { approvedAmount: true, approvalDate: true } },
-          },
-        },
-      },
-    }),
+      }),
+      opts?.includeFunding
+        ? tx.wioaCourseCase.findMany({
+            where: masterWhere ? { masterCase: masterWhere } : undefined,
+            include: {
+              masterCase: { select: { workforceBoard: { select: { name: true } } } },
+              fundingRequest: {
+                select: {
+                  submittedAt: true,
+                  requestedAmount: true,
+                  authorization: { select: { approvedAmount: true, approvalDate: true } },
+                },
+              },
+            },
+          })
+        : Promise.resolve([]),
+    ]),
   );
 
   const ALL_PHASES: WioaUiPhase[] = [...WIOA_UI_PHASES, 'Closed'];
@@ -667,16 +791,11 @@ export async function getWioaReportingSummary(
       determinedCases: number;
       eligibleCases: number;
       daysToEligible: number[];
-      tuitionApprovedCases: number;
-      totalApprovedAmount: number;
-      fundedCases: number;
-      daysToApproval: number[];
-      fundingRequestsSubmitted: number;
     }
   >();
 
-  for (const c of cases) {
-    phaseCounts[WIOA_STATUS_PHASE[c.status]] += 1;
+  for (const c of masterCases) {
+    phaseCounts[WIOA_ELIGIBILITY_STATUS_PHASE[c.status]] += 1;
 
     for (const doc of c.documents) {
       documentReadiness.total += 1;
@@ -696,16 +815,16 @@ export async function getWioaReportingSummary(
         reason = 'No response 3+ business days after outreach';
       else if (c.status === 'DOCUMENTS_PENDING' && daysSinceUpdate >= 5)
         reason = 'Documents pending 5+ days';
-      else if (c.status === 'WIOA_ELIGIBLE' && !c.fundingRequest)
-        reason = 'Eligible — ETPL funding request not started';
+      else if (c.status === 'WIOA_ELIGIBLE' && c.courseCases.length === 0)
+        reason = 'Eligible — no ETPL funding request started yet';
 
       if (reason) {
         followUpQueue.push({
           caseId: c.id,
           learnerName: await nameOf(c.learnerId),
-          courseTitle: c.course.title,
           status: c.status,
           reason,
+          courseTitle: null,
         });
       }
     }
@@ -713,88 +832,110 @@ export async function getWioaReportingSummary(
     if (opts?.includeFunding) {
       const boardName = c.workforceBoard?.name ?? 'Unmatched';
       if (!byBoard.has(boardName)) {
-        byBoard.set(boardName, {
-          totalCases: 0,
-          determinedCases: 0,
-          eligibleCases: 0,
-          daysToEligible: [],
-          tuitionApprovedCases: 0,
-          totalApprovedAmount: 0,
-          fundedCases: 0,
-          daysToApproval: [],
-          fundingRequestsSubmitted: 0,
-        });
+        byBoard.set(boardName, { totalCases: 0, determinedCases: 0, eligibleCases: 0, daysToEligible: [] });
       }
       const b = byBoard.get(boardName)!;
       b.totalCases += 1;
-
-      if (c.fundingRequest?.submittedAt) b.fundingRequestsSubmitted += 1;
-
-      const approvedAmount = c.fundingRequest?.authorization?.approvedAmount;
-      if (approvedAmount != null) {
-        b.totalApprovedAmount += approvedAmount;
-        b.fundedCases += 1;
-        const submittedAt = c.fundingRequest?.submittedAt;
-        const approvalDate = c.fundingRequest?.authorization?.approvalDate;
-        if (submittedAt && approvalDate) {
-          b.daysToApproval.push((approvalDate.getTime() - submittedAt.getTime()) / DAY_MS);
-        }
-      }
-
-      const reachedEligibleOrLater = WIOA_ELIGIBLE_OR_LATER.includes(c.status);
-      if (reachedEligibleOrLater || c.status === 'CLOSED_INELIGIBLE') b.determinedCases += 1;
-      if (reachedEligibleOrLater) {
+      const determined = c.status === 'WIOA_ELIGIBLE' || c.status === 'CLOSED_INELIGIBLE';
+      if (determined) b.determinedCases += 1;
+      if (c.status === 'WIOA_ELIGIBLE') {
         b.eligibleCases += 1;
         const eligibleEntry = c.statusHistory.find((h) => h.status === 'WIOA_ELIGIBLE');
         if (eligibleEntry) {
-          b.daysToEligible.push(
-            (eligibleEntry.changedAt.getTime() - c.createdAt.getTime()) / DAY_MS,
-          );
+          b.daysToEligible.push((eligibleEntry.changedAt.getTime() - c.createdAt.getTime()) / DAY_MS);
         }
       }
-      if (WIOA_TUITION_APPROVED_OR_LATER.includes(c.status)) b.tuitionApprovedCases += 1;
     }
   }
 
+  const byBoardFunding = new Map<
+    string,
+    {
+      tuitionApprovedCases: number;
+      totalApprovedAmount: number;
+      totalRequestedAmount: number;
+      fundedCases: number;
+      daysToApproval: number[];
+      fundingRequestsSubmitted: number;
+    }
+  >();
+  for (const cc of courseCases) {
+    const boardName = cc.masterCase.workforceBoard?.name ?? 'Unmatched';
+    if (!byBoardFunding.has(boardName)) {
+      byBoardFunding.set(boardName, {
+        tuitionApprovedCases: 0,
+        totalApprovedAmount: 0,
+        totalRequestedAmount: 0,
+        fundedCases: 0,
+        daysToApproval: [],
+        fundingRequestsSubmitted: 0,
+      });
+    }
+    const b = byBoardFunding.get(boardName)!;
+    if (cc.fundingRequest?.submittedAt) b.fundingRequestsSubmitted += 1;
+    if (cc.fundingRequest?.requestedAmount != null) b.totalRequestedAmount += cc.fundingRequest.requestedAmount;
+
+    const approvedAmount = cc.fundingRequest?.authorization?.approvedAmount;
+    if (approvedAmount != null) {
+      b.totalApprovedAmount += approvedAmount;
+      b.fundedCases += 1;
+      const submittedAt = cc.fundingRequest?.submittedAt;
+      const approvalDate = cc.fundingRequest?.authorization?.approvalDate;
+      if (submittedAt && approvalDate) {
+        b.daysToApproval.push((approvalDate.getTime() - submittedAt.getTime()) / DAY_MS);
+      }
+    }
+    if (WIOA_TUITION_APPROVED_OR_LATER.includes(cc.status)) b.tuitionApprovedCases += 1;
+  }
+
   const boardPerformance = opts?.includeFunding
-    ? Array.from(byBoard.entries()).map(([boardName, b]) => ({
-        boardName,
-        totalCases: b.totalCases,
-        determinedCases: b.determinedCases,
-        eligibleCases: b.eligibleCases,
-        approvalRate: b.determinedCases > 0 ? b.eligibleCases / b.determinedCases : null,
-        avgDaysToEligibility:
-          b.daysToEligible.length > 0
-            ? b.daysToEligible.reduce((a, x) => a + x, 0) / b.daysToEligible.length
-            : null,
-        fundingConversionRate:
-          b.eligibleCases > 0 ? b.tuitionApprovedCases / b.eligibleCases : null,
-        totalApprovedAmount: b.totalApprovedAmount,
-        fundedCases: b.fundedCases,
-        avgDaysToApproval:
-          b.daysToApproval.length > 0
-            ? b.daysToApproval.reduce((a, x) => a + x, 0) / b.daysToApproval.length
-            : null,
-      }))
+    ? Array.from(byBoard.entries()).map(([boardName, b]) => {
+        const f = byBoardFunding.get(boardName) ?? {
+          tuitionApprovedCases: 0,
+          totalApprovedAmount: 0,
+          totalRequestedAmount: 0,
+          fundedCases: 0,
+          daysToApproval: [],
+          fundingRequestsSubmitted: 0,
+        };
+        return {
+          boardName,
+          totalCases: b.totalCases,
+          determinedCases: b.determinedCases,
+          eligibleCases: b.eligibleCases,
+          approvalRate: b.determinedCases > 0 ? b.eligibleCases / b.determinedCases : null,
+          avgDaysToEligibility:
+            b.daysToEligible.length > 0
+              ? b.daysToEligible.reduce((a, x) => a + x, 0) / b.daysToEligible.length
+              : null,
+          fundingConversionRate: b.eligibleCases > 0 ? f.tuitionApprovedCases / b.eligibleCases : null,
+          totalApprovedAmount: f.totalApprovedAmount,
+          totalRequestedAmount: f.totalRequestedAmount,
+          fundedCases: f.fundedCases,
+          avgDaysToApproval:
+            f.daysToApproval.length > 0
+              ? f.daysToApproval.reduce((a, x) => a + x, 0) / f.daysToApproval.length
+              : null,
+        };
+      })
     : null;
 
   const fundingImpact: WioaFundingImpact | null = opts?.includeFunding
     ? (() => {
-        const allDaysToApproval = Array.from(byBoard.values()).flatMap((b) => b.daysToApproval);
-        const fundedCases = Array.from(byBoard.values()).reduce((sum, b) => sum + b.fundedCases, 0);
-        const fundingRequestsSubmitted = Array.from(byBoard.values()).reduce(
-          (sum, b) => sum + b.fundingRequestsSubmitted,
-          0,
-        );
+        const all = Array.from(byBoardFunding.values());
+        const allDaysToApproval = all.flatMap((b) => b.daysToApproval);
+        const fundedCases = all.reduce((sum, b) => sum + b.fundedCases, 0);
+        const fundingRequestsSubmitted = all.reduce((sum, b) => sum + b.fundingRequestsSubmitted, 0);
+        const totalApprovedAmount = all.reduce((sum, b) => sum + b.totalApprovedAmount, 0);
+        const totalRequestedAmount = all.reduce((sum, b) => sum + b.totalRequestedAmount, 0);
         return {
-          totalApprovedAmount: Array.from(byBoard.values()).reduce(
-            (sum, b) => sum + b.totalApprovedAmount,
-            0,
-          ),
+          totalApprovedAmount,
+          totalRequestedAmount,
+          approvalRateByAmount:
+            totalRequestedAmount > 0 ? totalApprovedAmount / totalRequestedAmount : null,
           fundedCases,
           fundingRequestsSubmitted,
-          approvalRate:
-            fundingRequestsSubmitted > 0 ? fundedCases / fundingRequestsSubmitted : null,
+          approvalRate: fundingRequestsSubmitted > 0 ? fundedCases / fundingRequestsSubmitted : null,
           avgDaysToApproval:
             allDaysToApproval.length > 0
               ? allDaysToApproval.reduce((a, x) => a + x, 0) / allDaysToApproval.length
@@ -804,7 +945,7 @@ export async function getWioaReportingSummary(
     : null;
 
   return {
-    totalCases: cases.length,
+    totalCases: masterCases.length,
     phaseCounts,
     documentReadiness,
     followUpQueue,

@@ -14,8 +14,6 @@ function retentionWindowMonths(): number {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : RETENTION_MONTHS_DEFAULT;
 }
 
-const TERMINAL_STATUSES = ['CLOSED_INELIGIBLE', 'APPRENTICESHIP_ENROLLMENT_COMPLETE'] as const;
-
 export type RetentionSweepResult = {
   retentionMonths: number;
   casesSwept: number;
@@ -23,8 +21,12 @@ export type RetentionSweepResult = {
 };
 
 /** Destroys the uploaded document *files* (the actual identity-document content — SSN cards, ID,
- * EDD letters, per src/lib/supabase/wioa-storage.ts) for cases closed longer ago than the
- * retention window, and clears any free-text fields that could carry PII. Deliberately does NOT
+ * EDD letters, per src/lib/supabase/wioa-storage.ts) for master cases closed (CLOSED_INELIGIBLE)
+ * longer ago than the retention window, and clears any free-text fields that could carry PII.
+ * Documents live on the master case, not a course-case
+ * (docs/plans/wioa-spec-alignment-kickoff.md #1, full split) — eligibility documents are shared
+ * across every funding request a learner makes, so they're only ever destroyed when the student's
+ * WIOA relationship itself closes, not when one course's funding closes. Deliberately does NOT
  * delete the WioaCase/WioaStatusHistory rows themselves — those are the compliance record this
  * whole module exists to produce, and destroying them would defeat the Audit Trail feature right
  * next to this one. Every destroyed document is individually logged to AuditLog, not just a
@@ -36,7 +38,7 @@ export async function runDataRetentionSweep(): Promise<RetentionSweepResult> {
 
   const eligibleCases = await prisma.wioaCase.findMany({
     where: {
-      status: { in: [...TERMINAL_STATUSES] },
+      status: 'CLOSED_INELIGIBLE',
       closedAt: { lt: cutoff },
     },
     select: {

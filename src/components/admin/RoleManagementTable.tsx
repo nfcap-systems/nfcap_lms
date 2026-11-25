@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import { toast } from 'sonner';
 import { updateUserRole } from '@/lib/actions/roles';
 import { setUserActive } from '@/lib/actions/users';
 import { ALL_ROLES, ROLE_DISPLAY_LABEL, type Role } from '@/lib/roles';
@@ -39,8 +40,10 @@ function RoleRow({ user, isSelf }: { user: UserRecord; isSelf: boolean }) {
     setRolePending(false);
     if ('error' in result) {
       setRoleMessage({ type: 'error', text: result.error });
+      toast.error(result.error);
     } else {
       setRoleMessage({ type: 'success', text: 'Role updated.' });
+      toast.success(`${user.name}'s role updated to ${ROLE_DISPLAY_LABEL[role]}`);
     }
   }
 
@@ -52,12 +55,14 @@ function RoleRow({ user, isSelf }: { user: UserRecord; isSelf: boolean }) {
     setActivePending(false);
     if ('error' in result) {
       setActiveMessage({ type: 'error', text: result.error });
+      toast.error(result.error);
     } else {
       setActive(nextActive);
       setActiveMessage({
         type: 'success',
         text: nextActive ? 'Account reactivated.' : 'Account deactivated.',
       });
+      toast.success(nextActive ? `${user.name} reactivated` : `${user.name} deactivated`);
     }
   }
 

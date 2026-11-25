@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 import {
   Badge,
   DataTableCard,
@@ -29,8 +30,6 @@ const PHASE_TONE: Record<WioaUiPhase, StatusTone> = {
   Matching: 'neutral',
   Contact: 'pending',
   'Eligibility Process': 'pending',
-  'Funding Request': 'info',
-  Enrollment: 'success',
   Closed: 'danger',
 };
 
@@ -78,7 +77,7 @@ function toCsv(cases: WioaCaseSummary[]): string {
   ];
   const rows = cases.map((c) => [
     c.learnerName,
-    c.courseTitle,
+    c.courseTitle ?? '',
     c.boardName ?? '',
     WIOA_STATUS_PHASE[c.status],
     WIOA_STATUS_LABEL[c.status],
@@ -120,7 +119,11 @@ export function WioaCaseListView({
       if (phaseFilter !== 'all' && WIOA_STATUS_PHASE[c.status] !== phaseFilter) return false;
       if (boardFilter !== 'all' && c.boardName !== boardFilter) return false;
       if (stalledOnly && !isStalled(c)) return false;
-      if (q && !c.learnerName.toLowerCase().includes(q) && !c.courseTitle.toLowerCase().includes(q))
+      if (
+        q &&
+        !c.learnerName.toLowerCase().includes(q) &&
+        !(c.courseTitle?.toLowerCase().includes(q) ?? false)
+      )
         return false;
       return true;
     });
@@ -160,7 +163,7 @@ export function WioaCaseListView({
           c.nextAppointment &&
           new Date(c.nextAppointment.scheduledAt).getTime() - now < 7 * 86_400_000,
       ).length,
-      fundingRequest: cases.filter((c) => WIOA_STATUS_PHASE[c.status] === 'Funding Request').length,
+      fundingRequest: cases.filter((c) => c.fundingRequests.length > 0).length,
     }),
     [cases, now],
   );
@@ -428,9 +431,15 @@ function CaseRow({
 
   async function assign(partnerStaffId: string) {
     setAssigning(true);
-    await assignWioaCasePartnerStaff(c.id, partnerStaffId || null);
-    setAssigning(false);
-    router.refresh();
+    try {
+      await assignWioaCasePartnerStaff(c.id, partnerStaffId || null);
+      toast.success(partnerStaffId ? 'Case assigned' : 'Case unassigned');
+      router.refresh();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Could not update the assignment.');
+    } finally {
+      setAssigning(false);
+    }
   }
 
   return (

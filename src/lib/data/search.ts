@@ -127,12 +127,12 @@ export async function searchStaffCases(
     if (
       c.learnerName.toLowerCase().includes(q) ||
       c.learnerEmail.toLowerCase().includes(q) ||
-      c.courseTitle.toLowerCase().includes(q)
+      (c.courseTitle?.toLowerCase().includes(q) ?? false)
     ) {
       results.push({
         type: 'case',
         title: c.learnerName,
-        subtitle: c.courseTitle,
+        subtitle: c.courseTitle ?? 'No funding request yet',
         href: `${basePath}/${c.id}`,
       });
     }

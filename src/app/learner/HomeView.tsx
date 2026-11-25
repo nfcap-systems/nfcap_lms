@@ -4,6 +4,7 @@ import { useEffect, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
+import { toast } from 'sonner';
 import { Button, Badge } from '@/components/ui';
 import { Icon } from '@/components/icons';
 import { LockedCourseDialog, LOCKED_COURSE_COPY } from '@/components/learner/LockedCourseDialog';
@@ -64,6 +65,8 @@ export function HomeView({
       try {
         const { base64, filename } = await getCertificatePdfBase64(rawId);
         downloadBase64File(base64, filename, 'application/pdf');
+      } catch (e) {
+        toast.error(e instanceof Error ? e.message : 'Could not download the certificate.');
       } finally {
         setDownloadingCertId(null);
       }
@@ -667,7 +670,7 @@ export function HomeView({
             </div>
             <div style={{ fontSize: 12.5, color: 'var(--ink-muted)', lineHeight: 1.5 }}>
               {latestWioaCase
-                ? `WIOA funding status for ${latestWioaCase.courseTitle}.`
+                ? 'Your WIOA eligibility status.'
                 : 'No WIOA funding case on file for your account.'}
             </div>
             <Link

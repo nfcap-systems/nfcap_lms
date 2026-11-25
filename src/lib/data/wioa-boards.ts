@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/prisma';
-import type { ContactType, WioaCaseStatus } from '@/generated/prisma/enums';
+import type { ContactType, WioaEligibilityStatus } from '@/generated/prisma/enums';
 
 export type WorkforceBoardSummary = {
   id: string;
@@ -114,6 +114,10 @@ export type WorkforceContactRecord = {
   priority: number;
   ajccCenterId: string | null;
   active: boolean;
+  /** Spec Section 17: "Track 'last verified' date and flag stale contacts for review"
+   * (docs/plans/wioa-spec-alignment-kickoff.md #5) — was captured at seed time, never read
+   * anywhere until now. */
+  lastVerifiedDate: Date | null;
 };
 
 export type WorkforceContactFields = {
@@ -186,6 +190,7 @@ export async function getWorkforceBoardDetail(
       priority: c.priority,
       ajccCenterId: c.ajccCenterId,
       active: c.active,
+      lastVerifiedDate: c.lastVerifiedDate,
     })),
   };
 }
@@ -193,12 +198,13 @@ export async function getWorkforceBoardDetail(
 export type BoardCaseRow = {
   id: string;
   learnerId: string;
-  status: WioaCaseStatus;
+  status: WioaEligibilityStatus;
 };
 
-/** WIOA02-BoardDetail's "Active cases" table — every open case matched to this board. Learner
- * names are resolved by the caller from the same roster fetch other Admin pages already make
- * (src/lib/data/learners.ts's getLearnerRoster), not a per-row Supabase Auth lookup here. */
+/** WIOA02-BoardDetail's "Active cases" table — every open master case matched to this board
+ * (docs/plans/wioa-spec-alignment-kickoff.md #1 — board routing is a master-case concept).
+ * Learner names are resolved by the caller from the same roster fetch other Admin pages already
+ * make (src/lib/data/learners.ts's getLearnerRoster), not a per-row Supabase Auth lookup here. */
 export async function getActiveCasesForBoard(boardId: string): Promise<BoardCaseRow[]> {
   const cases = await prisma.wioaCase.findMany({
     where: { workforceBoardId: boardId, closedAt: null },

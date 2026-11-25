@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { toast } from 'sonner';
 
 import { createCourse } from '@/lib/actions/courses';
 import type { CourseAccess } from '@/lib/types';
@@ -115,16 +116,22 @@ export function NewCourseDialog({
             disabled={!valid || submitting}
             onClick={async () => {
               setSubmitting(true);
-              const { slug } = await createCourse({
-                title: title.trim(),
-                description: description.trim(),
-                category: category.trim(),
-                access,
-              });
-              setSubmitting(false);
-              onOpenChange(false);
-              reset();
-              router.push(`/admin/courses/${slug}`);
+              try {
+                const { slug } = await createCourse({
+                  title: title.trim(),
+                  description: description.trim(),
+                  category: category.trim(),
+                  access,
+                });
+                toast.success('Course created');
+                onOpenChange(false);
+                reset();
+                router.push(`/admin/courses/${slug}`);
+              } catch (e) {
+                toast.error(e instanceof Error ? e.message : 'Could not create the course.');
+              } finally {
+                setSubmitting(false);
+              }
             }}
           >
             Create course

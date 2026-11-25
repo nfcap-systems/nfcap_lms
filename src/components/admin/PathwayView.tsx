@@ -16,6 +16,7 @@ import {
   arrayMove,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { toast } from 'sonner';
 import { Icon } from '@/components/icons';
 import { cn } from '@/lib/utils';
 import { reorderPathway, setCourseAccess } from '@/lib/actions/courses';
@@ -45,7 +46,12 @@ export function PathwayView({ courses }: { courses: AdminCourse[] }) {
     const next = arrayMove(ordered, oldIndex, newIndex);
     setOrdered(next);
     startTransition(async () => {
-      await reorderPathway(next.map((c) => c.id));
+      try {
+        await reorderPathway(next.map((c) => c.id));
+        toast.success('Pathway order updated');
+      } catch (e) {
+        toast.error(e instanceof Error ? e.message : 'Could not update the pathway order.');
+      }
     });
   }
 
@@ -56,12 +62,20 @@ export function PathwayView({ courses }: { courses: AdminCourse[] }) {
       current.map((c) => (c.id === course.id ? { ...c, access: nextAccess } : c)),
     );
     startTransition(async () => {
-      await setCourseAccess(course.id, nextAccess);
-      setPendingAccess((prev) => {
-        const rest = { ...prev };
-        delete rest[course.id];
-        return rest;
-      });
+      try {
+        await setCourseAccess(course.id, nextAccess);
+        toast.success(
+          nextAccess === 'restricted' ? `${course.title} is now restricted` : `${course.title} is now open to all`,
+        );
+      } catch (e) {
+        toast.error(e instanceof Error ? e.message : 'Could not update course access.');
+      } finally {
+        setPendingAccess((prev) => {
+          const rest = { ...prev };
+          delete rest[course.id];
+          return rest;
+        });
+      }
     });
   }
 

@@ -1,6 +1,7 @@
 'use client';
 
 import { useTransition } from 'react';
+import { toast } from 'sonner';
 import { Icon } from '@/components/icons';
 import { getCriterionFileUrl, getEvidenceFileUrl } from '@/lib/actions/progress';
 
@@ -25,10 +26,14 @@ export function EvidenceAttachmentLink({
       type="button"
       onClick={() => {
         startTransition(async () => {
-          const url = criterionAssessmentId
-            ? await getCriterionFileUrl(criterionAssessmentId)
-            : await getEvidenceFileUrl(evidenceSubmissionId!);
-          window.open(url, '_blank', 'noopener,noreferrer');
+          try {
+            const url = criterionAssessmentId
+              ? await getCriterionFileUrl(criterionAssessmentId)
+              : await getEvidenceFileUrl(evidenceSubmissionId!);
+            window.open(url, '_blank', 'noopener,noreferrer');
+          } catch (e) {
+            toast.error(e instanceof Error ? e.message : 'Could not open the attachment.');
+          }
         });
       }}
       style={{

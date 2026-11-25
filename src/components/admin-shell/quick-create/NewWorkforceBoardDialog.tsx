@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { toast } from 'sonner';
 
 import { createWorkforceBoard } from '@/lib/actions/wioa-boards';
 import { Button } from '@/components/admin-ui/button';
@@ -134,21 +135,27 @@ export function NewWorkforceBoardDialog({
             disabled={!valid || submitting}
             onClick={async () => {
               setSubmitting(true);
-              const { id } = await createWorkforceBoard({
-                name: form.name.trim(),
-                county: form.county.trim(),
-                serviceArea: form.serviceArea.trim(),
-                phone: form.phone.trim(),
-                email: form.email.trim(),
-                website: form.website.trim() || null,
-                address: form.address.trim(),
-                orientationUrl: form.orientationUrl.trim() || null,
-                applicationUrl: form.applicationUrl.trim() || null,
-              });
-              setSubmitting(false);
-              onOpenChange(false);
-              setForm(emptyForm);
-              router.push(`/admin/wioa/boards/${id}`);
+              try {
+                const { id } = await createWorkforceBoard({
+                  name: form.name.trim(),
+                  county: form.county.trim(),
+                  serviceArea: form.serviceArea.trim(),
+                  phone: form.phone.trim(),
+                  email: form.email.trim(),
+                  website: form.website.trim() || null,
+                  address: form.address.trim(),
+                  orientationUrl: form.orientationUrl.trim() || null,
+                  applicationUrl: form.applicationUrl.trim() || null,
+                });
+                toast.success('Workforce board created');
+                onOpenChange(false);
+                setForm(emptyForm);
+                router.push(`/admin/wioa/boards/${id}`);
+              } catch (e) {
+                toast.error(e instanceof Error ? e.message : 'Could not create the board.');
+              } finally {
+                setSubmitting(false);
+              }
             }}
           >
             Create board

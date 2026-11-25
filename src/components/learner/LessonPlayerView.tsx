@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { toast } from 'sonner';
 import { Badge, Button } from '@/components/ui';
 import { Icon } from '@/components/icons';
 import { cn } from '@/lib/cn';
@@ -43,9 +44,12 @@ export function LessonPlayerView({
     startTransition(async () => {
       try {
         await markLessonComplete(course.id, active.lesson.id);
+        toast.success('Lesson marked complete');
         router.refresh();
       } catch (e) {
-        setError(e instanceof Error ? e.message : 'Something went wrong.');
+        const message = e instanceof Error ? e.message : 'Something went wrong.';
+        setError(message);
+        toast.error(message);
       }
     });
   }

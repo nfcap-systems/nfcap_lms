@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { toast } from 'sonner';
 import { Check, Clipboard, Paperclip, X } from 'lucide-react';
 
 import { Badge as AdminBadge, type badgeVariants } from '@/components/admin-ui/badge';
@@ -503,8 +504,13 @@ function EnrollmentTab({
 
   function updateStatus(courseId: string, status: 'approved' | 'rejected') {
     startTransition(async () => {
-      await setEvidenceStatus(learner.id, courseId, status);
-      router.refresh();
+      try {
+        await setEvidenceStatus(learner.id, courseId, status);
+        toast.success(status === 'approved' ? 'Evidence approved' : 'Evidence rejected');
+        router.refresh();
+      } catch (e) {
+        toast.error(e instanceof Error ? e.message : 'Could not update evidence status.');
+      }
     });
   }
 
@@ -1003,9 +1009,15 @@ function CourseAccessCard({
   function grant(courseSlug: string) {
     setGrantingId(courseSlug);
     startTransition(async () => {
-      await grantCourseUnlock(learnerId, courseSlug);
-      setGrantingId(null);
-      router.refresh();
+      try {
+        await grantCourseUnlock(learnerId, courseSlug);
+        toast.success('Course access granted');
+        router.refresh();
+      } catch (e) {
+        toast.error(e instanceof Error ? e.message : 'Could not grant course access.');
+      } finally {
+        setGrantingId(null);
+      }
     });
   }
 

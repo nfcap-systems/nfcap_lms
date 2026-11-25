@@ -3,6 +3,7 @@
 import { useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
+import { toast } from 'sonner';
 import { Badge, Button } from '@/components/ui';
 import { Icon } from '@/components/icons';
 import { enroll } from '@/lib/actions/progress';
@@ -55,8 +56,13 @@ export function CourseOverviewView({
 
   function handleEnroll() {
     startTransition(async () => {
-      await enroll(course.id);
-      router.refresh();
+      try {
+        await enroll(course.id);
+        toast.success(`Enrolled in ${course.title}`);
+        router.refresh();
+      } catch (e) {
+        toast.error(e instanceof Error ? e.message : 'Could not enroll in this course.');
+      }
     });
   }
 

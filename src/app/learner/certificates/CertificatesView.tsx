@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui';
 import { Icon } from '@/components/icons';
 import { LockedCourseDialog, LOCKED_COURSE_COPY } from '@/components/learner/LockedCourseDialog';
@@ -34,8 +35,12 @@ export function CertificatesView({
     const sample = credentials[0];
     if (!sample) return;
     startSampleTransition(async () => {
-      const slug = await generateCertificatePublicSlug(sample.rawId);
-      router.push(`/verify/${slug}`);
+      try {
+        const slug = await generateCertificatePublicSlug(sample.rawId);
+        router.push(`/verify/${slug}`);
+      } catch (e) {
+        toast.error(e instanceof Error ? e.message : 'Could not open the sample verification page.');
+      }
     });
   }
   const nextUp = pathway.find((course) => {

@@ -3,6 +3,7 @@
 import { useRef, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { toast } from 'sonner';
 import {
   Badge,
   Button,
@@ -81,7 +82,7 @@ export function WioaCaseFeed({ wioaCase }: { wioaCase: WioaCaseRecord }) {
     <div className="flex flex-col gap-6">
       <Card>
         <CardHeader>
-          <CardTitle>Case status — {wioaCase.courseTitle}</CardTitle>
+          <CardTitle>WIOA eligibility status</CardTitle>
         </CardHeader>
         <CardContent>
           {wioaCase.status === 'CLOSED_INELIGIBLE' && (
@@ -187,9 +188,12 @@ function DocumentCard({ doc }: { doc: WioaDocumentRecord }) {
     startTransition(async () => {
       try {
         await uploadWioaDocument(doc.id, file);
+        toast.success(`${doc.requirementName} uploaded`);
         router.refresh();
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Upload failed. Please try again.');
+        const message = err instanceof Error ? err.message : 'Upload failed. Please try again.';
+        setError(message);
+        toast.error(message);
       } finally {
         if (fileInputRef.current) fileInputRef.current.value = '';
       }

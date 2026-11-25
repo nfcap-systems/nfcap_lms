@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 import { Badge, Button, CompletionRing, ProfileHeader, Textarea } from '@/components/ui';
 import { Icon } from '@/components/icons';
 import type { WioaCaseDetail, WioaDocumentRecord } from '@/lib/data/wioa';
@@ -103,6 +104,8 @@ export function PartnerTraineeDetailView({
     setSendingReminder(true);
     try {
       await sendWioaCaseReminder(wioaCase.id);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Could not send reminder.');
     } finally {
       setSendingReminder(false);
       router.refresh();
