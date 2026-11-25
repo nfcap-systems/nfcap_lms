@@ -14,7 +14,7 @@ const SIGNUP_WINDOW_MS = 60 * 60 * 1000;
 const RESET_LIMIT = 5;
 const RESET_WINDOW_MS = 60 * 60 * 1000;
 
-export type AuthFormState = { error?: string };
+export type AuthFormState = { error?: string; next?: string };
 
 /** Derives the request's own origin for building absolute auth-email links, instead of a fixed
  * env var — works unchanged across local dev, staging, and prod without per-environment config.
@@ -50,7 +50,14 @@ export async function login(_prevState: AuthFormState, formData: FormData): Prom
   const { error } = await supabase.auth.signInWithPassword({ email, password });
   if (error) return { error: error.message };
 
-  redirect(next || '/');
+  // Deliberately NOT `redirect()` here (that performs a client-side/RSC navigation that patches
+  // the DOM into the already-loaded page). The destination route's own CSS can still be loading
+  // when that patch commits, which intermittently painted the admin/coordinator/partner shell
+  // with its classes present but unstyled (missing borders, unstyled Quick Create button) until a
+  // real reload. Returning the target here and letting the client do a full
+  // `window.location.href` navigation (LoginAstryx.tsx) guarantees a fresh document load — the
+  // same code path as the manual refresh that always fixed it.
+  return { next: next || '/' };
 }
 
 /** Learner self-signup (docs/product/PRODUCT_CONTEXT.md: single Admin role, no admin signup UI — Admin

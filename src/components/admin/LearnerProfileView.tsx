@@ -41,13 +41,16 @@ const fundingBadge: Record<LearnerFundingStatus, { className: string; label: str
 
 type Tab = 'overview' | 'personal' | 'enrollment' | 'funding' | 'evidence' | 'documents';
 
+// Both pinned to 'en-US' — see the comment in src/app/admin/DashboardView.tsx: the environment's
+// default locale (`undefined`) can differ between server and browser, causing a real
+// SSR/hydration mismatch (React error #418).
 function formatMonthYear(date: Date): string {
-  return new Date(date).toLocaleDateString(undefined, { month: 'short', year: 'numeric' });
+  return new Date(date).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
 }
 
 function formatDate(value: Date | string | null | undefined): string {
   if (!value) return '—';
-  return new Date(value).toLocaleDateString(undefined, {
+  return new Date(value).toLocaleDateString('en-US', {
     month: 'long',
     day: 'numeric',
     year: 'numeric',
@@ -632,7 +635,7 @@ function EnrollmentTab({
                       <p className="text-sm font-medium text-foreground">Practical Evidence</p>
                       <span className="text-xs text-muted-foreground">
                         Submitted{' '}
-                        {new Date(evidence.submittedAt).toLocaleDateString(undefined, {
+                        {new Date(evidence.submittedAt).toLocaleDateString('en-US', {
                           month: 'short',
                           day: 'numeric',
                           year: 'numeric',

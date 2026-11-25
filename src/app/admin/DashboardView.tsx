@@ -80,7 +80,12 @@ function formatRelative(at: number): string {
   const days = Math.round(hours / 24);
   if (days === 1) return 'Yesterday';
   if (days < 7) return `${days}d ago`;
-  return new Date(at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  // Pinned to 'en-US' rather than the environment's default locale (`undefined`) — the server's
+  // locale and the browser's can disagree (e.g. en-US "Nov 25" vs en-GB "25 Nov"), which is a
+  // real SSR/hydration text mismatch (React error #418) that forces this whole page to discard
+  // and re-render client-side. That's what caused the admin shell's border/Quick Create button
+  // to intermittently go missing on first load — confirmed via the browser console, not guessed.
+  return new Date(at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
 /** Real month-over-month delta: current count vs the count whose real timestamp was already
@@ -387,7 +392,7 @@ function ReviewQueueCard({
                   <div className="sched-time">
                     <div className="main">{days === 0 ? 'Today' : `${days}d waiting`}</div>
                     <div className="sub">
-                      {new Date(evidence.submittedAt).toLocaleDateString(undefined, {
+                      {new Date(evidence.submittedAt).toLocaleDateString('en-US', {
                         month: 'short',
                         day: 'numeric',
                       })}
@@ -720,7 +725,7 @@ function UpcomingAppointmentsCard({
               <div className="evt-left">
                 <div className="evt-date">
                   <div className="mon">
-                    {new Date(a.scheduledAt).toLocaleDateString(undefined, { month: 'short' })}
+                    {new Date(a.scheduledAt).toLocaleDateString('en-US', { month: 'short' })}
                   </div>
                   <div className="day">{new Date(a.scheduledAt).getDate()}</div>
                 </div>
@@ -730,7 +735,7 @@ function UpcomingAppointmentsCard({
                   </div>
                   <div className="sub">
                     {a.courseTitle} ·{' '}
-                    {new Date(a.scheduledAt).toLocaleTimeString(undefined, {
+                    {new Date(a.scheduledAt).toLocaleTimeString('en-US', {
                       hour: 'numeric',
                       minute: '2-digit',
                     })}
