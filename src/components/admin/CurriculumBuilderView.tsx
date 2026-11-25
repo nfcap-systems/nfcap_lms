@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 import { Icon, type IconName } from '@/components/icons';
 import { lessonTypeIcon, lessonTypeLabel } from '@/components/learner/lesson-type';
 import { cn } from '@/lib/cn';
@@ -92,10 +93,15 @@ export function CurriculumBuilderView({
   const [questionEditor, setQuestionEditor] = useState<QuestionEditorTarget | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<ConfirmDeleteState | null>(null);
 
-  function runAndRefresh(action: Promise<void>) {
+  function runAndRefresh(action: Promise<void>, successMessage?: string) {
     startTransition(async () => {
-      await action;
-      router.refresh();
+      try {
+        await action;
+        if (successMessage) toast.success(successMessage);
+        router.refresh();
+      } catch (e) {
+        toast.error(e instanceof Error ? e.message : 'Something went wrong.');
+      }
     });
   }
 
@@ -124,7 +130,7 @@ export function CurriculumBuilderView({
             title: 'Delete section?',
             description: `"${section.title}" and its ${section.lessons.length} lesson(s) will be permanently removed.`,
             onConfirm: () => {
-              runAndRefresh(deleteSection(course.id, section.id));
+              runAndRefresh(deleteSection(course.id, section.id), 'Section deleted');
               if (railSelection.type === 'section' && railSelection.sectionId === section.id) {
                 setRailSelection({ type: 'general' });
               }
@@ -161,7 +167,7 @@ export function CurriculumBuilderView({
                   title: 'Delete lesson?',
                   description: `"${lesson.title}" will be permanently removed.`,
                   onConfirm: () => {
-                    runAndRefresh(deleteLesson(course.id, lesson.id));
+                    runAndRefresh(deleteLesson(course.id, lesson.id), 'Lesson deleted');
                     setConfirmDelete(null);
                   },
                 })
@@ -181,7 +187,7 @@ export function CurriculumBuilderView({
                 title: 'Delete question?',
                 description: 'This question will be permanently removed from the assessment.',
                 onConfirm: () => {
-                  runAndRefresh(deleteQuestion(course.id, question.id));
+                  runAndRefresh(deleteQuestion(course.id, question.id), 'Question deleted');
                   setConfirmDelete(null);
                 },
               })
@@ -193,7 +199,7 @@ export function CurriculumBuilderView({
       {sectionDialog === 'add' && (
         <SectionDialog
           onClose={() => setSectionDialog(null)}
-          onSubmit={(title) => runAndRefresh(addSection(course.id, title))}
+          onSubmit={(title) => runAndRefresh(addSection(course.id, title), 'Section added')}
         />
       )}
       {sectionDialog !== null && sectionDialog !== 'add' && (
@@ -204,7 +210,7 @@ export function CurriculumBuilderView({
           onClose={() => setSectionDialog(null)}
           onSubmit={(title) => {
             const { editSectionId } = sectionDialog;
-            runAndRefresh(updateSection(course.id, editSectionId, title));
+            runAndRefresh(updateSection(course.id, editSectionId, title), 'Section updated');
           }}
         />
       )}
@@ -237,6 +243,7 @@ export function CurriculumBuilderView({
               questionEditor.mode === 'edit'
                 ? updateQuestion(questionEditor.question.id, q)
                 : addQuestion(course.id, q),
+              questionEditor.mode === 'edit' ? 'Question updated' : 'Question added',
             )
           }
         />
@@ -581,10 +588,15 @@ function CriteriaPanel({
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [formResetKey, setFormResetKey] = useState(0);
 
-  function runAndRefresh(action: Promise<void>) {
+  function runAndRefresh(action: Promise<void>, successMessage?: string) {
     startTransition(async () => {
-      await action;
-      router.refresh();
+      try {
+        await action;
+        if (successMessage) toast.success(successMessage);
+        router.refresh();
+      } catch (e) {
+        toast.error(e instanceof Error ? e.message : 'Something went wrong.');
+      }
     });
   }
 
@@ -661,7 +673,7 @@ function CriteriaPanel({
                     onClick={(e) => {
                       e.stopPropagation();
                       if (selectedId === criterion.id) setSelectedId(null);
-                      runAndRefresh(deleteCriterion(courseId, criterion.id));
+                      runAndRefresh(deleteCriterion(courseId, criterion.id), 'Criterion deleted');
                     }}
                     aria-label="Delete criterion"
                   >
@@ -687,6 +699,7 @@ function CriteriaPanel({
           onSaved={(id) => {
             setSelectedId(id);
             setFormResetKey((k) => k + 1);
+            toast.success('Criterion saved');
             router.refresh();
           }}
         />
@@ -892,7 +905,7 @@ function LessonEditorDialog({
   state: LessonEditorState;
   courseSlug: string;
   onClose: () => void;
-  runAndRefresh: (action: Promise<void>) => void;
+  runAndRefresh: (action: Promise<void>, successMessage?: string) => void;
 }) {
   const isEdit = state.mode === 'edit';
   const [title, setTitle] = useState(isEdit ? state.lesson.title : '');
@@ -951,7 +964,7 @@ function LessonEditorDialog({
 
   function deleteBlock(id: string) {
     if (isEdit) {
-      runAndRefresh(deleteContentBlock(id));
+      runAndRefresh(deleteContentBlock(id), 'Block deleted');
     } else {
       setLocalBlocks((prev) => prev.filter((b) => b.id !== id));
     }
@@ -1008,6 +1021,7 @@ function LessonEditorDialog({
                     type,
                     durationMinutes: duration,
                   }),
+                  'Lesson updated',
                 )
               }
             >
@@ -1022,7 +1036,7 @@ function LessonEditorDialog({
             <Button
               disabled={!title.trim()}
               onClick={() => {
-                runAndRefresh(submitAddLesson());
+                runAndRefresh(submitAddLesson(), 'Lesson added');
                 onClose();
               }}
             >

@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { toast } from 'sonner';
 
 import { createCohort } from '@/lib/actions/cohorts';
 import { Button } from '@/components/admin-ui/button';
@@ -94,16 +95,22 @@ export function NewCohortDialog({
             disabled={!valid || submitting}
             onClick={async () => {
               setSubmitting(true);
-              await createCohort({
-                name: name.trim(),
-                pathwayId,
-                startDate: new Date(startDate),
-                endDate: endDate ? new Date(endDate) : null,
-              });
-              setSubmitting(false);
-              onOpenChange(false);
-              reset();
-              router.refresh();
+              try {
+                await createCohort({
+                  name: name.trim(),
+                  pathwayId,
+                  startDate: new Date(startDate),
+                  endDate: endDate ? new Date(endDate) : null,
+                });
+                toast.success('Cohort created');
+                onOpenChange(false);
+                reset();
+                router.refresh();
+              } catch (e) {
+                toast.error(e instanceof Error ? e.message : 'Could not create the cohort.');
+              } finally {
+                setSubmitting(false);
+              }
             }}
           >
             Create cohort

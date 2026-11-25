@@ -249,7 +249,14 @@ export function DashboardView({
       <div className="pagehdr">
         <div>
           <h1>Admin Dashboard</h1>
-          <p>
+          {/* suppressHydrationWarning: the server's local hour and the browser's local hour can
+              fall on opposite sides of a morning/afternoon/evening boundary (different
+              timezones, or just clock skew), which made this text mismatch between SSR and
+              hydration and threw React error #418 — that hydration failure forced React to
+              discard and re-render the whole tree client-side, which is what made the sidebar's
+              Quick Create button and borders appear to vanish on first load until a refresh.
+              The text itself is cosmetic and safe to let differ for one render. */}
+          <p suppressHydrationWarning>
             {timeOfDayGreeting()}, {adminName}. Here&apos;s today&apos;s overview.
           </p>
         </div>

@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 
 import { updateWioaEmailTemplate } from '@/lib/actions/wioa-email-template';
 import type { WioaEmailTemplateRecord } from '@/lib/data/wioa-email-template';
@@ -45,10 +46,15 @@ export function WioaEmailTemplateAdminView({ template }: { template: WioaEmailTe
             disabled={!valid || !dirty || submitting}
             onClick={async () => {
               setSubmitting(true);
-              await updateWioaEmailTemplate({ subject: subject.trim(), body: body.trim() });
-              setSubmitting(false);
-              setJustSaved(true);
-              router.refresh();
+              try {
+                await updateWioaEmailTemplate({ subject: subject.trim(), body: body.trim() });
+                setJustSaved(true);
+                router.refresh();
+              } catch (e) {
+                toast.error(e instanceof Error ? e.message : 'Could not save the template.');
+              } finally {
+                setSubmitting(false);
+              }
             }}
           >
             Save template

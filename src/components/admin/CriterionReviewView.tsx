@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 import { Icon } from '@/components/icons';
 import { getEvidenceFileUrl, getCriterionFileUrl } from '@/lib/actions/progress';
 import { setCriterionVerdict, finalizeCriterionReview } from '@/lib/actions/criterionReview';
@@ -39,21 +40,29 @@ export function CriterionReviewView({
     setError(null);
     const note = met ? undefined : noteDrafts[criterionId] || undefined;
     startTransition(async () => {
-      await setCriterionVerdict(review.evidenceSubmissionId, criterionId, met, note);
-      router.refresh();
+      try {
+        await setCriterionVerdict(review.evidenceSubmissionId, criterionId, met, note);
+        router.refresh();
+      } catch (e) {
+        toast.error(e instanceof Error ? e.message : 'Could not save that verdict.');
+      }
     });
   }
 
   function saveNote(criterionId: string, met: boolean | null) {
     if (met !== false) return; // note is only persisted alongside a "Not met" verdict
     startTransition(async () => {
-      await setCriterionVerdict(
-        review.evidenceSubmissionId,
-        criterionId,
-        false,
-        noteDrafts[criterionId] || undefined,
-      );
-      router.refresh();
+      try {
+        await setCriterionVerdict(
+          review.evidenceSubmissionId,
+          criterionId,
+          false,
+          noteDrafts[criterionId] || undefined,
+        );
+        router.refresh();
+      } catch (e) {
+        toast.error(e instanceof Error ? e.message : 'Could not save that note.');
+      }
     });
   }
 
@@ -62,6 +71,7 @@ export function CriterionReviewView({
     startTransition(async () => {
       try {
         await finalizeCriterionReview(learner.id, course.id, decision, overallNote || undefined);
+        toast.success(decision === 'complete' ? 'Marked complete' : 'Resubmission requested');
         router.refresh();
       } catch (e) {
         setError(e instanceof Error ? e.message : 'Something went wrong.');

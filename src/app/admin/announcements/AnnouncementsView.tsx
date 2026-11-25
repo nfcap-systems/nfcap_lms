@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { toast } from 'sonner';
 import type { AnnouncementAudience } from '@/generated/prisma/enums';
 import type { AdminAnnouncement } from '@/lib/data/announcements';
 import { publishAnnouncement } from '@/lib/actions/announcements';
@@ -122,11 +123,19 @@ export function AnnouncementsView({
               disabled={!valid || submitting}
               onClick={async () => {
                 setSubmitting(true);
-                await publishAnnouncement({ title: title.trim(), body: body.trim(), audience });
-                setSubmitting(false);
-                setTitle('');
-                setBody('');
-                router.refresh();
+                try {
+                  await publishAnnouncement({ title: title.trim(), body: body.trim(), audience });
+                  toast.success(
+                    `Sent to ${recipientCount} ${recipientCount === 1 ? 'person' : 'people'}`,
+                  );
+                  setTitle('');
+                  setBody('');
+                  router.refresh();
+                } catch (e) {
+                  toast.error(e instanceof Error ? e.message : 'Could not send the announcement.');
+                } finally {
+                  setSubmitting(false);
+                }
               }}
             >
               Send to {recipientCount} {recipientCount === 1 ? 'person' : 'people'}

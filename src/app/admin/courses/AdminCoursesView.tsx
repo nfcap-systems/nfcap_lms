@@ -4,6 +4,7 @@ import * as React from 'react';
 import { useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { toast } from 'sonner';
 
 import { setCoursePublished } from '@/lib/actions/courses';
 import { courseLessonCount } from '@/lib/types';
@@ -40,8 +41,13 @@ export function AdminCoursesView({ courses }: { courses: AdminCourse[] }) {
 
   function togglePublished(course: AdminCourse) {
     startTransition(async () => {
-      await setCoursePublished(course.id, !course.published);
-      router.refresh();
+      try {
+        await setCoursePublished(course.id, !course.published);
+        toast.success(course.published ? 'Course unpublished' : 'Course published');
+        router.refresh();
+      } catch (e) {
+        toast.error(e instanceof Error ? e.message : 'Could not update the course.');
+      }
     });
   }
 

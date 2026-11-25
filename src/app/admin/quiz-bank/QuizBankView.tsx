@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useMemo, useState } from 'react';
+import { toast } from 'sonner';
 import type { AssessmentSettings, BankQuestion, QuizBankCourse } from '@/lib/data/quiz-bank';
 import {
   attachExistingQuestion,
@@ -198,8 +199,13 @@ export function QuizBankView({
                       <DropdownMenuItem
                         key={c.slug}
                         onSelect={async () => {
-                          await attachExistingQuestion(c.slug, q.id);
-                          router.refresh();
+                          try {
+                            await attachExistingQuestion(c.slug, q.id);
+                            toast.success(`Attached to ${c.title}`);
+                            router.refresh();
+                          } catch (e) {
+                            toast.error(e instanceof Error ? e.message : 'Could not attach the question.');
+                          }
                         }}
                       >
                         {c.title}
@@ -275,14 +281,21 @@ export function QuizBankView({
                       options: draft.options.map((o) => o.trim()),
                       correctIndex: draft.correctIndex,
                     };
-                    if (editingId === 'new') {
-                      await createDraftQuestion(payload);
-                    } else {
-                      await updateQuestion(editingId, payload);
+                    try {
+                      if (editingId === 'new') {
+                        await createDraftQuestion(payload);
+                        toast.success('Question created');
+                      } else {
+                        await updateQuestion(editingId, payload);
+                        toast.success('Question updated');
+                      }
+                      setEditingId(null);
+                      router.refresh();
+                    } catch (e) {
+                      toast.error(e instanceof Error ? e.message : 'Could not save the question.');
+                    } finally {
+                      setSubmitting(false);
                     }
-                    setSubmitting(false);
-                    setEditingId(null);
-                    router.refresh();
                   }}
                 >
                   Save
@@ -294,10 +307,16 @@ export function QuizBankView({
                     disabled={submitting}
                     onClick={async () => {
                       setSubmitting(true);
-                      await deleteQuestionEverywhere(editingId);
-                      setSubmitting(false);
-                      setEditingId(null);
-                      router.refresh();
+                      try {
+                        await deleteQuestionEverywhere(editingId);
+                        toast.success('Question deleted everywhere');
+                        setEditingId(null);
+                        router.refresh();
+                      } catch (e) {
+                        toast.error(e instanceof Error ? e.message : 'Could not delete the question.');
+                      } finally {
+                        setSubmitting(false);
+                      }
                     }}
                   >
                     Delete everywhere
@@ -324,9 +343,17 @@ export function QuizBankView({
                           disabled={submitting}
                           onClick={async () => {
                             setSubmitting(true);
-                            await deleteQuestion(c.slug, editingQuestion.id);
-                            setSubmitting(false);
-                            router.refresh();
+                            try {
+                              await deleteQuestion(c.slug, editingQuestion.id);
+                              toast.success(`Removed from ${c.title}`);
+                              router.refresh();
+                            } catch (e) {
+                              toast.error(
+                                e instanceof Error ? e.message : 'Could not remove the question.',
+                              );
+                            } finally {
+                              setSubmitting(false);
+                            }
                           }}
                         >
                           Remove
