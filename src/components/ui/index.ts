@@ -11,3 +11,4 @@ export * from './StateCard';
 export * from './SegmentedToggle';
 export * from './DataTableCard';
 export * from './ProfileHeader';
+export * from './Toaster';

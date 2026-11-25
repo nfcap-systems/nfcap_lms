@@ -1,17 +1,16 @@
 import { Suspense } from 'react';
-import { AuthShell } from '@/components/auth/AuthShell';
-import { ResetPasswordForm } from './ResetPasswordForm';
+import '@astryxdesign/core/reset.css';
+import '@astryxdesign/core/astryx.css';
+import { Theme } from '@astryxdesign/core/theme';
+import { themes, defaultThemeSlug } from '@/astryx-themes';
+import { ResetPasswordAstryx } from './ResetPasswordAstryx';
 
 export default function ResetPasswordPage() {
   return (
-    <AuthShell
-      active="signin"
-      heading="Set a new password"
-      subheading="Choose a new password for your account."
-    >
+    <Theme theme={themes[defaultThemeSlug]}>
       <Suspense>
-        <ResetPasswordForm />
+        <ResetPasswordAstryx />
       </Suspense>
-    </AuthShell>
+    </Theme>
   );
 }

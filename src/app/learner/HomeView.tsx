@@ -164,7 +164,12 @@ export function HomeView({
     <div className="flex flex-col gap-6">
       <div className="greet-row">
         <div>
-          <p className="greet-h1">
+          {/* suppressHydrationWarning: see the matching comment in
+              src/app/admin/DashboardView.tsx — server vs. browser local-hour differences can
+              flip this text across SSR/hydration and throw React error #418, which forces a
+              full client re-render of the page. The text itself is cosmetic and safe to let
+              differ for one render. */}
+          <p className="greet-h1" suppressHydrationWarning>
             {timeOfDayGreeting()}, {firstName}
           </p>
           <p className="greet-sub">
