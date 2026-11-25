@@ -50,12 +50,12 @@ summary that `CLAUDE.md` points a new session at.
    video in the private evidence bucket and feature #2 deliberately passes video through without
    re-encoding, so nothing is blocked today — but no adaptive-streaming provider has been chosen,
    and that decision was scoped to *this* phase precisely because it gets expensive to change later.
-3. **A verification pass across features #8–#12 was planned and did not happen before merge.** In
-   particular `LRN06d-EvidenceNotMet`, `LRN06e-EvidenceResubmit` and `LRN06f-AttemptHistory` have
-   never been visually compared against their approved boards. Worth closing before `stage` is
-   promoted to `main`.
-4. **Plane backfill (Step 3 of the kickoff plan) has not been run.** No Phase 3 ticket exists; the
+3. **Plane backfill (Step 3 of the kickoff plan) has not been run.** No Phase 3 ticket exists; the
    kickoff doc's progress table is the only record, which is why its accuracy matters.
+
+Resolved: the visual-verification pass across features #8–#12 (`LRN06d-EvidenceNotMet`,
+`LRN06e-EvidenceResubmit`, `LRN06f-AttemptHistory` against their approved boards) is done as of
+2026-11-25.
 
 ## What this phase replaces
 
@@ -105,8 +105,8 @@ credible to the client until feature #5 replaces the `[PLACEHOLDER]` criteria wi
       same gate; driven end-to-end in the browser during feature #12 (refused, then certified once
       every mandatory criterion was Met)
 - [x] A rejected trainee sees exactly what failed and re-shoots only that — feature #10's
-      `EvidenceNotMet` + carry-forward of already-Met criteria. **Built but not visually verified
-      against `LRN06d`/`LRN06e`** — see "What's open" item 3.
+      `EvidenceNotMet` + carry-forward of already-Met criteria. Visually verified against
+      `LRN06d`/`LRN06e` on 2026-11-25.
 
 ## Dependencies / open decisions before (or early in) this phase
 

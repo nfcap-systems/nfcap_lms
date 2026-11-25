@@ -85,6 +85,8 @@ export type WioaCaseRecord = {
   contactName: string | null;
   documents: WioaDocumentRecord[];
   appointments: WioaAppointmentRecord[];
+  /** Oldest to most recent — feeds the learner-facing phase timeline (LRN10-FundingStatus). */
+  statusHistory: { status: WioaCaseStatus; changedAt: Date }[];
 };
 
 /** Every WIOA case for a learner, one per restricted course they've started outreach for
@@ -105,6 +107,7 @@ export async function getWioaCasesForLearner(
         contact: { select: { name: true } },
         documents: { include: { requirement: true } },
         appointments: { orderBy: { scheduledAt: 'asc' } },
+        statusHistory: { orderBy: { changedAt: 'asc' } },
       },
     }),
   );
@@ -131,6 +134,7 @@ export async function getWioaCasesForLearner(
       rejectionReason: d.rejectionReason,
     })),
     appointments: c.appointments,
+    statusHistory: c.statusHistory.map((h) => ({ status: h.status, changedAt: h.changedAt })),
   }));
 }
 

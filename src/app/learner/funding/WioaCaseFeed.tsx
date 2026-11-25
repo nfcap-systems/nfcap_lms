@@ -43,13 +43,39 @@ const docStatusLabel: Record<WioaDocumentRecord['status'], string> = {
   NOT_APPLICABLE: 'Not applicable',
 };
 
+function formatDate(d: Date) {
+  return new Date(d).toLocaleDateString(undefined, {
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric',
+  });
+}
+
 /** Learner-facing consolidated activity feed for one WIOA case (WIOA_INTEGRATION_PLAN.md
  * Section 7 — a read-only view over outreach log, documents, appointments, and next-step
- * guidance, plus the document upload UI itself). */
+ * guidance, plus the document upload UI itself).
+ *
+ * The "Case status" card below is a per-phase vertical timeline (matching docs/MOCKUP-INDEX.md's
+ * `LRN10-FundingStatus` board), not a raw dump of every `WioaStatusHistory` row — that granular
+ * view belongs to staff (`WioaCaseDetailView.tsx`'s History tab). Each phase's date is the
+ * earliest status-history entry whose phase matches it; the current phase shows the next-step
+ * guidance instead of a date. */
 export function WioaCaseFeed({ wioaCase }: { wioaCase: WioaCaseRecord }) {
-  const phaseIndex = WIOA_UI_PHASES.indexOf(
-    WIOA_STATUS_PHASE[wioaCase.status] as (typeof WIOA_UI_PHASES)[number],
-  );
+  // CLOSED_INELIGIBLE maps to the 'Closed' phase, which isn't one of WIOA_UI_PHASES' steps — fall
+  // back to the furthest phase actually reached per statusHistory, so phases genuinely completed
+  // before closure still render as done instead of every step going grey.
+  const phaseIndex =
+    wioaCase.status === 'CLOSED_INELIGIBLE'
+      ? wioaCase.statusHistory.reduce((max, h) => {
+          const idx = WIOA_UI_PHASES.indexOf(
+            WIOA_STATUS_PHASE[h.status] as (typeof WIOA_UI_PHASES)[number],
+          );
+          return idx > max ? idx : max;
+        }, -1)
+      : WIOA_UI_PHASES.indexOf(WIOA_STATUS_PHASE[wioaCase.status] as (typeof WIOA_UI_PHASES)[number]);
+
+  const phaseDate = (phase: (typeof WIOA_UI_PHASES)[number]) =>
+    wioaCase.statusHistory.find((h) => WIOA_STATUS_PHASE[h.status] === phase)?.changedAt ?? null;
 
   return (
     <div className="flex flex-col gap-6">
@@ -57,22 +83,31 @@ export function WioaCaseFeed({ wioaCase }: { wioaCase: WioaCaseRecord }) {
         <CardHeader>
           <CardTitle>Case status — {wioaCase.courseTitle}</CardTitle>
         </CardHeader>
-        <CardContent className="flex flex-col gap-4">
-          <div className="flex flex-wrap items-center gap-2">
-            {WIOA_UI_PHASES.map((phase, i) => (
-              <Badge key={phase} tone={i <= phaseIndex ? 'success' : 'neutral'}>
-                {phase}
-              </Badge>
-            ))}
-            {wioaCase.status === 'CLOSED_INELIGIBLE' && <Badge tone="danger">Closed</Badge>}
-          </div>
-          <div>
-            <p className="text-sm font-medium text-[var(--ink)]">
-              {WIOA_STATUS_LABEL[wioaCase.status]}
-            </p>
-            <p className="mt-1 text-sm text-[var(--ink-muted)]">
-              {WIOA_STATUS_NEXT_STEP[wioaCase.status]}
-            </p>
+        <CardContent>
+          {wioaCase.status === 'CLOSED_INELIGIBLE' && (
+            <Badge tone="danger" className="mb-4">
+              Closed — ineligible
+            </Badge>
+          )}
+          <div className="tl">
+            {WIOA_UI_PHASES.map((phase, i) => {
+              const state = i < phaseIndex ? 'done' : i === phaseIndex ? 'current' : 'future';
+              const date = state === 'done' ? phaseDate(phase) : null;
+              return (
+                <div key={phase} className={`tlrow ${state}`}>
+                  <div className="tldot" />
+                  <div className="tl-status">{phase}</div>
+                  {state === 'current' ? (
+                    <div className="tl-meta">
+                      {WIOA_STATUS_LABEL[wioaCase.status]} —{' '}
+                      {WIOA_STATUS_NEXT_STEP[wioaCase.status]}
+                    </div>
+                  ) : (
+                    date && <div className="tl-meta">{formatDate(date)}</div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </CardContent>
       </Card>

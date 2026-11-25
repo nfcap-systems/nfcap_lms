@@ -20,6 +20,8 @@ Read `docs/HANDOFF.md` first — it is the onboarding entry point. Then, by ques
 | Phase 2 execution status — what's done, what's open, why | `docs/build/PHASE_2_PROGRESS.md` |
 | Phase 3 execution status — what's done, what's open, why | `docs/build/PHASE_3_PROGRESS.md` |
 | **Active:** Phase 3 build + the design-system migration it depends on, started without Plane connected — branch/PR naming, progress log, deliberate deviations from `DEV-APPROACH.md`, and the exact backfill-into-Plane steps | `docs/plans/phase-3-and-design-migration-kickoff.md` |
+| **Active:** Phase 5 kickoff — corrected worklist after the 2026-11-25 code audit, open product questions, process decisions | `docs/plans/phase-5-funding-productisation-kickoff.md` |
+| What the 2026-11-25 code-level audit actually found per feature in Phases 5–8 (and re-checked Phase 0/3/4 open items), with file:line evidence | `docs/build/CODE_VERIFICATION_AUDIT_2026-11-25.md` |
 | WIOA module shape and closed decisions | `docs/wioa/WIOA_INTEGRATION_PLAN.md`, `docs/build/WIOA_BUILD_WORKFLOW.md` |
 | Design system / tokens | `docs/design/NFCAP_DESIGN_SYSTEM.md` |
 
@@ -92,10 +94,19 @@ Do not reopen decisions already closed in `PRODUCT_CONTEXT.md` or the client sco
      four separate consumers that assumed the legacy shape had gone away; don't reintroduce that
      assumption. Regression coverage lives in `tests/unit/legacy-evidence-regression.test.ts`.
   3. **Nothing is in production.** These are On Stage, not Done; `stage` has not been promoted to
-     `main`, and a planned verification pass over features #8–#12 — including any visual compare
-     against `LRN06d`/`LRN06e`/`LRN06f` — has not been done.
+     `main`. The planned verification pass over features #8–#12 — including the visual compare
+     against `LRN06d`/`LRN06e`/`LRN06f` — is done as of 2026-11-25.
 
-  Nothing in Phases 4–8 has started.
+  Phase 4 (Credential Integrity & Portability) is functionally complete — see below. **"Nothing in
+  Phases 5–8 has started" is false for Phase 6 and incomplete for Phase 5** — a full code-level
+  verification pass on 2026-11-25, done before starting Phase 5, found real existing work in
+  Phase 5 (Stalled-Case Detection ships end-to-end, not backend-only as previously believed) and
+  substantial unlabeled progress in Phase 6 (2/8 features fully built, several more with real
+  schema+backend work and no UI). Phases 7 and 8 are genuinely close to the floor, each with one
+  real exception (colour-contrast tokens; Sentry + `cacheComponents`). Full per-feature evidence:
+  `docs/build/CODE_VERIFICATION_AUDIT_2026-11-25.md`. Corrected Phase 5 worklist and the
+  Phase-6 regression this surfaced (quiz answers leak on every result screen, `QuizFlow.tsx`):
+  `docs/plans/phase-5-funding-productisation-kickoff.md`.
 - **Deployment: self-hosted, VPS + Docker.** Supabase is retained for database and object storage.
   Deploy target was decided 2026-11-01 (VPS + Docker). Replica count is still undecided but isn't a
   blocker — **build for 2+ instances** is already the working assumption everything is built

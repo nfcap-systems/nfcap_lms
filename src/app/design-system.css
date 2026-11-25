@@ -1126,6 +1126,20 @@
   border-color: var(--nfcap-accent);
   background: var(--nfcap-accent);
 }
+.tlrow.done .tldot {
+  border-color: var(--status-complete);
+  background: var(--status-complete);
+}
+.tlrow.done .tldot::after {
+  content: '✓';
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+}
+.tlrow.future .tl-status {
+  color: var(--ink-muted);
+}
 .tl-status {
   font-size: 13.5px;
   font-weight: 600;

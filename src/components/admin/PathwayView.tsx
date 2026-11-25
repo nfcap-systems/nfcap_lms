@@ -35,14 +35,17 @@ export function PathwayView({ courses }: { courses: AdminCourse[] }) {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
 
-    setOrdered((current) => {
-      const oldIndex = current.findIndex((c) => c.id === active.id);
-      const newIndex = current.findIndex((c) => c.id === over.id);
-      const next = arrayMove(current, oldIndex, newIndex);
-      startTransition(async () => {
-        await reorderPathway(next.map((c) => c.id));
-      });
-      return next;
+    // startTransition must NOT be called from inside a setState updater callback — that callback
+    // can run during React's render phase, and calling startTransition there throws "Cannot call
+    // startTransition while rendering" (seen live in dev: PathwayView[handleDragEnd > setOrdered]).
+    // Compute `next` from the closure's `ordered` instead, since this handler only ever runs from
+    // a user drag event, never during render.
+    const oldIndex = ordered.findIndex((c) => c.id === active.id);
+    const newIndex = ordered.findIndex((c) => c.id === over.id);
+    const next = arrayMove(ordered, oldIndex, newIndex);
+    setOrdered(next);
+    startTransition(async () => {
+      await reorderPathway(next.map((c) => c.id));
     });
   }
 
