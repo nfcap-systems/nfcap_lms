@@ -42,6 +42,7 @@ const fundingStatusBadge: Record<
 > = {
   funded: { tone: 'success', label: '● Funded' },
   pending: { tone: 'pending', label: '● Pending review' },
+  wioa_interest: { tone: 'pending', label: '● WIOA interest' },
   self_pay: { tone: 'neutral', label: 'Self-pay' },
 };
 
@@ -442,20 +443,6 @@ function EvidenceByWeekChart({
       >
         <div style={{ fontWeight: 600, fontSize: 14.5 }}>Evidence submissions by week</div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <Link
-            href="/admin/analytics"
-            style={{
-              fontSize: 12,
-              color: 'var(--ink-muted)',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 4,
-              whiteSpace: 'nowrap',
-            }}
-          >
-            View Report
-            <Icon name="chevron-right" className="h-3 w-3" />
-          </Link>
           <div className="segrange">
             <button
               type="button"

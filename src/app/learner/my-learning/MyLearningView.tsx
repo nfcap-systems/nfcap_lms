@@ -54,7 +54,10 @@ export function MyLearningView({
         >
           My Learning
         </div>
-        <div style={{ display: 'flex', gap: 28, borderBottom: '1px solid var(--nfcap-border)' }}>
+        <div
+          className="flex gap-5 overflow-x-auto sm:gap-7"
+          style={{ borderBottom: '1px solid var(--nfcap-border)' }}
+        >
           <span className="lrn-tab on">In Progress</span>
           <span className="lrn-tab">Completed</span>
           <span className="lrn-tab">Certificates</span>
@@ -189,7 +192,7 @@ export function MyLearningView({
       </div>
 
       {tab === 'in-progress' && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 16 }}>
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
           {pathway.map((course, index) => {
             const progress = progressMap[course.id];
             // Same rule as CourseOverviewView's gate on `/learner/courses/[courseId]` — a stale
@@ -281,9 +284,9 @@ export function MyLearningView({
       )}
 
       {tab === 'completed' && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 16 }}>
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
           {completedCourses.length === 0 ? (
-            <p style={{ fontSize: 13.5, color: 'var(--ink-muted)', gridColumn: '1 / -1' }}>
+            <p className="col-span-full" style={{ fontSize: 13.5, color: 'var(--ink-muted)' }}>
               No courses completed yet.
             </p>
           ) : (
@@ -300,9 +303,7 @@ export function MyLearningView({
                   type="button"
                   className="lrn-mcard"
                   onClick={() =>
-                    locked
-                      ? setLockedCourse(course)
-                      : router.push(`/learner/courses/${course.id}`)
+                    locked ? setLockedCourse(course) : router.push(`/learner/courses/${course.id}`)
                   }
                 >
                   <Image

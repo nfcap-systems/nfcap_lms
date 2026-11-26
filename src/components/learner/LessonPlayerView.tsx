@@ -58,7 +58,7 @@ export function LessonPlayerView({
   const next = flat[activeIndex + 1];
 
   return (
-    <div style={{ display: 'flex', gap: 24, alignItems: 'flex-start' }}>
+    <div className="flex flex-col items-stretch gap-6 lg:flex-row lg:items-start lg:gap-6">
       <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 16 }}>
         <div style={{ fontSize: 12.5, color: 'var(--ink-muted)' }}>
           <Link href={`/learner/courses/${course.id}`} style={{ color: 'var(--ink-muted)' }}>
@@ -178,11 +178,8 @@ export function LessonPlayerView({
       </div>
 
       <div
+        className="w-full lg:sticky lg:top-[84px] lg:w-[300px] lg:shrink-0"
         style={{
-          width: 300,
-          flexShrink: 0,
-          position: 'sticky',
-          top: 84,
           background: 'var(--surface)',
           border: '1px solid var(--nfcap-border)',
           borderRadius: 'var(--nfcap-radius-lg)',

@@ -14,12 +14,11 @@ export function LearnerFooter({
 }) {
   return (
     <footer
+      className="flex-wrap justify-center gap-3 text-center sm:justify-between sm:text-left"
       style={{
         borderTop: '1px solid var(--nfcap-border)',
         display: 'flex',
-        justifyContent: 'space-between',
         alignItems: 'center',
-        gap: 16,
         color: 'var(--ink-muted)',
         fontSize: 11.5,
         boxSizing: 'border-box',

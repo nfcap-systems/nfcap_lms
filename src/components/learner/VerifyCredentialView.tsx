@@ -18,12 +18,12 @@ export function VerifyCredentialView({ credential }: { credential: PublicCredent
     >
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
         <div
+          className="px-4 sm:px-7"
           style={{
             height: 64,
             borderBottom: '1px solid var(--nfcap-border)',
             display: 'flex',
             alignItems: 'center',
-            padding: '0 28px',
             gap: 10,
             background: '#fff',
           }}
@@ -55,7 +55,7 @@ export function VerifyCredentialView({ credential }: { credential: PublicCredent
             NFCAP
           </span>
           <div style={{ flex: 1 }} />
-          <span style={{ fontSize: 12, color: 'var(--ink-muted)' }}>
+          <span className="hidden sm:inline" style={{ fontSize: 12, color: 'var(--ink-muted)' }}>
             Public credential verification — no sign-in required
           </span>
         </div>

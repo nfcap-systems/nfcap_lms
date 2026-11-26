@@ -13,6 +13,7 @@ import {
   addLesson,
   addQuestion,
   addSection,
+  attachExistingQuestion,
   deleteContentBlock,
   deleteCriterion,
   deleteLesson,
@@ -35,6 +36,7 @@ import type {
   QuizQuestion,
   Section,
 } from '@/lib/types';
+import type { BankQuestion } from '@/lib/data/quiz-bank';
 
 type RailSelection =
   | { type: 'general' }
@@ -81,9 +83,11 @@ function LabeledField({
 export function CurriculumBuilderView({
   course,
   criteria,
+  bankQuestions,
 }: {
   course: Course;
   criteria: AssessmentCriterion[];
+  bankQuestions: BankQuestion[];
 }) {
   const router = useRouter();
   const [, startTransition] = useTransition();
@@ -91,6 +95,7 @@ export function CurriculumBuilderView({
   const [sectionDialog, setSectionDialog] = useState<SectionDialogTarget | null>(null);
   const [lessonEditor, setLessonEditor] = useState<LessonEditorTarget | null>(null);
   const [questionEditor, setQuestionEditor] = useState<QuestionEditorTarget | null>(null);
+  const [bankPickerOpen, setBankPickerOpen] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState<ConfirmDeleteState | null>(null);
 
   function runAndRefresh(action: Promise<void>, successMessage?: string) {
@@ -181,6 +186,7 @@ export function CurriculumBuilderView({
           <AssessmentPanel
             course={course}
             onAddQuestion={() => setQuestionEditor({ mode: 'add' })}
+            onImportFromBank={() => setBankPickerOpen(true)}
             onEditQuestion={(question) => setQuestionEditor({ mode: 'edit', question })}
             onDeleteQuestion={(question) =>
               setConfirmDelete({
@@ -246,6 +252,21 @@ export function CurriculumBuilderView({
               questionEditor.mode === 'edit' ? 'Question updated' : 'Question added',
             )
           }
+        />
+      )}
+
+      {bankPickerOpen && (
+        <QuestionBankPickerDialog
+          bankQuestions={bankQuestions}
+          attachedQuestionIds={new Set(course.assessment.questions.map((q) => q.id))}
+          onClose={() => setBankPickerOpen(false)}
+          onAttach={(questionId) => {
+            runAndRefresh(
+              attachExistingQuestion(course.id, questionId),
+              'Question added from bank',
+            );
+            setBankPickerOpen(false);
+          }}
         />
       )}
 
@@ -503,11 +524,13 @@ function SectionDetailPanel({
 function AssessmentPanel({
   course,
   onAddQuestion,
+  onImportFromBank,
   onEditQuestion,
   onDeleteQuestion,
 }: {
   course: Course;
   onAddQuestion: () => void;
+  onImportFromBank: () => void;
   onEditQuestion: (question: QuizQuestion) => void;
   onDeleteQuestion: (question: QuizQuestion) => void;
 }) {
@@ -516,10 +539,16 @@ function AssessmentPanel({
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-semibold text-foreground">Knowledge Assessment</h2>
-        <Button size="sm" variant="outline" onClick={onAddQuestion}>
-          <Icon name="clipboard" className="size-4" />
-          Add Question
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button size="sm" variant="outline" onClick={onImportFromBank}>
+            <Icon name="list" className="size-4" />
+            Choose from Quiz Bank
+          </Button>
+          <Button size="sm" variant="outline" onClick={onAddQuestion}>
+            <Icon name="clipboard" className="size-4" />
+            Add Question
+          </Button>
+        </div>
       </div>
 
       <Card>
@@ -606,9 +635,7 @@ function CriteriaPanel({
     <div className="flex flex-col gap-4 lg:flex-row lg:items-start">
       <div className="flex min-w-0 flex-1 flex-col gap-4" style={{ flex: 1.4 }}>
         <div className="panel">
-          <div style={{ fontWeight: 600, fontSize: 14.5, marginBottom: 4 }}>
-            Evidence criteria
-          </div>
+          <div style={{ fontWeight: 600, fontSize: 14.5, marginBottom: 4 }}>Evidence criteria</div>
           <div style={{ fontSize: 12.5, color: 'var(--ink-muted)', marginBottom: 14 }}>
             Each learner must show met evidence against every criterion marked &quot;required for
             certification&quot; before the course counts as complete.
@@ -631,7 +658,9 @@ function CriteriaPanel({
                   viewBox="0 0 24 24"
                   fill="none"
                   stroke={
-                    criterion.mandatoryForCertification ? 'var(--nfcap-accent)' : 'var(--nfcap-border)'
+                    criterion.mandatoryForCertification
+                      ? 'var(--nfcap-accent)'
+                      : 'var(--nfcap-border)'
                   }
                   strokeWidth="2"
                   style={{ marginTop: 1, flex: 'none' }}
@@ -640,7 +669,9 @@ function CriteriaPanel({
                 </svg>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontWeight: 600, fontSize: 13.5 }}>{criterion.title}</div>
-                  <div style={{ fontSize: 12, color: 'var(--ink-muted)' }}>{criterion.guidance}</div>
+                  <div style={{ fontSize: 12, color: 'var(--ink-muted)' }}>
+                    {criterion.guidance}
+                  </div>
                 </div>
                 <div style={{ display: 'flex', gap: 2, flex: 'none' }}>
                   <button
@@ -1358,3 +1389,67 @@ function QuestionDialog({
   );
 }
 
+/** Reuse-across-courses entry point into the shared question bank (Quiz Bank, `/admin/quiz-bank`)
+ * — previously the only way to attach an existing question to a course was to go there and use
+ * its own "Attach" dropdown; this lets an admin do it straight from the course's own Knowledge
+ * Assessment screen instead, via the same `attachExistingQuestion` action. */
+function QuestionBankPickerDialog({
+  bankQuestions,
+  attachedQuestionIds,
+  onClose,
+  onAttach,
+}: {
+  bankQuestions: BankQuestion[];
+  attachedQuestionIds: Set<string>;
+  onClose: () => void;
+  onAttach: (questionId: string) => void;
+}) {
+  const [search, setSearch] = useState('');
+  const available = bankQuestions.filter((q) => !attachedQuestionIds.has(q.id));
+  const q = search.trim().toLowerCase();
+  const filtered = q
+    ? available.filter((item) => item.prompt.toLowerCase().includes(q))
+    : available;
+
+  return (
+    <Dialog open onClose={onClose} title="Choose from Quiz Bank">
+      <div className="flex flex-col gap-3">
+        <Input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search questions..."
+          aria-label="Search quiz bank"
+          autoFocus
+        />
+        {available.length === 0 ? (
+          <p className="text-sm text-muted-foreground">
+            Every bank question is already attached to this course.
+          </p>
+        ) : filtered.length === 0 ? (
+          <p className="text-sm text-muted-foreground">No questions match that search.</p>
+        ) : (
+          <ul className="flex max-h-96 flex-col gap-1 overflow-y-auto">
+            {filtered.map((item) => (
+              <li
+                key={item.id}
+                className="flex items-center justify-between gap-3 rounded-md border border-border px-3 py-2"
+              >
+                <div className="min-w-0">
+                  <p className="truncate text-sm text-foreground">{item.prompt}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {item.attachedCourses.length > 0
+                      ? `Used in: ${item.attachedCourses.map((c) => c.title).join(', ')}`
+                      : 'Not attached to any course yet'}
+                  </p>
+                </div>
+                <Button size="sm" variant="outline" onClick={() => onAttach(item.id)}>
+                  Attach
+                </Button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </Dialog>
+  );
+}

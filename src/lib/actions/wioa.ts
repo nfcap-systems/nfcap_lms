@@ -20,7 +20,7 @@ import { containsSsnPattern } from '@/lib/pii';
 import { enforceRateLimit } from '@/lib/rate-limit';
 import { withRlsContext } from '@/lib/db/rls';
 import type { PrismaClient } from '@/generated/prisma/client';
-import { getLearnerById } from '@/lib/data/learners';
+import { getLearnerById, getPartnerStaffRoster } from '@/lib/data/learners';
 import { sendEmail } from '@/lib/email';
 
 /** Master-case-level authorization for staff actions on eligibility data (documents, status,
@@ -596,7 +596,9 @@ export async function advanceWioaFundingStatus(
       const current = await tx.wioaCourseCase.findUniqueOrThrow({ where: { id: courseCaseId } });
       const allowed = nextFundingStatusOptions(current.status);
       if (!allowed.includes(nextStatus)) {
-        throw new Error(`Cannot move this funding request from ${current.status} to ${nextStatus}.`);
+        throw new Error(
+          `Cannot move this funding request from ${current.status} to ${nextStatus}.`,
+        );
       }
 
       const terminal =
@@ -795,6 +797,16 @@ export async function assignWioaCasePartnerStaff(
     throw new Error('Admin or Coordinator access required.');
   }
 
+  // Previously accepted any id with no check it was even a Partner Staff account, active or not —
+  // getPartnerStaffRoster (src/lib/data/learners.ts) already excludes deactivated staff, so this
+  // reuses the exact same roster the UI's own dropdown is built from rather than re-deriving it.
+  if (partnerStaffId !== null) {
+    const roster = await getPartnerStaffRoster();
+    if (!roster.some((p) => p.id === partnerStaffId)) {
+      throw new Error('That account is not an active Partner Staff member.');
+    }
+  }
+
   await withRlsContext({ userId: user.id, role }, (tx) =>
     tx.wioaCase.update({
       where: { id: masterCaseId },
@@ -813,6 +825,31 @@ export async function assignWioaCasePartnerStaff(
   revalidatePath('/coordinator');
   revalidatePath(`/coordinator/${masterCaseId}`);
   revalidatePath('/partner');
+}
+
+/** Clears a Partner Staff account's open case assignments — called when they lose the
+ * PARTNER_STAFF role (`updateUserRole`, src/lib/actions/roles.ts) or get deactivated
+ * (`setUserActive`, src/lib/actions/users.ts). Neither of those actions used to touch WioaCase at
+ * all, so a case stayed "Assigned to [someone who can no longer act on it]" indefinitely with
+ * nothing surfacing that to the Coordinator. Returns the count so the caller can fold it into its
+ * own audit-log entry rather than this writing a second, separate one. `actingAdminId` is the
+ * admin making the role/status change, not the Partner Staff account being unassigned — same
+ * convention as `assignWioaCasePartnerStaff` passing the real caller into `withRlsContext`. */
+export async function unassignPartnerStaffCases(
+  actingAdminId: string,
+  partnerStaffId: string,
+): Promise<number> {
+  const { count } = await withRlsContext({ userId: actingAdminId, role: 'ADMIN' }, (tx) =>
+    tx.wioaCase.updateMany({
+      where: { assignedPartnerStaffId: partnerStaffId },
+      data: { assignedPartnerStaffId: null },
+    }),
+  );
+  if (count > 0) {
+    revalidatePath('/coordinator');
+    revalidatePath('/partner');
+  }
+  return count;
 }
 
 /** Partner Staff/Coordinator follow-up note on a learner's case (PTN02-LearnerDetail's "Add a

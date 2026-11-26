@@ -17,17 +17,24 @@ type Step = 'pre' | 'question' | 'result';
  * (board has no LearnerHeader there at all) — implemented as a fixed overlay covering the shared
  * header rather than a route restructure (docs/build/LRN_BATCH_DRIFT.md).
  *
- * Question banks/shuffle/attempt-limit UI (Assessment.questionsPerAttempt/randomizeOrder) exist
- * as schema fields (Layer 1) but nothing reads them yet — this flow still shows every question in
- * fixed order, same as before. That wiring is still open, not something this pass adds. */
+ * Question bank draw/shuffle (Assessment.questionsPerAttempt/randomizeOrder) exist as schema
+ * fields (Layer 1) but nothing reads them yet — this flow still shows every question in fixed
+ * order, same as before. That wiring is still open, not something this pass adds. `maxAttempts`
+ * is now read here too (see `canRevealAnswers` below, fixing the answer-leakage regression from
+ * docs/build/CODE_VERIFICATION_AUDIT_2026-11-25.md) — the server already enforced the attempt cap
+ * (`recordQuizAttempt`), this was only ever a result-screen display gap. */
 export function QuizFlow({
   course,
   assessment,
   lastAttempt,
+  attemptCount,
 }: {
   course: Course;
   assessment: Assessment;
   lastAttempt: QuizAttempt | undefined;
+  /** Attempts persisted before this page load — does not include whatever attempt the learner is
+   * about to submit in this session (see `attemptsUsedAfterThisOne` below). */
+  attemptCount: number;
 }) {
   const router = useRouter();
   const [, startTransition] = useTransition();
@@ -211,6 +218,19 @@ export function QuizFlow({
     const passed = sessionResult?.passed ?? lastAttempt?.passed ?? false;
     const correctCount = sessionResult ? Math.round((scorePercent / 100) * total) : undefined;
 
+    // QuizFlow previously revealed the correct answer on every result screen regardless of
+    // attempts remaining (docs/build/CODE_VERIFICATION_AUDIT_2026-11-25.md, Phase 6 "Quiz Engine
+    // Depth" finding) — a failed attempt with retakes left let a learner just memorize the right
+    // choice instead of actually retrying. `attemptCount` is attempts persisted before this page
+    // load; `sessionResult` only exists once this session's own attempt has already been recorded
+    // (recordQuizAttempt), so +1 accounts for it without waiting on a server round-trip to refresh
+    // the prop. Unlimited attempts (`maxAttempts === null`) never run out, so answers only ever
+    // reveal once the learner has actually passed.
+    const attemptsUsedAfterThisOne = attemptCount + (sessionResult ? 1 : 0);
+    const attemptsRemaining =
+      assessment.maxAttempts === null ? null : assessment.maxAttempts - attemptsUsedAfterThisOne;
+    const canRevealAnswers = passed || (attemptsRemaining !== null && attemptsRemaining <= 0);
+
     return (
       <div
         style={{
@@ -340,9 +360,18 @@ export function QuizFlow({
                     >
                       Your answer: {q.options[answers[q.id]] ?? '—'}
                     </div>
-                    {!isCorrect && (
+                    {!isCorrect && canRevealAnswers && (
                       <div style={{ color: 'var(--status-complete)', marginTop: 2 }}>
                         Correct answer: {q.options[q.correctIndex]}
+                      </div>
+                    )}
+                    {!isCorrect && !canRevealAnswers && (
+                      <div style={{ color: 'var(--ink-muted)', marginTop: 2, fontStyle: 'italic' }}>
+                        Correct answer hidden —{' '}
+                        {attemptsRemaining !== null
+                          ? `${attemptsRemaining} attempt${attemptsRemaining === 1 ? '' : 's'} remaining`
+                          : 'retake the quiz to improve your score'}
+                        .
                       </div>
                     )}
                   </div>
@@ -352,11 +381,12 @@ export function QuizFlow({
           </div>
         )}
 
-        <div style={{ display: 'flex', gap: 10 }}>
+        <div className="flex flex-col gap-2.5 sm:flex-row sm:gap-2.5">
           {!passed && (
             <Button
               variant="secondary"
-              style={{ flex: 1, justifyContent: 'center' }}
+              className="sm:flex-1"
+              style={{ justifyContent: 'center' }}
               onClick={startQuiz}
             >
               Retake quiz
@@ -364,7 +394,8 @@ export function QuizFlow({
           )}
           {passed ? (
             <Button
-              style={{ flex: 1, justifyContent: 'center' }}
+              className="sm:flex-1"
+              style={{ justifyContent: 'center' }}
               onClick={() => router.push(`/learner/courses/${course.id}/evidence`)}
             >
               Continue to Practical Evidence
@@ -372,7 +403,8 @@ export function QuizFlow({
           ) : (
             <Button
               variant="outline"
-              style={{ flex: 1, justifyContent: 'center' }}
+              className="sm:flex-1"
+              style={{ justifyContent: 'center' }}
               onClick={() => router.push(`/learner/courses/${course.id}`)}
             >
               Back to {course.title}

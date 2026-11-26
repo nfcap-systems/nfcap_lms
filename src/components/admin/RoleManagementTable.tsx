@@ -80,33 +80,43 @@ function RoleRow({ user, isSelf }: { user: UserRecord; isSelf: boolean }) {
         </td>
         <td style={{ color: 'var(--ink-muted)' }}>{user.email}</td>
         <td>
-          <select
-            className="field-select"
-            style={{ height: 34, width: 150 }}
-            value={role || '__unassigned__'}
-            onChange={(e) => {
-              const v = e.target.value;
-              handleRoleChange(v === '__unassigned__' ? ('' as Role) : (v as Role));
-            }}
-            aria-label={`Role for ${user.name}`}
-          >
-            {!user.role && <option value="__unassigned__">Unassigned</option>}
-            {ALL_ROLES.map((r) => (
-              <option key={r} value={r}>
-                {ROLE_DISPLAY_LABEL[r]}
-              </option>
-            ))}
-          </select>
-          {roleDirty && (
-            <button
-              type="button"
-              className="btn-primary btn-sm"
-              style={{ marginLeft: 8 }}
-              onClick={handleSaveRole}
-              disabled={rolePending || !role}
-            >
-              {rolePending ? 'Saving…' : 'Save'}
-            </button>
+          {user.role === 'LEARNER' ? (
+            // Learners are a permanently separate pool, not a staff-track starting point (NFCAP
+            // decision, 2026-11-26) — a dropdown that only ever errors on save is a worse affordance
+            // than just not showing one; updateUserRole (src/lib/actions/roles.ts) enforces the
+            // same rule server-side regardless of what this row renders.
+            <span style={{ fontSize: 13 }}>{ROLE_DISPLAY_LABEL.LEARNER}</span>
+          ) : (
+            <>
+              <select
+                className="field-select"
+                style={{ height: 34, width: 150 }}
+                value={role || '__unassigned__'}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  handleRoleChange(v === '__unassigned__' ? ('' as Role) : (v as Role));
+                }}
+                aria-label={`Role for ${user.name}`}
+              >
+                {!user.role && <option value="__unassigned__">Unassigned</option>}
+                {ALL_ROLES.map((r) => (
+                  <option key={r} value={r}>
+                    {ROLE_DISPLAY_LABEL[r]}
+                  </option>
+                ))}
+              </select>
+              {roleDirty && (
+                <button
+                  type="button"
+                  className="btn-primary btn-sm"
+                  style={{ marginLeft: 8 }}
+                  onClick={handleSaveRole}
+                  disabled={rolePending || !role}
+                >
+                  {rolePending ? 'Saving…' : 'Save'}
+                </button>
+              )}
+            </>
           )}
         </td>
         <td>

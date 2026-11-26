@@ -42,6 +42,11 @@ export default async function QuizPage({ params }: { params: Promise<{ courseId:
   }
 
   return (
-    <QuizFlow course={course} assessment={course.assessment} lastAttempt={progress.quizAttempt} />
+    <QuizFlow
+      course={course}
+      assessment={course.assessment}
+      lastAttempt={progress.quizAttempt}
+      attemptCount={progress.quizAttemptCount}
+    />
   );
 }

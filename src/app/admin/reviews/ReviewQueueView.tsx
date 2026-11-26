@@ -4,7 +4,13 @@ import { useMemo, useState, useTransition } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { Pagination, StateCard } from '@/components/ui';
+import {
+  DataTableCard,
+  DataTableCardHeader,
+  DataTableFilters,
+  Pagination,
+  StateCard,
+} from '@/components/ui';
 import { Icon } from '@/components/icons';
 import { bulkApproveEvidence } from '@/lib/actions/progress';
 import { timeAgo } from '@/lib/time-ago';
@@ -39,6 +45,7 @@ export function ReviewQueueView({
   const [isPending, startTransition] = useTransition();
   const [courseFilter, setCourseFilter] = useState<string>('all');
   const [sort, setSort] = useState<SortOrder>('oldest');
+  const [search, setSearch] = useState('');
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [page, setPage] = useState(1);
   /** Outcome of the last bulk approve — feature #7's gated certification means some rows can be
@@ -52,18 +59,43 @@ export function ReviewQueueView({
   }, [rows]);
 
   const filtered = useMemo(() => {
-    const byCourse =
-      courseFilter === 'all' ? rows : rows.filter((r) => r.courseId === courseFilter);
+    const q = search.trim().toLowerCase();
+    const byCourse = rows.filter((r) => {
+      if (courseFilter !== 'all' && r.courseId !== courseFilter) return false;
+      if (q && !r.learnerName.toLowerCase().includes(q) && !r.courseTitle.toLowerCase().includes(q))
+        return false;
+      return true;
+    });
     const sorted = [...byCourse].sort((a, b) => {
       const diff = new Date(a.submittedAt).getTime() - new Date(b.submittedAt).getTime();
       return sort === 'oldest' ? diff : -diff;
     });
     return sorted;
-  }, [rows, courseFilter, sort]);
+  }, [rows, courseFilter, sort, search]);
 
   const oldestAge = rows.length > 0 ? timeAgo(rows[0].submittedAt) : null;
   const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const pageRows = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
+  function exportCsv() {
+    const header = ['Learner', 'Course', 'Submitted', 'Photos'];
+    const csvRows = filtered.map((r) => [
+      r.learnerName,
+      r.courseTitle,
+      new Date(r.submittedAt).toISOString(),
+      String(r.fileCount),
+    ]);
+    const csv = [header, ...csvRows]
+      .map((row) => row.map((cell) => `"${cell.replace(/"/g, '""')}"`).join(','))
+      .join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `review-queue-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
 
   function toggleRow(evidenceId: string) {
     setSelected((prev) => {
@@ -203,41 +235,65 @@ export function ReviewQueueView({
         </div>
       </div>
 
-      <div className="toolbar">
-        <button
-          type="button"
-          className={courseFilter === 'all' ? 'chip on' : 'chip'}
-          onClick={() => {
-            setCourseFilter('all');
-            setPage(1);
-          }}
-        >
-          All courses
-        </button>
-        {courseOptions.map((c) => (
-          <button
-            key={c.courseId}
-            type="button"
-            className={courseFilter === c.courseId ? 'chip on' : 'chip'}
-            onClick={() => {
-              setCourseFilter(c.courseId);
-              setPage(1);
-            }}
-          >
-            {c.courseTitle}
-          </button>
-        ))}
-        <button
-          type="button"
-          className={sort === 'oldest' ? 'chip on' : 'chip'}
-          onClick={() => setSort(sort === 'oldest' ? 'newest' : 'oldest')}
-          aria-label={sort === 'oldest' ? 'Showing oldest first' : 'Showing newest first'}
-        >
-          {sort === 'oldest' ? 'Oldest first' : 'Newest first'}
-        </button>
-      </div>
+      <DataTableCard>
+        <DataTableCardHeader
+          title="All submissions"
+          description="Every evidence submission awaiting assessment."
+          actions={
+            <>
+              <div className="dtsearch">
+                <Icon name="search" className="h-3.5 w-3.5" />
+                <input
+                  value={search}
+                  onChange={(e) => {
+                    setSearch(e.target.value);
+                    setPage(1);
+                  }}
+                  placeholder="Search submissions..."
+                  aria-label="Search submissions"
+                />
+              </div>
+              <button type="button" className="dtbtn" onClick={exportCsv}>
+                <Icon name="upload" className="h-3.5 w-3.5" />
+                Export
+              </button>
+            </>
+          }
+        />
 
-      <div className="panel" style={{ padding: 0, overflowX: 'auto', overflowY: 'hidden' }}>
+        <DataTableFilters>
+          <div className="dt-filter-group">
+            <div className="dt-filter">
+              <span className="lbl">Course:</span>
+              <select
+                value={courseFilter}
+                onChange={(e) => {
+                  setCourseFilter(e.target.value);
+                  setPage(1);
+                }}
+              >
+                <option value="all">All</option>
+                {courseOptions.map((c) => (
+                  <option key={c.courseId} value={c.courseId}>
+                    {c.courseTitle}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="dt-filter">
+              <span className="lbl">Sort:</span>
+              <select value={sort} onChange={(e) => setSort(e.target.value as SortOrder)}>
+                <option value="oldest">Oldest first</option>
+                <option value="newest">Newest first</option>
+              </select>
+            </div>
+          </div>
+        </DataTableFilters>
+
+        <div className="dt-selrow">
+          <span className="dt-selcount">{selected.size} selected</span>
+        </div>
+
         <table className="data-table">
           <thead>
             <tr>
@@ -254,7 +310,7 @@ export function ReviewQueueView({
               <th>Course</th>
               <th>Submitted</th>
               <th>Attachment</th>
-              <th></th>
+              <th style={{ textAlign: 'right' }}>Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -294,24 +350,40 @@ export function ReviewQueueView({
                 <td style={{ textAlign: 'right' }}>
                   <Link
                     href={`/admin/learners/${row.learnerId}/review/${row.courseId}`}
-                    style={{ fontWeight: 600, fontSize: 13 }}
+                    className="rowkebab"
+                    aria-label={`Review ${row.learnerName}'s submission`}
+                    title="Review submission"
                   >
-                    Review →
+                    <Icon name="chevron-right" className="h-4 w-4" />
                   </Link>
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
-        <div className="table-footer">
-          <span>
-            Showing {pageRows.length} of {filtered.length}
-          </span>
-          <span>
-            Rows per page: {PAGE_SIZE} · Page {page} of {pageCount}
-          </span>
-        </div>
-      </div>
+
+        {filtered.length === 0 ? (
+          <div
+            style={{
+              padding: '40px 20px',
+              textAlign: 'center',
+              fontSize: 13.5,
+              color: 'var(--ink-muted)',
+            }}
+          >
+            No submissions match this filter.
+          </div>
+        ) : (
+          <div className="dt-footer">
+            <span>
+              Showing {pageRows.length} of {filtered.length}
+            </span>
+            <span>
+              Page {page} of {pageCount}
+            </span>
+          </div>
+        )}
+      </DataTableCard>
 
       {pageCount > 1 && <Pagination page={page} pageCount={pageCount} onPageChange={setPage} />}
     </div>

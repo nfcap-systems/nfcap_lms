@@ -39,7 +39,9 @@ export function CertificatesView({
         const slug = await generateCertificatePublicSlug(sample.rawId);
         router.push(`/verify/${slug}`);
       } catch (e) {
-        toast.error(e instanceof Error ? e.message : 'Could not open the sample verification page.');
+        toast.error(
+          e instanceof Error ? e.message : 'Could not open the sample verification page.',
+        );
       }
     });
   }
@@ -133,7 +135,7 @@ export function CertificatesView({
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 14 }}>
+      <div className="grid-cols-2 sm:grid-cols-4" style={{ display: 'grid', gap: 14 }}>
         <div className="lrn-stat">
           <span className="lrn-stat-icon" style={{ background: '#f0fdf4', color: '#166534' }}>
             <Icon name="award" className="h-5 w-5" />
@@ -178,9 +180,9 @@ export function CertificatesView({
       </div>
 
       <div
+        className="grid-cols-1 lg:grid-cols-[minmax(0,1fr)_300px]"
         style={{
           display: 'grid',
-          gridTemplateColumns: 'minmax(0, 1fr) 300px',
           gap: 24,
           alignItems: 'start',
         }}
@@ -189,9 +191,7 @@ export function CertificatesView({
           <div className="lrn-sechead">
             <h2>Your credentials</h2>
           </div>
-          <div
-            style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 18 }}
-          >
+          <div className="grid-cols-1 sm:grid-cols-2" style={{ display: 'grid', gap: 18 }}>
             {pathway.map((course) => {
               const credential = earnedByCourseId.get(course.id);
               if (credential) {

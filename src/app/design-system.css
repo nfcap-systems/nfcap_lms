@@ -2981,3 +2981,199 @@
   flex-direction: column;
   gap: 12px;
 }
+
+/* ============================================================================
+   Mobile audit, 2026-11-26 — learner UI. Decision 4 (docs/plans/mockup-complete-
+   build.md) deferred mobile/responsive at the time of the LearnerHeader/LRN01-Home
+   literal-port retrofits above; this is that "revisit before launch." No mobile
+   mockup boards exist, so these overrides follow the ui-ux-pro-max mobile-first
+   conventions (single-column stacking, 44px touch targets, no horizontal page
+   scroll) directly against the shipped desktop layout rather than a board.
+   `--lhdr-mobile-bp` also gates LearnerHeader.tsx's hamburger-panel markup.
+   ============================================================================ */
+:root {
+  --lhdr-mobile-bp: 860px;
+}
+.lhdr-mobile-toggle {
+  display: none;
+  width: 36px;
+  height: 36px;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--nfcap-radius-md);
+  border: none;
+  background: transparent;
+  color: var(--ink-muted);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.lhdr-mobile-toggle:hover {
+  background: var(--surface-muted);
+  color: var(--ink);
+}
+.lhdr-mobilenav-wrap {
+  display: none;
+}
+
+@media (max-width: 860px) {
+  /* Header: drop the pieces that don't fit, hand nav to the hamburger panel. */
+  .lhdr-row1-inner {
+    gap: 12px;
+    padding: 0 16px;
+  }
+  .lhdr-mobile-toggle {
+    display: flex;
+  }
+  .lhdr-askai,
+  .lhdr-vdivider {
+    display: none;
+  }
+  .lhdr-search-wrap {
+    max-width: none;
+  }
+  .lhdr-search span {
+    display: none;
+  }
+  .lhdr-search {
+    width: 38px;
+    padding: 0;
+    justify-content: center;
+  }
+  .lhdr-account-text {
+    display: none;
+  }
+  .lhdr-row2 {
+    display: none;
+  }
+  .lhdr-mobilenav-wrap {
+    display: block;
+    padding: 0 16px 10px;
+  }
+  .lhdr-mobilenav {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  /* The Funding nav slot (WioaNavLink → NavLinkItem) is shared with row 2 and hardcodes
+     `.toplink` — restyle it to match `.lhdr-mobile-navlink` inside this panel instead of
+     touching that shared component. */
+  .lhdr-mobilenav .toplink {
+    height: auto;
+    border-bottom: none;
+    border-radius: var(--nfcap-radius-md);
+    padding: 10px 12px;
+    font-weight: 500;
+    font-size: 13.5px;
+  }
+  .lhdr-mobilenav .toplink.on {
+    background: color-mix(in srgb, var(--nfcap-accent) 10%, transparent);
+    color: var(--nfcap-accent);
+    font-weight: 600;
+  }
+  .lhdr-iconbtn2,
+  .lhdr-avatar {
+    width: 40px;
+    height: 40px;
+  }
+  .lshell-main {
+    padding: 20px 16px 40px;
+  }
+}
+
+@media (max-width: 760px) {
+  /* LRN01-Home — collapse the two-column body + every fixed-column grid it ported. */
+  .body-grid {
+    grid-template-columns: 1fr;
+  }
+  .greet-h1 {
+    font-size: 21px;
+  }
+  .stat-row {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .stat-tile {
+    flex: 1 1 calc(50% - 5px);
+    min-width: 0;
+  }
+  .lrn-hero {
+    grid-template-columns: 1fr;
+  }
+  .lrn-hero-media {
+    min-height: 160px;
+  }
+  .catalog-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .pathway-strip {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+  .lrn-allcard {
+    min-height: 0;
+    grid-column: span 2;
+    flex-direction: row;
+    padding: 12px;
+  }
+  .lrn-pcard-grid {
+    grid-template-columns: 1fr;
+  }
+  /* The 5-column `continue-row` (thumb/title/content/completion/start) has no room on a
+     phone — reflow it into two label/value rows under the thumbnail+title instead of
+     cramming all five into one line. */
+  .continue-row {
+    grid-template-columns: 52px 1fr;
+    grid-template-rows: auto auto;
+    row-gap: 8px;
+  }
+  .continue-row .continue-cell {
+    grid-column: 2;
+  }
+  .continue-row .continue-btn {
+    grid-column: 1 / -1;
+    justify-self: stretch;
+    text-align: center;
+    padding: 10px 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .stat-tile {
+    flex: 1 1 100%;
+  }
+  .catalog-grid {
+    grid-template-columns: 1fr;
+  }
+  .pathway-strip {
+    grid-template-columns: 1fr !important;
+  }
+  .lrn-allcard {
+    grid-column: span 1;
+  }
+}
+
+@media (max-width: 860px) {
+  /* Shared across Home/Certificates/Portfolio/Quiz/Evidence-review — generic row/touch-target
+     fixes that apply everywhere these classes show up, not just Home. */
+  .lrn-quiz-bar {
+    padding: 0 16px;
+    gap: 16px;
+  }
+  .cert-row {
+    padding: 14px 16px;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .att {
+    padding: 14px 16px;
+    gap: 12px;
+  }
+  .seg3 button {
+    padding: 8px 12px;
+    min-height: 32px;
+  }
+  .lrn-dl-btn,
+  .tool {
+    width: 40px;
+    height: 40px;
+  }
+}

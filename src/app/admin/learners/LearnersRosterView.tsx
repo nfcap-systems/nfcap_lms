@@ -42,7 +42,17 @@ const rowStatusBadge: Record<
 const fundingLabel: Record<LearnerFundingStatus, string> = {
   funded: '● Funded',
   pending: '● Pending review',
+  wioa_interest: '● WIOA interest',
   self_pay: 'Self-pay',
+};
+
+// 'wioa_interest' reuses the 'pending' (amber/attention) tone — it's an actionable item for staff,
+// not a neutral/inert state like true self-pay.
+const fundingTone: Record<LearnerFundingStatus, 'pending' | 'success' | 'info' | 'neutral'> = {
+  funded: 'success',
+  pending: 'pending',
+  wioa_interest: 'pending',
+  self_pay: 'neutral',
 };
 
 export function LearnersRosterView({
@@ -299,15 +309,6 @@ export function LearnersRosterView({
                   aria-label="Search learners"
                 />
               </div>
-              {/* Column hide/customize isn't built — disabled rather than fabricated. */}
-              <button type="button" className="dtbtn" disabled title="Not yet built">
-                <Icon name="list" className="h-3.5 w-3.5" />
-                Hide
-              </button>
-              <button type="button" className="dtbtn" disabled title="Not yet built">
-                <Icon name="settings" className="h-3.5 w-3.5" />
-                Customize
-              </button>
               <button type="button" className="dtbtn" onClick={exportCsv}>
                 <Icon name="download" className="h-3.5 w-3.5" />
                 Export
@@ -385,6 +386,7 @@ export function LearnersRosterView({
               <option value="all">All</option>
               <option value="funded">Funded</option>
               <option value="pending">Pending review</option>
+              <option value="wioa_interest">WIOA interest — awaiting outreach</option>
               <option value="self_pay">Self-pay</option>
             </select>
           </div>
@@ -441,7 +443,10 @@ export function LearnersRosterView({
                 const isSelected = selected.has(row.learner.id);
                 const badge =
                   row.rowStatus === 'funding'
-                    ? { tone: rowStatusBadge.funding.tone, label: fundingLabel[row.fundingStatus] }
+                    ? {
+                        tone: fundingTone[row.fundingStatus],
+                        label: fundingLabel[row.fundingStatus],
+                      }
                     : rowStatusBadge[row.rowStatus];
                 return (
                   <tr key={row.learner.id}>

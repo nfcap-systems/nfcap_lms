@@ -70,12 +70,10 @@ export const adminNav: NavEntry[] = [
       { label: 'Reports', href: '/admin/wioa/reports', icon: 'bar-chart' },
     ],
   },
-  { label: 'Analytics', href: '/admin/analytics', icon: 'bar-chart', section: 'System' },
-  { label: 'Announcements', href: '/admin/announcements', icon: 'bell' },
+  { label: 'Announcements', href: '/admin/announcements', icon: 'bell', section: 'System' },
   { label: 'Data Import/Export', href: '/admin/data-io', icon: 'upload' },
   { label: 'Audit Log', href: '/admin/audit', icon: 'lock' },
   { label: 'Roles', href: '/admin/roles', icon: 'user' },
-  { label: 'Settings', href: '/admin/settings', icon: 'settings' },
 ];
 
 // Partner Staff: scoped to their own assigned cases only, no funding visibility

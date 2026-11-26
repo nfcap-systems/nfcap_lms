@@ -6,22 +6,32 @@ import {
   getCourseUnlocksForLearner,
   type CourseUnlockRecord,
 } from '@/lib/data/progress';
-import { getAuthUser } from '@/lib/supabase/server';
+import { getAuthUser, getRole } from '@/lib/supabase/server';
 
 /** LRN03-CourseOverview — the course landing page. Lessons, the quiz, and evidence submission
  * each live at their own discrete route now (docs/build/LRN_BATCH_DRIFT.md); this page only
  * shows the syllabus and routes onward via its own Continue button. */
 export default async function CourseOverviewPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ courseId: string }>;
+  searchParams: Promise<{ preview?: string }>;
 }) {
   const { courseId } = await params;
-  const [course, user, published] = await Promise.all([
+  const [course, user, published, query] = await Promise.all([
     getCourseBySlug(courseId),
     getAuthUser(),
     getPublishedCourses(),
+    searchParams,
   ]);
+
+  // "Preview as Learner" (src/app/admin/courses/[courseId]/page.tsx) — Admin-only, gated on the
+  // real role (never trust the query param alone, or any learner could add ?preview=1 to bypass
+  // the restricted-course gate below). Read-only: CourseOverviewView disables every write action
+  // in this mode, so nothing creates a real Enrollment/QuizAttempt/EvidenceSubmission row against
+  // the admin's own account.
+  const previewMode = query.preview === '1' && getRole(user) === 'ADMIN';
 
   if (!course) {
     return (
@@ -54,6 +64,7 @@ export default async function CourseOverviewPage({
       unlocked={Boolean(unlocks[courseId])}
       moduleNumber={moduleIndex >= 0 ? moduleIndex + 1 : 1}
       moduleTotal={pathway.length || 1}
+      previewMode={previewMode}
     />
   );
 }
