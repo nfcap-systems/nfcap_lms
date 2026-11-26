@@ -18,7 +18,7 @@ import {
   SelectValue,
 } from '@/components/admin-ui/select';
 import { Textarea } from '@/components/admin-ui/textarea';
-import { StateCard } from '@/components/ui';
+import { Badge, StateCard } from '@/components/ui';
 import { Icon } from '@/components/icons';
 
 const AUDIENCE_OPTIONS: { value: AnnouncementAudience; label: string }[] = [
@@ -28,6 +28,17 @@ const AUDIENCE_OPTIONS: { value: AnnouncementAudience; label: string }[] = [
   { value: 'COORDINATOR', label: 'WIOA Coordinators' },
   { value: 'PARTNER', label: 'Partner staff' },
 ];
+
+// Recent-announcements list needs a short label per row — "Learners"/"All" fit inline, the
+// per-role ones ("Admin staff") are too long next to a title + relative date, so this is its own
+// shorter map rather than reusing AUDIENCE_OPTIONS' compose-dropdown wording.
+const AUDIENCE_SHORT_LABEL: Record<AnnouncementAudience, string> = {
+  LEARNERS: 'Learners',
+  ALL: 'All roles',
+  ADMIN: 'Admin',
+  COORDINATOR: 'Coordinators',
+  PARTNER: 'Partner Staff',
+};
 
 function formatDate(iso: string): string {
   const diffMs = Date.now() - new Date(iso).getTime();
@@ -204,13 +215,25 @@ export function AnnouncementsView({
                   key={a.id}
                   style={{
                     display: 'flex',
-                    justifyContent: 'space-between',
+                    flexDirection: 'column',
+                    gap: 3,
                     fontSize: 12.5,
-                    padding: '6px 0',
+                    padding: '7px 0',
+                    borderBottom: '1px solid var(--nfcap-border)',
                   }}
                 >
-                  <span>{a.title}</span>
-                  <span style={{ color: 'var(--ink-muted)' }}>{formatDate(a.publishedAt)}</span>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
+                    <span>{a.title}</span>
+                    <span style={{ color: 'var(--ink-muted)', flexShrink: 0 }}>
+                      {formatDate(a.publishedAt)}
+                    </span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <Badge tone="neutral">{AUDIENCE_SHORT_LABEL[a.audience]}</Badge>
+                    <span style={{ fontSize: 11.5, color: 'var(--ink-muted)' }}>
+                      Delivered to {a.audienceSize} {a.audienceSize === 1 ? 'person' : 'people'}
+                    </span>
+                  </div>
                 </div>
               ))
             )}

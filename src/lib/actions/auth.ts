@@ -34,7 +34,17 @@ export async function login(_prevState: AuthFormState, formData: FormData): Prom
 
   const supabase = await createClient();
   const { error } = await supabase.auth.signInWithPassword({ email, password });
-  if (error) return { error: error.message };
+  if (error) {
+    // A deactivated account (setUserActive, src/lib/actions/users.ts — Supabase's ban_duration
+    // admin API) otherwise surfaces Supabase's own generic auth error text verbatim here, which
+    // was never written with this case in mind. `user_banned` is Supabase's own documented error
+    // code (@supabase/auth-js's ErrorCode union) for exactly this, so it's checked rather than
+    // string-matching `error.message`, which isn't a stable contract across Supabase versions.
+    if (error.code === 'user_banned') {
+      return { error: 'Your account has been deactivated. Contact your administrator.' };
+    }
+    return { error: error.message };
+  }
 
   // Deliberately NOT `redirect()` here (that performs a client-side/RSC navigation that patches
   // the DOM into the already-loaded page). The destination route's own CSS can still be loading

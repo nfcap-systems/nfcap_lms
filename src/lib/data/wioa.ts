@@ -6,11 +6,7 @@ import type {
   WioaDocumentStatus,
   AppointmentType,
 } from '@/generated/prisma/enums';
-import {
-  WIOA_ELIGIBILITY_STATUS_PHASE,
-  WIOA_UI_PHASES,
-  type WioaUiPhase,
-} from '@/lib/wioa/status';
+import { WIOA_ELIGIBILITY_STATUS_PHASE, WIOA_UI_PHASES, type WioaUiPhase } from '@/lib/wioa/status';
 import { withRlsContext, type SessionContext } from '@/lib/db/rls';
 
 export type LearnerProfile = {
@@ -399,7 +395,7 @@ export async function getUpcomingWioaAppointments(
   }));
 }
 
-export type LearnerFundingStatus = 'funded' | 'pending' | 'self_pay';
+export type LearnerFundingStatus = 'funded' | 'pending' | 'wioa_interest' | 'self_pay';
 
 const FUNDED_COURSE_STATUSES: WioaFundingStatus[] = [
   'TUITION_APPROVED',
@@ -409,9 +405,11 @@ const FUNDED_COURSE_STATUSES: WioaFundingStatus[] = [
 /** Per-learner funding status for the Admin Dashboard's and Learners roster's "Status" column —
  * batched (one query per table, not a per-row lookup, per CLAUDE.md's "no per-entity queries in a
  * loop"). 'funded' if any open course-case has reached TUITION_APPROVED+; 'pending' if they have
- * a master case open but no course funded yet; 'self_pay' if they've never started WIOA outreach
- * at all. Dashboard-only badge — not the case-management data itself, so a short cache is
- * low-risk. */
+ * a master case open but no course funded yet; 'wioa_interest' if they checked "pursuing WIOA" at
+ * signup (LearnerProfile.fundingSource = WIOA_PENDING) but staff hasn't started outreach yet (no
+ * WioaCase row) — this is the admin's actionable outreach queue, previously indistinguishable from
+ * true self-pay; 'self_pay' only when neither signal is present. Dashboard-only badge — not the
+ * case-management data itself, so a short cache is low-risk. */
 export async function getFundingStatusForLearners(
   viewer: SessionContext,
   learnerIds: string[],
@@ -420,7 +418,7 @@ export async function getFundingStatusForLearners(
   cacheLife({ stale: 30, revalidate: 30, expire: 120 });
   cacheTag('wioa-funding-status');
   if (learnerIds.length === 0) return {};
-  const [courseCases, masterCases] = await withRlsContext(viewer, (tx) =>
+  const [courseCases, masterCases, profiles] = await withRlsContext(viewer, (tx) =>
     Promise.all([
       tx.wioaCourseCase.findMany({
         where: { learnerId: { in: learnerIds }, closedAt: null },
@@ -430,16 +428,27 @@ export async function getFundingStatusForLearners(
         where: { learnerId: { in: learnerIds } },
         select: { learnerId: true },
       }),
+      tx.learnerProfile.findMany({
+        where: { learnerId: { in: learnerIds }, fundingSource: 'WIOA_PENDING' },
+        select: { learnerId: true },
+      }),
     ]),
   );
   const fundedLearners = new Set(
     courseCases.filter((c) => FUNDED_COURSE_STATUSES.includes(c.status)).map((c) => c.learnerId),
   );
   const hasMasterCase = new Set(masterCases.map((c) => c.learnerId));
+  const wantsWioa = new Set(profiles.map((p) => p.learnerId));
 
   const result: Record<string, LearnerFundingStatus> = {};
   for (const id of learnerIds) {
-    result[id] = fundedLearners.has(id) ? 'funded' : hasMasterCase.has(id) ? 'pending' : 'self_pay';
+    result[id] = fundedLearners.has(id)
+      ? 'funded'
+      : hasMasterCase.has(id)
+        ? 'pending'
+        : wantsWioa.has(id)
+          ? 'wioa_interest'
+          : 'self_pay';
   }
   return result;
 }
@@ -586,7 +595,8 @@ export async function getWioaCaseDetail(
       status: comm.status,
       sentAt: comm.sentAt,
     })),
-    courseTitle: opts?.includeFunding && c.courseCases ? c.courseCases[0]?.course.title ?? null : null,
+    courseTitle:
+      opts?.includeFunding && c.courseCases ? (c.courseCases[0]?.course.title ?? null) : null,
     funding:
       opts?.includeFunding && c.courseCases && c.courseCases[0]?.fundingRequest
         ? {
@@ -604,7 +614,8 @@ export async function getWioaCaseDetail(
                   itaIssuedAt: c.courseCases[0].fundingRequest.authorization.itaIssuedAt,
                   approvedAmount: c.courseCases[0].fundingRequest.authorization.approvedAmount,
                   approvalDate: c.courseCases[0].fundingRequest.authorization.approvalDate,
-                  trainingStartDate: c.courseCases[0].fundingRequest.authorization.trainingStartDate,
+                  trainingStartDate:
+                    c.courseCases[0].fundingRequest.authorization.trainingStartDate,
                   status: c.courseCases[0].fundingRequest.authorization.status,
                 }
               : null,
@@ -673,7 +684,6 @@ export type WioaFollowUpItem = {
   courseTitle: null;
 };
 
-
 export type WioaBoardPerformance = {
   boardName: string;
   totalCases: number;
@@ -737,7 +747,10 @@ export async function getWioaReportingSummary(
         include: {
           workforceBoard: { select: { name: true } },
           documents: { select: { status: true } },
-          statusHistory: { select: { status: true, changedAt: true }, orderBy: { changedAt: 'asc' } },
+          statusHistory: {
+            select: { status: true, changedAt: true },
+            orderBy: { changedAt: 'asc' },
+          },
           courseCases: { select: { id: true } },
         },
       }),
@@ -832,7 +845,12 @@ export async function getWioaReportingSummary(
     if (opts?.includeFunding) {
       const boardName = c.workforceBoard?.name ?? 'Unmatched';
       if (!byBoard.has(boardName)) {
-        byBoard.set(boardName, { totalCases: 0, determinedCases: 0, eligibleCases: 0, daysToEligible: [] });
+        byBoard.set(boardName, {
+          totalCases: 0,
+          determinedCases: 0,
+          eligibleCases: 0,
+          daysToEligible: [],
+        });
       }
       const b = byBoard.get(boardName)!;
       b.totalCases += 1;
@@ -842,7 +860,9 @@ export async function getWioaReportingSummary(
         b.eligibleCases += 1;
         const eligibleEntry = c.statusHistory.find((h) => h.status === 'WIOA_ELIGIBLE');
         if (eligibleEntry) {
-          b.daysToEligible.push((eligibleEntry.changedAt.getTime() - c.createdAt.getTime()) / DAY_MS);
+          b.daysToEligible.push(
+            (eligibleEntry.changedAt.getTime() - c.createdAt.getTime()) / DAY_MS,
+          );
         }
       }
     }
@@ -873,7 +893,8 @@ export async function getWioaReportingSummary(
     }
     const b = byBoardFunding.get(boardName)!;
     if (cc.fundingRequest?.submittedAt) b.fundingRequestsSubmitted += 1;
-    if (cc.fundingRequest?.requestedAmount != null) b.totalRequestedAmount += cc.fundingRequest.requestedAmount;
+    if (cc.fundingRequest?.requestedAmount != null)
+      b.totalRequestedAmount += cc.fundingRequest.requestedAmount;
 
     const approvedAmount = cc.fundingRequest?.authorization?.approvedAmount;
     if (approvedAmount != null) {
@@ -908,7 +929,8 @@ export async function getWioaReportingSummary(
             b.daysToEligible.length > 0
               ? b.daysToEligible.reduce((a, x) => a + x, 0) / b.daysToEligible.length
               : null,
-          fundingConversionRate: b.eligibleCases > 0 ? f.tuitionApprovedCases / b.eligibleCases : null,
+          fundingConversionRate:
+            b.eligibleCases > 0 ? f.tuitionApprovedCases / b.eligibleCases : null,
           totalApprovedAmount: f.totalApprovedAmount,
           totalRequestedAmount: f.totalRequestedAmount,
           fundedCases: f.fundedCases,
@@ -925,7 +947,10 @@ export async function getWioaReportingSummary(
         const all = Array.from(byBoardFunding.values());
         const allDaysToApproval = all.flatMap((b) => b.daysToApproval);
         const fundedCases = all.reduce((sum, b) => sum + b.fundedCases, 0);
-        const fundingRequestsSubmitted = all.reduce((sum, b) => sum + b.fundingRequestsSubmitted, 0);
+        const fundingRequestsSubmitted = all.reduce(
+          (sum, b) => sum + b.fundingRequestsSubmitted,
+          0,
+        );
         const totalApprovedAmount = all.reduce((sum, b) => sum + b.totalApprovedAmount, 0);
         const totalRequestedAmount = all.reduce((sum, b) => sum + b.totalRequestedAmount, 0);
         return {
@@ -935,7 +960,8 @@ export async function getWioaReportingSummary(
             totalRequestedAmount > 0 ? totalApprovedAmount / totalRequestedAmount : null,
           fundedCases,
           fundingRequestsSubmitted,
-          approvalRate: fundingRequestsSubmitted > 0 ? fundedCases / fundingRequestsSubmitted : null,
+          approvalRate:
+            fundingRequestsSubmitted > 0 ? fundedCases / fundingRequestsSubmitted : null,
           avgDaysToApproval:
             allDaysToApproval.length > 0
               ? allDaysToApproval.reduce((a, x) => a + x, 0) / allDaysToApproval.length

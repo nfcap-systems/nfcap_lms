@@ -86,6 +86,7 @@ export function FundingView({
       city={profile.city ?? ''}
       zip={profile.zip}
       mobilePhone={profile.mobilePhone ?? ''}
+      trainingApprenticeshipInterest={profile.trainingApprenticeshipInterest ?? ''}
       emailTemplate={emailTemplate}
     />
   );
@@ -174,16 +175,15 @@ function FundingRequestsCard({
         setSelectedCourseId('');
         router.refresh();
       } catch (err) {
-        toast.error(
-          err instanceof Error ? err.message : 'Could not submit this funding request.',
-        );
+        toast.error(err instanceof Error ? err.message : 'Could not submit this funding request.');
       }
     });
   }
 
   return (
     <Card>
-      <CardHeader>
+      <CardHeader className="flex flex-col items-start gap-1.5">
+        <Badge tone="info">Step 2 of 2 — Request course funding</Badge>
         <CardTitle>Course funding requests</CardTitle>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
@@ -359,6 +359,7 @@ function MatchedOfficeView({
   city,
   zip,
   mobilePhone,
+  trainingApprenticeshipInterest,
   emailTemplate,
 }: {
   match: MatchedOffice;
@@ -371,12 +372,16 @@ function MatchedOfficeView({
   city: string;
   zip: string;
   mobilePhone: string;
+  trainingApprenticeshipInterest: string;
   emailTemplate: WioaEmailTemplateRecord;
 }) {
-  const [courseId, setCourseId] = useState(restrictedCourses[0]?.id ?? '');
   // The learner now has one course-less master case, not one per course
-  // (docs/plans/wioa-spec-alignment-kickoff.md #1) — `courseId` still drives the outreach-email
-  // preview copy below, but no longer selects which case is active.
+  // (docs/plans/wioa-spec-alignment-kickoff.md #1). Which course they'll eventually request
+  // funding for is a Step 2 decision, made only once eligible (FundingRequestsCard below) — this
+  // screen used to also ask the learner to pick a course here, which both implied a funding
+  // commitment that hadn't happened yet and had no real effect (see temp_ss/mockups/
+  // funding-step-clarity-comparison.html, Option B). The outreach email now personalizes itself
+  // from the learner's own stated training interest (captured at WIOA signup/profile) instead.
   const activeCase = cases.find((c) => !c.closedAt);
   const [emailOpen, setEmailOpen] = useState(false);
   const [requirementsOpen, setRequirementsOpen] = useState(false);
@@ -385,7 +390,7 @@ function MatchedOfficeView({
   const [pending, startTransition] = useTransition();
   const router = useRouter();
 
-  const courseTitle = restrictedCourses.find((c) => c.id === courseId)?.title ?? '';
+  const courseTitle = trainingApprenticeshipInterest || 'apprenticeship training';
   const recipient = match.contact?.email ?? match.board.email;
 
   function openEmailDialog() {
@@ -421,7 +426,8 @@ function MatchedOfficeView({
   return (
     <div className="flex flex-col gap-6">
       <Card>
-        <CardHeader>
+        <CardHeader className="flex flex-col items-start gap-1.5">
+          <Badge tone="info">Step 1 of 2 — Confirm your eligibility</Badge>
           <CardTitle>Your matched workforce office</CardTitle>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
@@ -443,20 +449,18 @@ function MatchedOfficeView({
             </div>
           )}
 
-          {restrictedCourses.length > 1 && (
-            <Field label="Which course are you seeking funding for?" htmlFor="courseId">
-              <Select id="courseId" value={courseId} onChange={(e) => setCourseId(e.target.value)}>
-                {restrictedCourses.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.title}
-                  </option>
-                ))}
-              </Select>
-            </Field>
+          {restrictedCourses.length > 0 && (
+            <div className="flex items-start gap-2 rounded-lg border border-[var(--accent)]/30 bg-[var(--accent)]/5 p-3 text-xs text-[var(--ink)]">
+              <Icon name="alert-circle" className="mt-0.5 size-3.5 shrink-0 text-[var(--accent)]" />
+              <span>
+                You&apos;ll choose which course to request funding for once you&apos;re approved as
+                WIOA eligible — no need to pick one now.
+              </span>
+            </div>
           )}
 
           <div className="flex flex-wrap gap-3">
-            <Button onClick={openEmailDialog} disabled={!courseId}>
+            <Button onClick={openEmailDialog}>
               <Icon name="mail" className="size-4" />
               Email
             </Button>
@@ -476,6 +480,24 @@ function MatchedOfficeView({
       </Card>
 
       {activeCase && <WioaCaseFeed wioaCase={activeCase} />}
+
+      {activeCase && activeCase.status !== 'WIOA_ELIGIBLE' && restrictedCourses.length > 0 && (
+        <Card className="border-dashed bg-[var(--surface-muted)]">
+          <CardHeader className="flex flex-col items-start gap-1.5">
+            <Badge tone="neutral" className="inline-flex items-center gap-1">
+              <Icon name="lock" className="size-3" />
+              Step 2 of 2 — Request course funding
+            </Badge>
+            <CardTitle className="text-[var(--ink-muted)]">Course funding requests</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-[var(--ink-muted)]">
+              Available once you&apos;re found WIOA eligible. Your Coordinator is reviewing your
+              eligibility now.
+            </p>
+          </CardContent>
+        </Card>
+      )}
 
       {activeCase?.status === 'WIOA_ELIGIBLE' && (
         <FundingRequestsCard

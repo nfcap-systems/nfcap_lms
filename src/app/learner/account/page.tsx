@@ -24,9 +24,9 @@ export default async function LearnerAccountPage() {
       </div>
 
       <div
+        className="grid-cols-1 lg:grid-cols-[minmax(0,1fr)_300px]"
         style={{
           display: 'grid',
-          gridTemplateColumns: 'minmax(0, 1fr) 300px',
           gap: 24,
           alignItems: 'start',
         }}

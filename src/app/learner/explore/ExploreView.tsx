@@ -41,25 +41,23 @@ export function ExploreView({
     <div className="flex flex-col gap-9">
       <div style={{ position: 'relative' }}>
         <div
+          className="h-auto flex-col items-start gap-3 py-5 sm:h-[150px] sm:flex-row sm:items-center sm:py-0"
           style={{
-            height: 150,
             borderRadius: 'var(--nfcap-radius-lg)',
             overflow: 'hidden',
             position: 'relative',
             background:
               'linear-gradient(105deg, #eff6ff 0%, #f5f8ff 46%, #dbe9ff 72%, var(--surface) 100%)',
             display: 'flex',
-            alignItems: 'center',
             boxShadow: 'var(--nfcap-shadow-sm)',
             border: '1px solid var(--nfcap-border)',
           }}
         >
           <div
+            className="max-w-[80%] px-5 sm:max-w-[56%] sm:px-9"
             style={{
               position: 'relative',
               zIndex: 2,
-              padding: '0 36px',
-              maxWidth: '56%',
               display: 'flex',
               flexDirection: 'column',
               gap: 8,
@@ -87,6 +85,7 @@ export function ExploreView({
             alt=""
             width={700}
             height={150}
+            className="hidden sm:block"
             style={{
               position: 'absolute',
               right: 0,
@@ -101,11 +100,11 @@ export function ExploreView({
         </div>
 
         <div
+          className="grid-cols-1 sm:grid-cols-3"
           style={{
             position: 'relative',
             margin: '10px 16px 0',
             display: 'grid',
-            gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
             gap: 14,
             zIndex: 3,
           }}
@@ -144,15 +143,15 @@ export function ExploreView({
       </div>
 
       <div
+        className="grid-cols-1 lg:grid-cols-[minmax(0,1fr)_300px]"
         style={{
           display: 'grid',
-          gridTemplateColumns: 'minmax(0, 1fr) 300px',
           gap: 24,
           alignItems: 'start',
         }}
       >
         <div style={{ display: 'flex', flexDirection: 'column', gap: 18, minWidth: 0 }}>
-          <div className="lrn-sechead">
+          <div className="lrn-sechead flex-col items-start gap-2 sm:flex-row sm:items-baseline sm:gap-0">
             <h2>All courses</h2>
             {categories.length > 1 && (
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
@@ -195,9 +194,7 @@ export function ExploreView({
             )}
           </div>
 
-          <div
-            style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 18 }}
-          >
+          <div className="grid-cols-1 sm:grid-cols-2" style={{ display: 'grid', gap: 18 }}>
             {filtered.map((course, index) => (
               <ExploreCourseCard
                 key={course.id}

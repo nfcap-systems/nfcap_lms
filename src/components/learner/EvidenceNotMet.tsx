@@ -47,14 +47,14 @@ export function EvidenceNotMet({
       {context.notMet.map((criterion) => (
         <div
           key={criterion.criterionId}
-          className="flex gap-4 rounded-xl border border-[var(--nfcap-border)] bg-[var(--surface)] p-5 shadow-[var(--nfcap-shadow-sm)]"
+          className="flex flex-col gap-4 rounded-xl border border-[var(--nfcap-border)] bg-[var(--surface)] p-5 shadow-[var(--nfcap-shadow-sm)] sm:flex-row"
         >
           {criterion.thumbUrl ? (
             // eslint-disable-next-line @next/next/no-img-element -- short-lived signed Supabase URL
             <img
               src={criterion.thumbUrl}
               alt={`Your submitted evidence for ${criterion.title}`}
-              className="size-[110px] shrink-0 rounded-lg object-cover"
+              className="size-20 shrink-0 rounded-lg object-cover sm:size-[110px]"
             />
           ) : null}
           <div className="min-w-0 flex-1">

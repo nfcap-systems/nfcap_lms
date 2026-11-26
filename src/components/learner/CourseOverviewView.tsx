@@ -2,6 +2,7 @@
 
 import { useTransition } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import Image from 'next/image';
 import { toast } from 'sonner';
 import { Badge, Button } from '@/components/ui';
@@ -33,12 +34,20 @@ export function CourseOverviewView({
   unlocked,
   moduleNumber,
   moduleTotal,
+  previewMode = false,
 }: {
   course: Course;
   progress: CourseProgress | undefined;
   unlocked: boolean;
   moduleNumber: number;
   moduleTotal: number;
+  /** Admin's "Preview as Learner" (src/app/admin/courses/[courseId]/page.tsx), role-gated in the
+   * page above this component — bypasses the restricted-course gate below (the one case the plain
+   * learner link always failed on, since the admin's own account never holds a CourseUnlock) and
+   * disables the one remaining write action here, the Enroll button. Lessons/quiz already render
+   * inert in this mode with no extra code: `canOpen`/the quiz row's disabled check both key off
+   * `enrolled`, which is already false for an admin who was never actually enrolled. */
+  previewMode?: boolean;
 }) {
   const router = useRouter();
   const [, startTransition] = useTransition();
@@ -70,7 +79,7 @@ export function CourseOverviewView({
   // (src/lib/actions/progress.ts) — NOT on `enrolled`, since a learner can hold a stale Enrollment
   // row from before this restriction existed (or from an admin demo flow) and must still be locked
   // out here, or they reach the lesson/quiz/evidence routes only to have every write there throw.
-  if (course.access === 'restricted' && !unlocked) {
+  if (course.access === 'restricted' && !unlocked && !previewMode) {
     return <RestrictedCourseNotice courseTitle={course.title} />;
   }
 
@@ -98,11 +107,39 @@ export function CourseOverviewView({
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column' }}>
+      {previewMode && (
+        <div
+          className="flex-wrap"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 10,
+            background: '#eff6ff',
+            border: '1px solid #bfdbfe',
+            borderRadius: 'var(--nfcap-radius-lg)',
+            padding: '10px 16px',
+            marginBottom: 16,
+            fontSize: 13,
+            color: '#1e3a8a',
+          }}
+        >
+          <Icon name="alert-circle" className="h-4 w-4" style={{ flexShrink: 0 }} />
+          <span>
+            <b>Previewing as Learner</b> — read-only, nothing you do here is saved.
+          </span>
+          <Link
+            href={`/admin/courses/${course.id}`}
+            style={{ marginLeft: 'auto', fontSize: 12.5, fontWeight: 600, whiteSpace: 'nowrap' }}
+          >
+            Exit preview ✕
+          </Link>
+        </div>
+      )}
       {/* Hero */}
       <div
+        className="h-[200px] sm:h-[280px]"
         style={{
           position: 'relative',
-          height: 280,
           borderRadius: 'var(--nfcap-radius-lg)',
           overflow: 'hidden',
           marginBottom: 28,
@@ -117,12 +154,12 @@ export function CourseOverviewView({
           }}
         />
         <div
+          className="px-4 pb-4 sm:px-7 sm:pb-6"
           style={{
             position: 'absolute',
             inset: 0,
             display: 'flex',
             alignItems: 'flex-end',
-            padding: '0 28px 24px',
           }}
         >
           <div>
@@ -140,8 +177,8 @@ export function CourseOverviewView({
               {moduleTotal}
             </div>
             <div
+              className="text-2xl sm:text-[30px]"
               style={{
-                fontSize: 30,
                 fontWeight: 700,
                 fontFamily: 'var(--font-display)',
                 color: '#fff',
@@ -160,7 +197,8 @@ export function CourseOverviewView({
       </div>
 
       <div
-        style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 32, alignItems: 'start' }}
+        className="grid-cols-1 lg:grid-cols-[2fr_1fr]"
+        style={{ display: 'grid', gap: 32, alignItems: 'start' }}
       >
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           <p style={{ margin: 0, fontSize: 14.5, lineHeight: 1.6, color: 'var(--ink)' }}>
@@ -309,7 +347,8 @@ export function CourseOverviewView({
         </div>
 
         <div
-          style={{ display: 'flex', flexDirection: 'column', gap: 16, position: 'sticky', top: 84 }}
+          className="lg:sticky lg:top-[84px]"
+          style={{ display: 'flex', flexDirection: 'column', gap: 16 }}
         >
           <div
             style={{
@@ -369,6 +408,10 @@ export function CourseOverviewView({
                   </Badge>
                 )}
               </>
+            ) : previewMode ? (
+              <Button style={{ width: '100%', justifyContent: 'center' }} disabled>
+                Preview only — not enrolled
+              </Button>
             ) : (
               <Button style={{ width: '100%', justifyContent: 'center' }} onClick={handleEnroll}>
                 Enroll in Course

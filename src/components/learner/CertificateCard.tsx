@@ -96,25 +96,17 @@ export function CertificateCard({
             </div>
           </div>
         </div>
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div className="flex flex-col gap-2 sm:flex-row">
           <button
             type="button"
-            className="btn-secondary btn-sm"
-            style={{ flex: 1 }}
+            className="btn-secondary btn-sm sm:flex-1"
             onClick={() => setOpen(true)}
           >
             View
           </button>
           <button
             type="button"
-            className="btn-secondary btn-sm"
-            style={{
-              flex: 1,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: 6,
-            }}
+            className="btn-secondary btn-sm flex items-center justify-center gap-1.5 sm:flex-1"
             onClick={copyVerificationLink}
           >
             <Icon name={copyState === 'copied' ? 'check' : 'shield'} className="h-3.5 w-3.5" />
@@ -122,14 +114,7 @@ export function CertificateCard({
           </button>
           <button
             type="button"
-            className="btn-secondary btn-sm"
-            style={{
-              flex: 1,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: 6,
-            }}
+            className="btn-secondary btn-sm flex items-center justify-center gap-1.5 sm:flex-1"
             onClick={downloadPdf}
             disabled={downloading}
           >

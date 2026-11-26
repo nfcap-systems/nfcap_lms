@@ -47,7 +47,7 @@ export function PortfolioView({
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 14 }}>
+      <div className="grid-cols-2 sm:grid-cols-4" style={{ display: 'grid', gap: 14 }}>
         <div className="lrn-stat">
           <span
             className="lrn-stat-icon"
@@ -92,9 +92,9 @@ export function PortfolioView({
       </div>
 
       <div
+        className="grid-cols-1 lg:grid-cols-[minmax(0,1fr)_300px]"
         style={{
           display: 'grid',
-          gridTemplateColumns: 'minmax(0, 1fr) 300px',
           gap: 24,
           alignItems: 'start',
         }}
@@ -214,9 +214,9 @@ export function PortfolioView({
                     {group.title}
                   </div>
                   <div
+                    className="grid-cols-2 sm:grid-cols-3"
                     style={{
                       display: 'grid',
-                      gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
                       gap: 16,
                     }}
                   >

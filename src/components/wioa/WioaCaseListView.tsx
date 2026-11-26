@@ -6,10 +6,14 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import {
   Badge,
+  Button,
   DataTableCard,
   DataTableCardHeader,
   DataTableFilters,
+  Dialog,
+  Field,
   StateCard,
+  Textarea,
 } from '@/components/ui';
 import type { StatusTone } from '@/components/ui/Badge';
 import { Icon } from '@/components/icons';
@@ -21,7 +25,11 @@ import {
   WIOA_UI_PHASES,
   type WioaUiPhase,
 } from '@/lib/wioa/status';
-import { assignWioaCasePartnerStaff } from '@/lib/actions/wioa';
+import {
+  addWioaCaseNote,
+  assignWioaCasePartnerStaff,
+  sendWioaCaseReminder,
+} from '@/lib/actions/wioa';
 
 type PhaseFilter = 'all' | WioaUiPhase;
 
@@ -101,12 +109,41 @@ export function WioaCaseListView({
    * assignment dropdown (Partner Staff never assigns, only views their own assignment). */
   partnerStaffRoster?: LearnerRecord[];
 }) {
+  const router = useRouter();
   const [phaseFilter, setPhaseFilter] = useState<PhaseFilter>('all');
   const [boardFilter, setBoardFilter] = useState<string>('all');
   const [stalledOnly, setStalledOnly] = useState(false);
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [page, setPage] = useState(1);
+  // One shared note dialog for the whole table, not one per row — a <dialog> can't legally sit
+  // between <tr> rows inside <tbody> (invalid HTML; browsers foster-parent it out of the table,
+  // which would cause a hydration mismatch), so the target case is tracked here instead.
+  const [noteTarget, setNoteTarget] = useState<{ caseId: string; learnerName: string } | null>(
+    null,
+  );
+  const [noteBody, setNoteBody] = useState('');
+  const [savingNote, setSavingNote] = useState(false);
+
+  function closeNoteDialog() {
+    setNoteTarget(null);
+    setNoteBody('');
+  }
+
+  async function saveNote() {
+    if (!noteTarget || !noteBody.trim()) return;
+    setSavingNote(true);
+    try {
+      await addWioaCaseNote(noteTarget.caseId, noteBody);
+      toast.success('Note added');
+      closeNoteDialog();
+      router.refresh();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Could not save this note.');
+    } finally {
+      setSavingNote(false);
+    }
+  }
 
   const boards = useMemo(
     () => Array.from(new Set(cases.map((c) => c.boardName).filter((b): b is string => !!b))).sort(),
@@ -252,16 +289,6 @@ export function WioaCaseListView({
                   aria-label="Search cases"
                 />
               </div>
-              {/* Column hide/customize isn't built — disabled rather than fabricated, same
-                  pattern as the Admin Learners roster's own Hide/Customize buttons. */}
-              <button type="button" className="dtbtn" disabled title="Not yet built">
-                <Icon name="list" className="h-3.5 w-3.5" />
-                Hide
-              </button>
-              <button type="button" className="dtbtn" disabled title="Not yet built">
-                <Icon name="settings" className="h-3.5 w-3.5" />
-                Customize
-              </button>
               <button type="button" className="dtbtn" onClick={exportCsv}>
                 <Icon name="upload" className="h-3.5 w-3.5" />
                 Export
@@ -360,6 +387,7 @@ export function WioaCaseListView({
                 partnerStaffRoster={partnerStaffRoster}
                 selected={selected.has(c.id)}
                 onToggleSelect={() => toggleRow(c.id)}
+                onAddNote={(caseId, learnerName) => setNoteTarget({ caseId, learnerName })}
               />
             ))}
           </tbody>
@@ -408,6 +436,32 @@ export function WioaCaseListView({
           </button>
         </div>
       )}
+
+      <Dialog
+        open={noteTarget !== null}
+        onClose={closeNoteDialog}
+        title={noteTarget ? `Add a note — ${noteTarget.learnerName}` : 'Add a note'}
+        description="Internal only — never visible to the learner."
+        footer={
+          <>
+            <Button variant="ghost" onClick={closeNoteDialog}>
+              Cancel
+            </Button>
+            <Button onClick={saveNote} disabled={!noteBody.trim() || savingNote}>
+              {savingNote ? 'Saving…' : 'Save note'}
+            </Button>
+          </>
+        }
+      >
+        <Field label="Note" htmlFor="case-note-body">
+          <Textarea
+            id="case-note-body"
+            rows={5}
+            value={noteBody}
+            onChange={(e) => setNoteBody(e.target.value)}
+          />
+        </Field>
+      </Dialog>
     </div>
   );
 }
@@ -418,15 +472,18 @@ function CaseRow({
   partnerStaffRoster,
   selected,
   onToggleSelect,
+  onAddNote,
 }: {
   c: WioaCaseSummary;
   basePath: '/coordinator' | '/partner';
   partnerStaffRoster?: LearnerRecord[];
   selected: boolean;
   onToggleSelect: () => void;
+  onAddNote: (caseId: string, learnerName: string) => void;
 }) {
   const router = useRouter();
   const [assigning, setAssigning] = useState(false);
+  const [sendingReminder, setSendingReminder] = useState(false);
   const phase = WIOA_STATUS_PHASE[c.status];
 
   async function assign(partnerStaffId: string) {
@@ -439,6 +496,19 @@ function CaseRow({
       toast.error(e instanceof Error ? e.message : 'Could not update the assignment.');
     } finally {
       setAssigning(false);
+    }
+  }
+
+  async function remind() {
+    setSendingReminder(true);
+    try {
+      await sendWioaCaseReminder(c.id);
+      toast.success(`Reminder sent to ${c.learnerName}`);
+      router.refresh();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Could not send the reminder.');
+    } finally {
+      setSendingReminder(false);
     }
   }
 
@@ -513,9 +583,30 @@ function CaseRow({
         )}
       </td>
       <td style={{ textAlign: 'right' }}>
-        <Link href={`${basePath}/${c.id}`} className="rowkebab" aria-label="View case">
-          <Icon name="chevron-right" className="h-4 w-4" />
-        </Link>
+        <div style={{ display: 'inline-flex', gap: 2 }}>
+          <button
+            type="button"
+            className="rowkebab"
+            aria-label={`Send document reminder to ${c.learnerName}`}
+            title="Send document reminder email"
+            disabled={sendingReminder}
+            onClick={remind}
+          >
+            <Icon name="mail" className="h-4 w-4" />
+          </button>
+          <button
+            type="button"
+            className="rowkebab"
+            aria-label={`Add a note to ${c.learnerName}'s case`}
+            title="Add internal note"
+            onClick={() => onAddNote(c.id, c.learnerName)}
+          >
+            <Icon name="message-circle" className="h-4 w-4" />
+          </button>
+          <Link href={`${basePath}/${c.id}`} className="rowkebab" aria-label="View case">
+            <Icon name="chevron-right" className="h-4 w-4" />
+          </Link>
+        </div>
       </td>
     </tr>
   );

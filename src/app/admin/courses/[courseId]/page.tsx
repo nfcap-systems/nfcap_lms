@@ -3,6 +3,7 @@ import { Icon } from '@/components/icons';
 import { Badge } from '@/components/ui';
 import { CurriculumBuilderView } from '@/components/admin/CurriculumBuilderView';
 import { getAssessmentCriteria, getCourseBySlug } from '@/lib/data/courses';
+import { getAllBankQuestions } from '@/lib/data/quiz-bank';
 
 export default async function CurriculumBuilderPage({
   params,
@@ -10,9 +11,10 @@ export default async function CurriculumBuilderPage({
   params: Promise<{ courseId: string }>;
 }) {
   const { courseId } = await params;
-  const [course, criteria] = await Promise.all([
+  const [course, criteria, bankQuestions] = await Promise.all([
     getCourseBySlug(courseId),
     getAssessmentCriteria(courseId),
+    getAllBankQuestions(),
   ]);
 
   if (!course) {
@@ -46,12 +48,17 @@ export default async function CurriculumBuilderPage({
             </Badge>
           </div>
         </div>
-        <Link href={`/learner/courses/${course.id}`} target="_blank" rel="noopener noreferrer" className="btn-secondary btn-sm">
+        <Link
+          href={`/learner/courses/${course.id}?preview=1`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="btn-secondary btn-sm"
+        >
           <Icon name="arrow-right" className="size-4" />
           Preview as Learner
         </Link>
       </div>
-      <CurriculumBuilderView course={course} criteria={criteria} />
+      <CurriculumBuilderView course={course} criteria={criteria} bankQuestions={bankQuestions} />
     </div>
   );
 }

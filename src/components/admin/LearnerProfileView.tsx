@@ -37,7 +37,15 @@ const toneToBadgeVariant: Record<StatusTone, VariantProps<typeof badgeVariants>[
 const fundingBadge: Record<LearnerFundingStatus, { className: string; label: string }> = {
   funded: { className: 'pbadge solid', label: 'Funded' },
   pending: { className: 'pbadge amber', label: 'Funding pending' },
+  wioa_interest: { className: 'pbadge amber', label: 'WIOA interest' },
   self_pay: { className: 'pbadge', label: 'Self-pay' },
+};
+
+const fundingStatusLabel: Record<LearnerFundingStatus, (boardName?: string | null) => string> = {
+  funded: (boardName) => `Funded${boardName ? ` — ${boardName}` : ''}`,
+  pending: () => 'Funding under review',
+  wioa_interest: () => 'WIOA interest — awaiting outreach',
+  self_pay: () => 'Self-pay',
 };
 
 type Tab = 'overview' | 'personal' | 'enrollment' | 'funding' | 'evidence' | 'documents';
@@ -300,11 +308,7 @@ function OverviewTab({
             <div className="ov-field">
               <span className="ov-sub">Funding status</span>
               <span className="ov-val">
-                {fundingStatus === 'funded'
-                  ? `Funded${activeWioaCase?.boardName ? ` — ${activeWioaCase.boardName}` : ''}`
-                  : fundingStatus === 'pending'
-                    ? 'Funding under review'
-                    : 'Self-pay'}
+                {fundingStatusLabel[fundingStatus](activeWioaCase?.boardName)}
               </span>
             </div>
             <div className="ov-field">

@@ -1,5 +1,6 @@
 import { cacheLife, cacheTag } from 'next/cache';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { isUserActive } from '@/lib/data/users';
 import { prisma } from '@/lib/prisma';
 
 export type LearnerRecord = { id: string; name: string; email: string; createdAt: Date };
@@ -10,6 +11,7 @@ type AuthUserRecord = {
   user_metadata?: Record<string, unknown>;
   app_metadata?: Record<string, unknown>;
   created_at: string;
+  banned_until?: string | null;
 };
 
 function toLearnerRecord(user: AuthUserRecord): LearnerRecord {
@@ -81,12 +83,15 @@ export async function getPortfolioShareToken(learnerId: string): Promise<string 
   return profile?.portfolioShareToken ?? null;
 }
 
-/** Every PARTNER_STAFF account, for the Coordinator dashboard's case-assignment dropdown
- * (docs/build/WIOA_BUILD_WORKFLOW.md Phase 3). Same prototype-scale assumption as getLearnerRoster. */
+/** Every active PARTNER_STAFF account, for the Coordinator dashboard's case-assignment dropdown
+ * (docs/build/WIOA_BUILD_WORKFLOW.md Phase 3). Same prototype-scale assumption as getLearnerRoster.
+ * Excludes deactivated staff (`setUserActive`, src/lib/actions/users.ts) — previously this listed
+ * every Partner Staff account regardless of status, so a Coordinator could assign a fresh case to
+ * someone who can no longer log in to work it. */
 export async function getPartnerStaffRoster(): Promise<LearnerRecord[]> {
   const users = await listAllAuthUsers();
   return users
-    .filter((u) => u.app_metadata?.role === 'PARTNER_STAFF')
+    .filter((u) => u.app_metadata?.role === 'PARTNER_STAFF' && isUserActive(u))
     .map(toLearnerRecord)
     .sort((a, b) => a.name.localeCompare(b.name));
 }

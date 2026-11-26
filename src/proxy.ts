@@ -50,9 +50,20 @@ export async function proxy(request: NextRequest) {
     }
 
     // Wrong-role dashboard access → redirect to their own. Each role is confined to exactly
-    // one prefix — no cross-role preview in this prototype.
+    // one prefix, with one deliberate exception: Admin's "Preview as Learner"
+    // (src/components/learner/CourseOverviewView.tsx's `previewMode`, src/app/admin/courses/
+    // [courseId]/page.tsx's link) needs to actually reach the learner course page, not get
+    // bounced here before the page's own role+query-param check ever runs. Scoped narrowly — only
+    // /learner/courses/<slug> itself, not every /learner/* route, and only with the exact query
+    // param that link sets, so this can't be used as a general cross-role bypass.
     for (const [ownerRole, prefix] of ROLE_PREFIXES) {
       if (pathname.startsWith(prefix) && role !== ownerRole) {
+        const isAdminCoursePreview =
+          role === 'ADMIN' &&
+          ownerRole === 'LEARNER' &&
+          /^\/learner\/courses\/[^/]+$/.test(pathname) &&
+          request.nextUrl.searchParams.get('preview') === '1';
+        if (isAdminCoursePreview) continue;
         return NextResponse.redirect(new URL(home ?? '/login', request.url));
       }
     }

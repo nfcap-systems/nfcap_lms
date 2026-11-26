@@ -32,6 +32,10 @@ export type CourseProgress = {
   enrolledAt: string;
   completedLessonIds: string[];
   quizAttempt?: QuizAttempt;
+  /** Total persisted attempts for this enrollment, independent of `quizAttempt` (which is only the
+   * latest one) — QuizFlow needs the count to know whether retakes remain, e.g. to decide whether
+   * showing the correct answer on a failed attempt would leak it for a retake still in progress. */
+  quizAttemptCount: number;
   evidence?: EvidenceSubmission;
   certificateId?: string;
 };
@@ -39,6 +43,7 @@ export type CourseProgress = {
 const progressInclude = {
   completedLessons: true,
   quizAttempts: { orderBy: { submittedAt: 'desc' as const }, take: 1 },
+  _count: { select: { quizAttempts: true } },
   evidenceSubmissions: {
     orderBy: { submittedAt: 'desc' as const },
     take: 1,
@@ -66,6 +71,7 @@ function mapEnrollment(enrollment: DbEnrollment): CourseProgress {
     enrolled: true,
     enrolledAt: enrollment.enrolledAt.toISOString(),
     completedLessonIds: enrollment.completedLessons.map((c) => c.lessonId),
+    quizAttemptCount: enrollment._count.quizAttempts,
     quizAttempt: quiz
       ? {
           scorePercent: quiz.scorePercent,
