@@ -3,7 +3,7 @@ import { requireAdmin } from '@/lib/actions/guard';
 import { getLearnerById } from '@/lib/data/learners';
 import { getAllCourses, getCriteriaCountsByCourseSlug } from '@/lib/data/courses';
 import { getLearnerProgressMap, getCourseUnlocksForLearner } from '@/lib/data/progress';
-import { getCohortMembershipsForLearners } from '@/lib/data/cohorts';
+import { getCohortMembershipsForLearners, getCohortOptions } from '@/lib/data/cohorts';
 import {
   getFundingStatusForLearners,
   getWioaCasesForLearner,
@@ -46,6 +46,10 @@ export default async function AdminLearnerProfilePage({
     getLearnerProfile(viewer, learnerId),
   ]);
   const credentials = await getCredentialsForLearner(learnerId, courses);
+  // Sequential, not batched into the Promise.all above — this page already runs 8 concurrent
+  // queries against a 4-connection pool (src/lib/prisma.ts); the cohort dropdown's own list
+  // isn't on the critical path for first paint of anything else on this page.
+  const cohortOptions = await getCohortOptions();
 
   const enrolledCourses = courses.filter((c) => progress[c.id]?.enrolled);
   // The Overview/Evidence tabs' "current course" — first enrolled course not yet verified, or
@@ -68,6 +72,8 @@ export default async function AdminLearnerProfilePage({
       courseUnlocks={courseUnlocks}
       criteriaCounts={criteriaCounts}
       cohortName={cohortMembershipByLearner.get(learnerId)?.cohortName ?? null}
+      cohortId={cohortMembershipByLearner.get(learnerId)?.cohortId ?? null}
+      cohorts={cohortOptions}
       fundingStatus={fundingStatusByLearner[learnerId] ?? 'self_pay'}
       wioaCases={wioaCases}
       credentials={credentials}

@@ -1,7 +1,6 @@
 'use client';
 
 import { useMemo, useState, useTransition } from 'react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import {
@@ -9,8 +8,10 @@ import {
   DataTableCardHeader,
   DataTableFilters,
   Pagination,
+  RowActionsMenu,
   StateCard,
 } from '@/components/ui';
+import { DropdownMenuItem } from '@/components/admin-ui/dropdown-menu';
 import { Icon } from '@/components/icons';
 import { bulkApproveEvidence } from '@/lib/actions/progress';
 import { timeAgo } from '@/lib/time-ago';
@@ -348,14 +349,16 @@ export function ReviewQueueView({
                   )}
                 </td>
                 <td style={{ textAlign: 'right' }}>
-                  <Link
-                    href={`/admin/learners/${row.learnerId}/review/${row.courseId}`}
-                    className="rowkebab"
-                    aria-label={`Review ${row.learnerName}'s submission`}
-                    title="Review submission"
-                  >
-                    <Icon name="chevron-right" className="h-4 w-4" />
-                  </Link>
+                  <RowActionsMenu label={`Actions for ${row.learnerName}'s submission`}>
+                    <DropdownMenuItem
+                      onSelect={() =>
+                        router.push(`/admin/learners/${row.learnerId}/review/${row.courseId}`)
+                      }
+                    >
+                      <Icon name="chevron-right" className="h-4 w-4" />
+                      Review submission
+                    </DropdownMenuItem>
+                  </RowActionsMenu>
                 </td>
               </tr>
             ))}

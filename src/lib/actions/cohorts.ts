@@ -116,3 +116,29 @@ export async function removeLearnerFromCohort(cohortId: string, learnerId: strin
   revalidatePath('/admin');
   revalidatePath(`/admin/learners/${learnerId}`);
 }
+
+/** Every UI surface (the Enrollment tab's assignment select, the Cohorts page's add-learner
+ * picker) treats "cohort" as a single field per learner, matching `CohortMembership`'s own
+ * @@unique([cohortId, learnerId]) — but that constraint doesn't stop a learner holding rows in
+ * two different cohorts at once, which `addLearnerToCohort` alone would do silently on a
+ * reassignment. This is the one entry point both surfaces should call instead: it swaps
+ * atomically, so a learner is never left in more than one cohort at a time. Pass `null` to
+ * unassign. */
+export async function setLearnerCohort(learnerId: string, cohortId: string | null): Promise<void> {
+  const admin = await requireAdmin();
+  await prisma.$transaction(async (tx) => {
+    await tx.cohortMembership.deleteMany({ where: { learnerId } });
+    if (cohortId) {
+      await tx.cohortMembership.create({ data: { cohortId, learnerId } });
+    }
+  });
+  await logAuditEvent({
+    actor: admin,
+    action: cohortId ? 'ADD_COHORT_MEMBER' : 'REMOVE_COHORT_MEMBER',
+    targetType: 'Cohort',
+    targetId: cohortId ?? 'none',
+    metadata: { learnerId },
+  });
+  revalidatePath('/admin');
+  revalidatePath(`/admin/learners/${learnerId}`);
+}

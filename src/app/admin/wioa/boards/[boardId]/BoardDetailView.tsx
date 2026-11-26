@@ -27,9 +27,13 @@ import type {
 import type { ContactType, WioaEligibilityStatus } from '@/generated/prisma/enums';
 import { Icon } from '@/components/icons';
 import { WIOA_STATUS_LABEL } from '@/lib/wioa/status';
+import { RowActionsMenu } from '@/components/ui';
 import { Badge } from '@/components/admin-ui/badge';
 import { Button } from '@/components/admin-ui/button';
 import { Card, CardContent } from '@/components/admin-ui/card';
+import {
+  DropdownMenuItem,
+} from '@/components/admin-ui/dropdown-menu';
 import {
   Dialog,
   DialogContent,
@@ -251,24 +255,28 @@ function AjccTab({ board, onChanged }: { board: WorkforceBoardDetail; onChanged:
                   <Badge variant={a.active ? 'success' : 'outline'}>
                     {a.active ? 'Active' : 'Inactive'}
                   </Badge>
-                  <Button size="sm" variant="outline" onClick={() => setEditing(a)}>
-                    Edit
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={async () => {
-                      try {
-                        await setAjccCenterActive(board.id, a.id, !a.active);
-                        toast.success(a.active ? 'AJCC center deactivated' : 'AJCC center activated');
-                        onChanged();
-                      } catch (e) {
-                        toast.error(e instanceof Error ? e.message : 'Could not update the center.');
-                      }
-                    }}
-                  >
-                    {a.active ? 'Deactivate' : 'Activate'}
-                  </Button>
+                  <RowActionsMenu label={`Actions for ${a.name}`}>
+                    <DropdownMenuItem onSelect={() => setEditing(a)}>
+                      <Icon name="edit" className="h-4 w-4" />
+                      Edit
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onSelect={async () => {
+                        try {
+                          await setAjccCenterActive(board.id, a.id, !a.active);
+                          toast.success(
+                            a.active ? 'AJCC center deactivated' : 'AJCC center activated',
+                          );
+                          onChanged();
+                        } catch (e) {
+                          toast.error(e instanceof Error ? e.message : 'Could not update the center.');
+                        }
+                      }}
+                    >
+                      <Icon name={a.active ? 'x' : 'check'} className="h-4 w-4" />
+                      {a.active ? 'Deactivate' : 'Activate'}
+                    </DropdownMenuItem>
+                  </RowActionsMenu>
                 </div>
               </div>
             ))}
@@ -416,24 +424,26 @@ function JurisdictionTab({
                   <Badge variant={j.active ? 'success' : 'outline'}>
                     {j.active ? 'Active' : 'Inactive'}
                   </Badge>
-                  <Button size="sm" variant="outline" onClick={() => setEditing(j)}>
-                    Edit
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={async () => {
-                      try {
-                        await setWorkforceJurisdictionActive(board.id, j.id, !j.active);
-                        toast.success(j.active ? 'ZIP deactivated' : 'ZIP activated');
-                        onChanged();
-                      } catch (e) {
-                        toast.error(e instanceof Error ? e.message : 'Could not update the ZIP.');
-                      }
-                    }}
-                  >
-                    {j.active ? 'Deactivate' : 'Activate'}
-                  </Button>
+                  <RowActionsMenu label={`Actions for ${j.zip}`}>
+                    <DropdownMenuItem onSelect={() => setEditing(j)}>
+                      <Icon name="edit" className="h-4 w-4" />
+                      Edit
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onSelect={async () => {
+                        try {
+                          await setWorkforceJurisdictionActive(board.id, j.id, !j.active);
+                          toast.success(j.active ? 'ZIP deactivated' : 'ZIP activated');
+                          onChanged();
+                        } catch (e) {
+                          toast.error(e instanceof Error ? e.message : 'Could not update the ZIP.');
+                        }
+                      }}
+                    >
+                      <Icon name={j.active ? 'x' : 'check'} className="h-4 w-4" />
+                      {j.active ? 'Deactivate' : 'Activate'}
+                    </DropdownMenuItem>
+                  </RowActionsMenu>
                 </div>
               </div>
             ))}
@@ -592,24 +602,28 @@ function ContactTab({ board, onChanged }: { board: WorkforceBoardDetail; onChang
                     {c.active ? 'Active' : 'Inactive'}
                   </Badge>
                   {isContactStale(c.lastVerifiedDate) && <Badge variant="warning">Stale</Badge>}
-                  <Button size="sm" variant="outline" onClick={() => setEditing(c)}>
-                    Edit
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={async () => {
-                      try {
-                        await setWorkforceContactActive(board.id, c.id, !c.active);
-                        toast.success(c.active ? 'Contact deactivated' : 'Contact activated');
-                        onChanged();
-                      } catch (e) {
-                        toast.error(e instanceof Error ? e.message : 'Could not update the contact.');
-                      }
-                    }}
-                  >
-                    {c.active ? 'Deactivate' : 'Activate'}
-                  </Button>
+                  <RowActionsMenu label={`Actions for ${c.name}`}>
+                    <DropdownMenuItem onSelect={() => setEditing(c)}>
+                      <Icon name="edit" className="h-4 w-4" />
+                      Edit
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onSelect={async () => {
+                        try {
+                          await setWorkforceContactActive(board.id, c.id, !c.active);
+                          toast.success(c.active ? 'Contact deactivated' : 'Contact activated');
+                          onChanged();
+                        } catch (e) {
+                          toast.error(
+                            e instanceof Error ? e.message : 'Could not update the contact.',
+                          );
+                        }
+                      }}
+                    >
+                      <Icon name={c.active ? 'x' : 'check'} className="h-4 w-4" />
+                      {c.active ? 'Deactivate' : 'Activate'}
+                    </DropdownMenuItem>
+                  </RowActionsMenu>
                 </div>
               </div>
             ))}

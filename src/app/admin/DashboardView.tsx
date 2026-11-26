@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from 'recharts';
 
@@ -10,7 +11,8 @@ import type { LearnerRecord } from '@/lib/data/learners';
 import type { AdminCourse } from '@/lib/data/courses';
 import type { CourseProgress } from '@/lib/data/progress';
 import type { UpcomingAppointment, LearnerFundingStatus } from '@/lib/data/wioa';
-import { Badge } from '@/components/ui';
+import { Badge, RowActionsMenu } from '@/components/ui';
+import { DropdownMenuItem } from '@/components/admin-ui/dropdown-menu';
 import { Icon } from '@/components/icons';
 import {
   ChartContainer,
@@ -557,6 +559,7 @@ function RecentLearnersTable({
   totalLearners: number;
   fundingStatusByLearner: Record<string, LearnerFundingStatus>;
 }) {
+  const router = useRouter();
   return (
     <div
       className="panel"
@@ -601,6 +604,7 @@ function RecentLearnersTable({
                 <th>Progress</th>
                 <th>Last activity</th>
                 <th>Status</th>
+                <th style={{ textAlign: 'right' }}>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -628,6 +632,16 @@ function RecentLearnersTable({
                     <td style={{ color: 'var(--ink-muted)' }}>{formatRelative(activity!.at)}</td>
                     <td>
                       <Badge tone={fundingBadge.tone}>{fundingBadge.label}</Badge>
+                    </td>
+                    <td style={{ textAlign: 'right' }}>
+                      <RowActionsMenu label={`Actions for ${learner.name}`}>
+                        <DropdownMenuItem
+                          onSelect={() => router.push(`/admin/learners/${learner.id}`)}
+                        >
+                          <Icon name="chevron-right" className="h-4 w-4" />
+                          View learner
+                        </DropdownMenuItem>
+                      </RowActionsMenu>
                     </td>
                   </tr>
                 );

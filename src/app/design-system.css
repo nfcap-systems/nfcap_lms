@@ -1009,6 +1009,16 @@
   color: var(--ink);
   display: block;
 }
+.ov-select {
+  font-size: 13.5px;
+  color: var(--ink);
+  background: #fff;
+  border: 1px solid var(--nfcap-border);
+  border-radius: 6px;
+  padding: 5px 8px;
+  width: fit-content;
+  max-width: 100%;
+}
 .ov-field {
   display: flex;
   flex-direction: column;

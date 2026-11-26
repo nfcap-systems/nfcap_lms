@@ -1,15 +1,17 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Icon } from '@/components/icons';
 import {
   Badge,
   DataTableCard,
   DataTableCardHeader,
   DataTableFilters,
+  RowActionsMenu,
   StateCard,
 } from '@/components/ui';
+import { DropdownMenuItem } from '@/components/admin-ui/dropdown-menu';
 import type { StatusTone } from '@/components/ui/Badge';
 import type { StalledCase } from '@/lib/data/wioa';
 import { WIOA_STATUS_LABEL, WIOA_STATUS_PHASE, type WioaUiPhase } from '@/lib/wioa/status';
@@ -48,6 +50,7 @@ export function StalledCasesView({
   cases: StalledCase[];
   totalCaseCount: number;
 }) {
+  const router = useRouter();
   const [boardFilter, setBoardFilter] = useState('all');
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
@@ -211,9 +214,12 @@ export function StalledCasesView({
                   </td>
                   <td>{c.likelyCause}</td>
                   <td style={{ textAlign: 'right' }}>
-                    <Link href={`/coordinator/${c.id}`} className="dtbtn">
-                      View case
-                    </Link>
+                    <RowActionsMenu label={`Actions for ${c.learnerName}`}>
+                      <DropdownMenuItem onSelect={() => router.push(`/coordinator/${c.id}`)}>
+                        <Icon name="chevron-right" className="h-4 w-4" />
+                        View case
+                      </DropdownMenuItem>
+                    </RowActionsMenu>
                   </td>
                 </tr>
               );

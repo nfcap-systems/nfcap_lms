@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 import { getCourseStatus } from '@/lib/course-status';
 import { getInitials } from '@/lib/utils';
@@ -9,7 +10,15 @@ import type { LearnerRecord } from '@/lib/data/learners';
 import type { AdminCourse } from '@/lib/data/courses';
 import type { CourseProgress } from '@/lib/data/progress';
 import type { LearnerFundingStatus } from '@/lib/data/wioa';
-import { Badge, DataTableCard, DataTableCardHeader, Pagination, StateCard } from '@/components/ui';
+import {
+  Badge,
+  DataTableCard,
+  DataTableCardHeader,
+  Pagination,
+  RowActionsMenu,
+  StateCard,
+} from '@/components/ui';
+import { DropdownMenuItem } from '@/components/admin-ui/dropdown-menu';
 import { Icon } from '@/components/icons';
 
 type RowStatus = 'pending' | 'complete' | 'active' | 'funding';
@@ -70,6 +79,7 @@ export function LearnersRosterView({
   fundingStatusByLearner: Record<string, LearnerFundingStatus>;
   fundedCaseCount: number;
 }) {
+  const router = useRouter();
   const [now] = useState(() => Date.now());
   const [search, setSearch] = useState('');
   const [pathwayFilter, setPathwayFilter] = useState('all');
@@ -487,13 +497,14 @@ export function LearnersRosterView({
                       <Badge tone={badge.tone}>{badge.label}</Badge>
                     </td>
                     <td style={{ textAlign: 'right' }}>
-                      <Link
-                        href={`/admin/learners/${row.learner.id}`}
-                        className="rowkebab"
-                        aria-label="View learner"
-                      >
-                        <Icon name="chevron-right" className="h-4 w-4" />
-                      </Link>
+                      <RowActionsMenu label={`Actions for ${row.learner.name}`}>
+                        <DropdownMenuItem
+                          onSelect={() => router.push(`/admin/learners/${row.learner.id}`)}
+                        >
+                          <Icon name="chevron-right" className="h-4 w-4" />
+                          View learner
+                        </DropdownMenuItem>
+                      </RowActionsMenu>
                     </td>
                   </tr>
                 );
