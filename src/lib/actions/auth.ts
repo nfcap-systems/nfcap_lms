@@ -90,6 +90,16 @@ export async function signup(
   if (error) return { error: error.message };
   if (!data.user) return { error: 'Sign up failed. Please try again.' };
 
+  // Supabase's anti-enumeration behavior: signUp() for an email that's already registered
+  // returns a 200 with a user object that has an empty `identities` array and a placeholder id
+  // that doesn't exist in auth.users — not an error, and not a real new user. Previously this
+  // fell through to admin.updateUserById() below, which then failed with a raw "User not found"
+  // (Supabase's own 404 message) instead of a message that tells the learner what's actually
+  // wrong.
+  if (data.user.identities?.length === 0) {
+    return { error: 'An account with this email already exists. Try logging in instead.' };
+  }
+
   const admin = createAdminClient();
   const { error: roleError } = await admin.auth.admin.updateUserById(data.user.id, {
     app_metadata: { role: 'LEARNER' },

@@ -14,6 +14,7 @@ import { Link } from '@astryxdesign/core/Link';
 import { Section } from '@astryxdesign/core/Section';
 import { login, type AuthFormState } from '@/lib/actions/auth';
 import { PasswordInput } from '@/components/auth/PasswordInput';
+import { isValidEmail } from '@/lib/validation';
 
 // Background: Unsplash License (free for commercial use), photo by Craftsman Concrete Floors.
 // https://unsplash.com/photos/pmWQwdO9Rpg
@@ -37,6 +38,12 @@ export function LoginAstryx() {
   const [state, formAction, pending] = useActionState(login, initialState);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+
+  // @astryxdesign/core's TextInput only sets aria-required, never the native `required`
+  // attribute (see src/lib/validation.ts), so this form gets no browser-level blocking on its
+  // own — these checks replace it.
+  const emailFormatInvalid = email.length > 0 && !isValidEmail(email);
+  const canSubmit = email.trim() !== '' && password !== '' && !emailFormatInvalid;
 
   // A full browser navigation, not router.push — see the comment on login() in
   // src/lib/actions/auth.ts for why: a client-side/RSC transition into /admin (or
@@ -99,6 +106,11 @@ export function LoginAstryx() {
                 size="lg"
                 autoComplete="email"
                 isRequired
+                status={
+                  emailFormatInvalid
+                    ? { type: 'error', message: 'Enter a valid email address.' }
+                    : undefined
+                }
               />
               <PasswordInput
                 label="Password"
@@ -124,6 +136,7 @@ export function LoginAstryx() {
               variant="primary"
               size="lg"
               isLoading={pending}
+              isDisabled={pending || !canSubmit}
             />
 
             <VStack hAlign="center">

@@ -13,6 +13,7 @@ import { Button } from '@astryxdesign/core/Button';
 import { Link } from '@astryxdesign/core/Link';
 import { Section } from '@astryxdesign/core/Section';
 import { requestPasswordReset, type AuthFormState } from '@/lib/actions/auth';
+import { isValidEmail } from '@/lib/validation';
 
 // Same background/Theme treatment as src/app/login/LoginAstryx.tsx — one shared visual family
 // across every auth route, not just login/signup.
@@ -31,6 +32,12 @@ export function ForgotPasswordAstryx() {
   const sent = searchParams.get('sent') === '1';
   const [state, formAction, pending] = useActionState(requestPasswordReset, initialState);
   const [email, setEmail] = useState('');
+
+  // @astryxdesign/core's TextInput only sets aria-required, never the native `required`
+  // attribute (see src/lib/validation.ts), so this form gets no browser-level blocking on its
+  // own — these checks replace it.
+  const emailFormatInvalid = email.length > 0 && !isValidEmail(email);
+  const canSubmit = email.trim() !== '' && !emailFormatInvalid;
 
   return (
     <Center role="main" axis="both" padding={6} style={pageStyle}>
@@ -85,7 +92,13 @@ export function ForgotPasswordAstryx() {
                   size="lg"
                   autoComplete="email"
                   isRequired
-                  status={state.error ? { type: 'error', message: state.error } : undefined}
+                  status={
+                    emailFormatInvalid
+                      ? { type: 'error', message: 'Enter a valid email address.' }
+                      : state.error
+                        ? { type: 'error', message: state.error }
+                        : undefined
+                  }
                 />
 
                 <Button
@@ -94,6 +107,7 @@ export function ForgotPasswordAstryx() {
                   variant="primary"
                   size="lg"
                   isLoading={pending}
+                  isDisabled={pending || !canSubmit}
                 />
 
                 <VStack hAlign="center">
