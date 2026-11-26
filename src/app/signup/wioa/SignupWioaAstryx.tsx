@@ -18,6 +18,8 @@ import { Divider } from '@astryxdesign/core/Divider';
 import { signup, type AuthFormState } from '@/lib/actions/auth';
 import { SIGNUP_STEP1_KEY, type SignupStep1 } from '../signup-step1-storage';
 
+const ZIP_PATTERN = /^\d{5}$/;
+
 const pageStyle: CSSProperties = {
   minHeight: '100vh',
   backgroundImage:
@@ -126,6 +128,21 @@ export function SignupWioaAstryx() {
   const [unemploymentInsuranceStatus, setUnemploymentInsuranceStatus] = useState('');
   const [trainingInterest, setTrainingInterest] = useState('');
 
+  // @astryxdesign/core's TextInput/Selector/DateInput only set aria-required, never the native
+  // `required` attribute (see src/lib/validation.ts), so this form gets no browser-level
+  // blocking on its own — these checks replace it. employmentStatus/unemploymentInsuranceStatus/
+  // preferredLanguage are deliberately not required here, matching the form's own field markup.
+  const zipFormatInvalid = zip.length > 0 && !ZIP_PATTERN.test(zip);
+  const canSubmit =
+    Boolean(dateOfBirth) &&
+    mobilePhone.trim() !== '' &&
+    streetAddress.trim() !== '' &&
+    city.trim() !== '' &&
+    state2.trim() !== '' &&
+    zip.trim() !== '' &&
+    !zipFormatInvalid &&
+    trainingInterest.trim() !== '';
+
   if (!step1) return null;
 
   return (
@@ -221,6 +238,11 @@ export function SignupWioaAstryx() {
                   width="100%"
                   value={zip}
                   onChange={setZip}
+                  status={
+                    zipFormatInvalid
+                      ? { type: 'error', message: 'Enter a 5-digit ZIP code.' }
+                      : undefined
+                  }
                 />
               </div>
             </FormSection>
@@ -282,6 +304,7 @@ export function SignupWioaAstryx() {
               variant="primary"
               size="lg"
               isLoading={pending}
+              isDisabled={pending || !canSubmit}
             />
 
             <VStack hAlign="center">

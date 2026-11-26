@@ -16,6 +16,9 @@ import { Section } from '@astryxdesign/core/Section';
 import { signup, type AuthFormState } from '@/lib/actions/auth';
 import { PasswordInput } from '@/components/auth/PasswordInput';
 import { SIGNUP_STEP1_KEY, type SignupStep1 } from './signup-step1-storage';
+import { isValidEmail } from '@/lib/validation';
+
+const MIN_PASSWORD_LENGTH = 6;
 
 // Background: Unsplash License (free for commercial use), photo by Craftsman Concrete Floors.
 // https://unsplash.com/photos/pmWQwdO9Rpg
@@ -56,9 +59,21 @@ export function SignupAstryx() {
   const [password, setPassword] = useState(step1Prefill?.password ?? '');
   const [pursuingWioa, setPursuingWioa] = useState(Boolean(step1Prefill));
 
+  // @astryxdesign/core's TextInput only sets aria-required, never the native `required`
+  // attribute (see src/lib/validation.ts), so this form gets no browser-level blocking on its
+  // own — these checks replace it.
+  const emailFormatInvalid = email.length > 0 && !isValidEmail(email);
+  const passwordTooShort = password.length > 0 && password.length < MIN_PASSWORD_LENGTH;
+  const canSubmit =
+    name.trim() !== '' &&
+    email.trim() !== '' &&
+    password.length >= MIN_PASSWORD_LENGTH &&
+    !emailFormatInvalid;
+
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     if (!pursuingWioa) return; // let the form submit normally via formAction
     e.preventDefault();
+    if (!canSubmit) return;
     const step1: SignupStep1 = { name, email, password };
     try {
       sessionStorage.setItem(SIGNUP_STEP1_KEY, JSON.stringify(step1));
@@ -108,6 +123,11 @@ export function SignupAstryx() {
                 autoComplete="email"
                 value={email}
                 onChange={setEmail}
+                status={
+                  emailFormatInvalid
+                    ? { type: 'error', message: 'Enter a valid email address.' }
+                    : undefined
+                }
               />
               <PasswordInput
                 label="Password"
@@ -119,6 +139,14 @@ export function SignupAstryx() {
                 autoComplete="new-password"
                 value={password}
                 onChange={setPassword}
+                status={
+                  passwordTooShort
+                    ? {
+                        type: 'error',
+                        message: `Password must be at least ${MIN_PASSWORD_LENGTH} characters.`,
+                      }
+                    : undefined
+                }
               />
               <Text type="supporting" color="secondary" size="sm">
                 At least 6 characters.
@@ -158,6 +186,7 @@ export function SignupAstryx() {
               variant="primary"
               size="lg"
               isLoading={pending}
+              isDisabled={pending || !canSubmit}
             />
 
             <VStack hAlign="center">

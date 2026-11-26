@@ -1,11 +1,11 @@
 'use server';
 
 import { redirect } from 'next/navigation';
-import { headers } from 'next/headers';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { withRlsContext } from '@/lib/db/rls';
 import { enforceRateLimit } from '@/lib/rate-limit';
+import { getOrigin } from '@/lib/origin';
 
 const LOGIN_LIMIT = 10;
 const LOGIN_WINDOW_MS = 15 * 60 * 1000;
@@ -15,20 +15,6 @@ const RESET_LIMIT = 5;
 const RESET_WINDOW_MS = 60 * 60 * 1000;
 
 export type AuthFormState = { error?: string; next?: string };
-
-/** Derives the request's own origin for building absolute auth-email links, instead of a fixed
- * env var — works unchanged across local dev, staging, and prod without per-environment config.
- * Trusts `x-forwarded-*` first (set by Traefik in front of the deploy target), falling back to
- * the raw Host header for local dev where nothing sits in front of Next.js. */
-async function getOrigin(): Promise<string> {
-  const h = await headers();
-  const host = h.get('x-forwarded-host') ?? h.get('host') ?? 'localhost:3000';
-  const forwardedProto = h.get('x-forwarded-proto');
-  const proto =
-    forwardedProto ??
-    (host.startsWith('localhost') || host.startsWith('127.0.0.1') ? 'http' : 'https');
-  return `${proto}://${host}`;
-}
 
 function orNull(value: FormDataEntryValue | null): string | null {
   const str = String(value ?? '').trim();
@@ -89,6 +75,16 @@ export async function signup(
   });
   if (error) return { error: error.message };
   if (!data.user) return { error: 'Sign up failed. Please try again.' };
+
+  // Supabase's anti-enumeration behavior: signUp() for an email that's already registered
+  // returns a 200 with a user object that has an empty `identities` array and a placeholder id
+  // that doesn't exist in auth.users — not an error, and not a real new user. Previously this
+  // fell through to admin.updateUserById() below, which then failed with a raw "User not found"
+  // (Supabase's own 404 message) instead of a message that tells the learner what's actually
+  // wrong.
+  if (data.user.identities?.length === 0) {
+    return { error: 'An account with this email already exists. Try logging in instead.' };
+  }
 
   const admin = createAdminClient();
   const { error: roleError } = await admin.auth.admin.updateUserById(data.user.id, {
