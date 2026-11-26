@@ -77,6 +77,18 @@ export async function getAllCohorts(): Promise<Cohort[]> {
   });
 }
 
+export type CohortOption = { id: string; name: string };
+
+/** Minimal cohort list for the Enrollment tab's assignment dropdown — CLAUDE.md's "narrowest
+ * shape" convention; skips getAllCohorts' per-cohort completion aggregation, which a plain
+ * picker has no use for. */
+export async function getCohortOptions(): Promise<CohortOption[]> {
+  return prisma.cohort.findMany({
+    orderBy: { startDate: 'desc' },
+    select: { id: true, name: true },
+  });
+}
+
 /** PRODUCT_CONTEXT.md §5 — exactly one pathway exists in this prototype, so the New Cohort
  * dialog auto-assigns it rather than showing a single-option dropdown that implies choice. */
 export async function getDefaultPathwayId(): Promise<string | null> {

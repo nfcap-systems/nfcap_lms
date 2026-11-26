@@ -7,9 +7,18 @@ import { setUserActive } from '@/lib/actions/users';
 import { ALL_ROLES, ROLE_DISPLAY_LABEL, type Role } from '@/lib/roles';
 import type { UserRecord } from '@/lib/data/users';
 import { Icon } from '@/components/icons';
-import { Pagination } from '@/components/ui';
+import {
+  DataTableCard,
+  DataTableCardHeader,
+  DataTableFilters,
+  Pagination,
+  RowActionsMenu,
+} from '@/components/ui';
+import { DropdownMenuItem } from '@/components/admin-ui/dropdown-menu';
 
 type ActionMessage = { type: 'error' | 'success'; text: string } | null;
+type RoleFilter = 'all' | Role | 'unassigned';
+type StatusFilter = 'all' | 'active' | 'deactivated';
 
 const PAGE_SIZE = 20;
 
@@ -125,21 +134,12 @@ function RoleRow({ user, isSelf }: { user: UserRecord; isSelf: boolean }) {
           </span>
         </td>
         <td style={{ textAlign: 'right' }}>
-          <button
-            type="button"
-            onClick={handleToggleActive}
-            disabled={activePending}
-            style={{
-              fontSize: 12.5,
-              fontWeight: 600,
-              background: 'none',
-              border: 'none',
-              cursor: 'pointer',
-              color: active ? 'var(--status-problem)' : 'var(--nfcap-accent)',
-            }}
-          >
-            {activePending ? 'Saving…' : active ? 'Deactivate' : 'Reactivate'}
-          </button>
+          <RowActionsMenu label={`Actions for ${user.name}`}>
+            <DropdownMenuItem onSelect={handleToggleActive} disabled={activePending}>
+              <Icon name={active ? 'lock' : 'check'} className="h-4 w-4" />
+              {activePending ? 'Saving…' : active ? 'Deactivate' : 'Reactivate'}
+            </DropdownMenuItem>
+          </RowActionsMenu>
         </td>
       </tr>
       {(roleMessage || activeMessage) && (
@@ -189,37 +189,86 @@ export function RoleManagementTable({
   currentUserId: string;
 }) {
   const [search, setSearch] = useState('');
+  const [roleFilter, setRoleFilter] = useState<RoleFilter>('all');
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [page, setPage] = useState(1);
 
   const filtered = useMemo(() => {
     const query = search.trim().toLowerCase();
-    if (!query) return users;
-    return users.filter(
-      (u) => u.name.toLowerCase().includes(query) || u.email.toLowerCase().includes(query),
-    );
-  }, [users, search]);
+    return users.filter((u) => {
+      if (roleFilter === 'unassigned' && u.role) return false;
+      if (roleFilter !== 'all' && roleFilter !== 'unassigned' && u.role !== roleFilter) return false;
+      if (statusFilter === 'active' && !u.active) return false;
+      if (statusFilter === 'deactivated' && u.active) return false;
+      if (!query) return true;
+      return u.name.toLowerCase().includes(query) || u.email.toLowerCase().includes(query);
+    });
+  }, [users, search, roleFilter, statusFilter]);
 
   const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const pageRows = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="toolbar">
-        <div className="dtsearch" style={{ maxWidth: 320 }}>
-          <Icon name="search" className="h-3.5 w-3.5" />
-          <input
-            value={search}
-            onChange={(e) => {
-              setSearch(e.target.value);
-              setPage(1);
-            }}
-            placeholder="Search name or email..."
-            aria-label="Search users"
-          />
-        </div>
-      </div>
+      <DataTableCard>
+        <DataTableCardHeader
+          title="All users"
+          description="Role and account status for every user, across every role."
+          actions={
+            <div className="dtsearch">
+              <Icon name="search" className="h-3.5 w-3.5" />
+              <input
+                value={search}
+                onChange={(e) => {
+                  setSearch(e.target.value);
+                  setPage(1);
+                }}
+                placeholder="Search name or email..."
+                aria-label="Search users"
+              />
+            </div>
+          }
+        />
 
-      <div className="panel" style={{ padding: 0, overflowX: 'auto', overflowY: 'hidden' }}>
+        <DataTableFilters>
+          <div className="dt-filter-group">
+            <div className="dt-filter">
+              <span className="lbl">Role:</span>
+              <select
+                value={roleFilter}
+                onChange={(e) => {
+                  setRoleFilter(e.target.value as RoleFilter);
+                  setPage(1);
+                }}
+                aria-label="Filter by role"
+              >
+                <option value="all">All</option>
+                <option value="unassigned">Unassigned</option>
+                {ALL_ROLES.map((r) => (
+                  <option key={r} value={r}>
+                    {ROLE_DISPLAY_LABEL[r]}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="dt-filter">
+              <span className="lbl">Status:</span>
+              <select
+                value={statusFilter}
+                onChange={(e) => {
+                  setStatusFilter(e.target.value as StatusFilter);
+                  setPage(1);
+                }}
+                aria-label="Filter by status"
+              >
+                <option value="all">All</option>
+                <option value="active">Active</option>
+                <option value="deactivated">Deactivated</option>
+              </select>
+            </div>
+          </div>
+        </DataTableFilters>
+
         <table className="data-table">
           <thead>
             <tr>
@@ -230,7 +279,7 @@ export function RoleManagementTable({
               <th>Email</th>
               <th>Role</th>
               <th>Status</th>
-              <th />
+              <th style={{ textAlign: 'right' }}>Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -250,15 +299,16 @@ export function RoleManagementTable({
             )}
           </tbody>
         </table>
-        <div className="table-footer">
+
+        <div className="dt-footer">
           <span>
             Showing {pageRows.length} of {filtered.length}
           </span>
           <span>
-            Rows per page: {PAGE_SIZE} · Page {page} of {pageCount}
+            Page {page} of {pageCount}
           </span>
         </div>
-      </div>
+      </DataTableCard>
 
       {pageCount > 1 && <Pagination page={page} pageCount={pageCount} onPageChange={setPage} />}
     </div>

@@ -1009,6 +1009,16 @@
   color: var(--ink);
   display: block;
 }
+.ov-select {
+  font-size: 13.5px;
+  color: var(--ink);
+  background: #fff;
+  border: 1px solid var(--nfcap-border);
+  border-radius: 6px;
+  padding: 5px 8px;
+  width: fit-content;
+  max-width: 100%;
+}
 .ov-field {
   display: flex;
   flex-direction: column;
@@ -1654,31 +1664,6 @@
   background: var(--surface-muted);
   color: var(--ink);
 }
-.lhdr-mobilenav {
-  margin-top: 8px;
-  border-radius: var(--nfcap-radius-lg);
-  background: var(--surface);
-  border: 1px solid var(--nfcap-border);
-  box-shadow: var(--nfcap-shadow-sm);
-  padding: 8px;
-}
-.lhdr-mobile-navlink {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  border-radius: var(--nfcap-radius-md);
-  padding: 10px 12px;
-  font-size: 13.5px;
-  font-weight: 500;
-  color: var(--ink-muted);
-  text-decoration: none;
-}
-.lhdr-mobile-navlink.on {
-  background: color-mix(in srgb, var(--nfcap-accent) 10%, transparent);
-  color: var(--nfcap-accent);
-  font-weight: 600;
-}
-
 /* ============================================================================
    Step 1.4 — Coordinator/Partner shell retrofit (FND13-Shells' Staff half).
    Admin's shell (admin-ui/shadcn) already matches via globals.css's own
@@ -2986,97 +2971,223 @@
    Mobile audit, 2026-11-26 — learner UI. Decision 4 (docs/plans/mockup-complete-
    build.md) deferred mobile/responsive at the time of the LearnerHeader/LRN01-Home
    literal-port retrofits above; this is that "revisit before launch." No mobile
-   mockup boards exist, so these overrides follow the ui-ux-pro-max mobile-first
-   conventions (single-column stacking, 44px touch targets, no horizontal page
-   scroll) directly against the shipped desktop layout rather than a board.
-   `--lhdr-mobile-bp` also gates LearnerHeader.tsx's hamburger-panel markup.
+   mockup board existed for the header itself, so this shape — greeting/avatar/bell
+   top bar, a 5-tab bottom bar, and a "More" sheet for the overflow nav items —
+   follows the user-approved reference captured in
+   temp_ss/mockups/learner-mobile-nav-final.html rather than inventing one from the
+   ui-ux-pro-max conventions alone (those still govern everything else in this file).
+   `--lhdr-mobile-bp` is informational — the breakpoint below is hardcoded to match it.
    ============================================================================ */
 :root {
   --lhdr-mobile-bp: 860px;
 }
-.lhdr-mobile-toggle {
-  display: none;
-  width: 36px;
-  height: 36px;
-  align-items: center;
-  justify-content: center;
-  border-radius: var(--nfcap-radius-md);
-  border: none;
-  background: transparent;
-  color: var(--ink-muted);
-  cursor: pointer;
-  flex-shrink: 0;
-}
-.lhdr-mobile-toggle:hover {
-  background: var(--surface-muted);
-  color: var(--ink);
-}
-.lhdr-mobilenav-wrap {
+.lhdr-mobiletop,
+.lhdr-bottombar,
+.lhdr-sheet-scrim,
+.lhdr-sheet {
   display: none;
 }
 
 @media (max-width: 860px) {
-  /* Header: drop the pieces that don't fit, hand nav to the hamburger panel. */
-  .lhdr-row1-inner {
-    gap: 12px;
-    padding: 0 16px;
-  }
-  .lhdr-mobile-toggle {
-    display: flex;
-  }
-  .lhdr-askai,
-  .lhdr-vdivider {
-    display: none;
-  }
-  .lhdr-search-wrap {
-    max-width: none;
-  }
-  .lhdr-search span {
-    display: none;
-  }
-  .lhdr-search {
-    width: 38px;
-    padding: 0;
-    justify-content: center;
-  }
-  .lhdr-account-text {
-    display: none;
-  }
+  /* Row 1/row 2 are replaced wholesale below — trying to reflow the same 7-element desktop bar
+     (logo/Ask AI/search/message/bell/account) into one mobile row was the original cramped-bar
+     problem, not a fixable CSS tweak. */
+  .lhdr-row1,
   .lhdr-row2 {
     display: none;
   }
-  .lhdr-mobilenav-wrap {
+
+  .lhdr-mobiletop {
     display: block;
-    padding: 0 16px 10px;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--nfcap-border);
   }
-  .lhdr-mobilenav {
+  .lhdr-mobiletop-row {
     display: flex;
-    flex-direction: column;
-    gap: 2px;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 12px;
   }
-  /* The Funding nav slot (WioaNavLink → NavLinkItem) is shared with row 2 and hardcodes
-     `.toplink` — restyle it to match `.lhdr-mobile-navlink` inside this panel instead of
-     touching that shared component. */
-  .lhdr-mobilenav .toplink {
-    height: auto;
-    border-bottom: none;
-    border-radius: var(--nfcap-radius-md);
-    padding: 10px 12px;
-    font-weight: 500;
-    font-size: 13.5px;
+  .lhdr-mobiletop-greet {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+    border: none;
+    background: none;
+    padding: 0;
+    cursor: pointer;
+    text-align: left;
   }
-  .lhdr-mobilenav .toplink.on {
-    background: color-mix(in srgb, var(--nfcap-accent) 10%, transparent);
-    color: var(--nfcap-accent);
-    font-weight: 600;
-  }
-  .lhdr-iconbtn2,
-  .lhdr-avatar {
+  .lhdr-avatar-lg {
     width: 40px;
     height: 40px;
+    font-size: 14px;
   }
+  .lhdr-mobiletop-greet-text {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    min-width: 0;
+  }
+  .lhdr-mobiletop-greet-text .hi {
+    font-size: 14.5px;
+    font-weight: 700;
+    color: var(--ink);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .lhdr-mobiletop-greet-text .sub {
+    font-size: 12px;
+    color: var(--ink-muted);
+  }
+  /* Anchored to the narrow avatar/greeting button instead of the desktop account container, so
+     left:0 (not the default right:0) keeps it from overflowing past the screen edge. */
+  .lhdr-mobiletop .lhdr-menu {
+    left: 0;
+    right: auto;
+  }
+  .lhdr-mobiletop-search .lhdr-search {
+    width: 100%;
+    height: 42px;
+  }
+
+  /* Bottom tab bar — Home/My Learning/Explore/Portfolio + More. Fixed, so .lshell-main gets
+     matching bottom padding below so page content never sits underneath it. */
+  .lhdr-bottombar {
+    display: flex;
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 40;
+    height: 64px;
+    padding-bottom: env(safe-area-inset-bottom, 0);
+    background: var(--surface);
+    border-top: 1px solid var(--nfcap-border);
+    box-shadow: 0 -1px 0 rgba(15, 23, 32, 0.03);
+  }
+  .lhdr-bb-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    height: 100%;
+    border: none;
+    background: none;
+    font-family: Geist, sans-serif;
+    font-size: 10.5px;
+    font-weight: 600;
+    color: var(--ink-faint);
+    text-decoration: none;
+    cursor: pointer;
+  }
+  .lhdr-bb-item.on {
+    color: var(--nfcap-accent);
+  }
+
+  /* "More" sheet — Certificates, Funding (extraNavSlot), Messages (still inert). */
+  .lhdr-sheet-scrim {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 49;
+    border: none;
+    padding: 0;
+    background: rgba(15, 23, 32, 0.45);
+    cursor: default;
+  }
+  .lhdr-sheet {
+    display: block;
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 50;
+    background: var(--surface);
+    border-radius: 20px 20px 0 0;
+    padding: 10px 20px calc(24px + env(safe-area-inset-bottom, 0));
+    box-shadow: 0 -12px 28px rgba(15, 23, 32, 0.2);
+  }
+  .lhdr-sheet-handle {
+    width: 40px;
+    height: 4px;
+    border-radius: 2px;
+    background: var(--nfcap-border);
+    margin: 6px auto 16px;
+  }
+  .lhdr-sheet-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 14px 0;
+    text-decoration: none;
+  }
+  .lhdr-sheet-row .ic {
+    width: 44px;
+    height: 44px;
+    border-radius: 13px;
+    background: color-mix(in srgb, var(--nfcap-accent) 10%, transparent);
+    color: var(--nfcap-accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .lhdr-sheet-row .t {
+    font-size: 15.5px;
+    font-weight: 700;
+    color: var(--ink);
+  }
+  .lhdr-sheet-row.on .t {
+    color: var(--nfcap-accent);
+  }
+  .lhdr-sheet-row.disabled {
+    cursor: not-allowed;
+  }
+  .lhdr-sheet-row.disabled .ic {
+    background: var(--surface-muted);
+    color: var(--ink-faint);
+  }
+  .lhdr-sheet-row.disabled .t {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--ink-faint);
+  }
+  .lhdr-sheet-soon {
+    background: var(--surface-muted);
+    border: 1px solid var(--nfcap-border);
+    color: var(--ink-faint);
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 999px;
+  }
+  /* extraNavSlot (Funding) renders NavLinkItem's shared `.toplink` markup, not a sheet row with
+     an icon tile — NavLinkItem is also shared by row 2 (desktop) so it isn't forked per
+     breakpoint; this is a text-only row by design, padded to line up under the icon column
+     above (44px tile + 16px gap = 60px). */
+  .lhdr-sheet-extra .toplink {
+    display: flex;
+    align-items: center;
+    height: auto;
+    border-bottom: none;
+    padding: 14px 0 14px 60px;
+    font-size: 15.5px;
+    font-weight: 700;
+    color: var(--ink);
+  }
+  .lhdr-sheet-extra .toplink.on {
+    color: var(--nfcap-accent);
+  }
+
   .lshell-main {
-    padding: 20px 16px 40px;
+    padding: 20px 16px 96px;
   }
 }
 

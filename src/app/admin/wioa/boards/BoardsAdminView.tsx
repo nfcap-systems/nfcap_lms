@@ -9,8 +9,10 @@ import {
   DataTableCard,
   DataTableCardHeader,
   DataTableFilters,
+  RowActionsMenu,
   StateCard,
 } from '@/components/ui';
+import { DropdownMenuItem } from '@/components/admin-ui/dropdown-menu';
 import { NewWorkforceBoardDialog } from '@/components/admin-shell/quick-create/NewWorkforceBoardDialog';
 import type { WorkforceBoardSummary } from '@/lib/data/wioa-boards';
 
@@ -179,14 +181,14 @@ export function BoardsAdminView({ boards }: { boards: WorkforceBoardSummary[] })
                       </Badge>
                     </td>
                     <td style={{ textAlign: 'right' }}>
-                      <button
-                        type="button"
-                        className="rowkebab"
-                        aria-label={`View ${b.name}`}
-                        onClick={() => router.push(`/admin/wioa/boards/${b.id}`)}
-                      >
-                        <Icon name="chevron-right" className="h-4 w-4" />
-                      </button>
+                      <RowActionsMenu label={`Actions for ${b.name}`}>
+                        <DropdownMenuItem
+                          onSelect={() => router.push(`/admin/wioa/boards/${b.id}`)}
+                        >
+                          <Icon name="chevron-right" className="h-4 w-4" />
+                          View board
+                        </DropdownMenuItem>
+                      </RowActionsMenu>
                     </td>
                   </tr>
                 ))}

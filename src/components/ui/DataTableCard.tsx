@@ -1,5 +1,11 @@
 import type { HTMLAttributes, ReactNode } from 'react';
 import { cn } from '@/lib/cn';
+import { Icon } from '@/components/icons';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+} from '@/components/admin-ui/dropdown-menu';
 
 /** FND08/ADM03's canonical data-table shell — the standard card wrapper for every Staff list
  * view (header with title/description/actions, a filters row, the table itself, a footer). This
@@ -47,6 +53,28 @@ export function DataTableSelectionRow({
 
 export function DataTableFooter({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
   return <div className={cn('dt-footer', className)} {...props} />;
+}
+
+/** The canonical per-row Actions-column trigger — a single three-dot kebab button opening a
+ * dropdown, instead of each table inventing its own mix of inline text links / bare icon
+ * buttons. Pass `DropdownMenuItem`s (from '@/components/admin-ui/dropdown-menu') as children. */
+export function RowActionsMenu({
+  label = 'Row actions',
+  children,
+}: {
+  label?: string;
+  children: ReactNode;
+}) {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button type="button" className="rowkebab" aria-label={label}>
+          <Icon name="more-vertical" className="h-4 w-4" />
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">{children}</DropdownMenuContent>
+    </DropdownMenu>
+  );
 }
 
 export type PaginationProps = {

@@ -1,7 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useTransition } from 'react';
+import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 import type { Cohort, CohortMember } from '@/lib/data/cohorts';
+import type { LearnerRecord } from '@/lib/data/learners';
+import { setLearnerCohort } from '@/lib/actions/cohorts';
 import { Badge, DataTableCard, ProgressBar, StateCard } from '@/components/ui';
 import { Icon } from '@/components/icons';
 import { Button } from '@/components/admin-ui/button';
@@ -31,10 +35,12 @@ export function CohortsView({
   cohorts,
   membersByCohort,
   pathwayId,
+  learners,
 }: {
   cohorts: Cohort[];
   membersByCohort: Record<string, CohortMember[]>;
   pathwayId: string | null;
+  learners: LearnerRecord[];
 }) {
   const [selectedId, setSelectedId] = useState<string | null>(cohorts[0]?.id ?? null);
   const [newOpen, setNewOpen] = useState(false);
@@ -122,18 +128,28 @@ export function CohortsView({
                 style={{
                   padding: '16px 20px',
                   borderBottom: '1px solid var(--nfcap-border)',
-                  fontWeight: 600,
-                  fontSize: 14.5,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: 12,
+                  flexWrap: 'wrap',
                 }}
               >
-                {selected.name} — learners
+                <span style={{ fontWeight: 600, fontSize: 14.5 }}>{selected.name} — learners</span>
+                <AddLearnerControl
+                  cohortId={selected.id}
+                  cohortName={selected.name}
+                  candidates={learners.filter(
+                    (l) => !members.some((m) => m.id === l.id),
+                  )}
+                />
               </div>
               {members.length === 0 ? (
                 <div style={{ padding: '32px 0', textAlign: 'center' }}>
                   <StateCard
                     icon={<Icon name="users" className="h-5 w-5" />}
                     title="No learners in this cohort yet"
-                    description="Add learners to this cohort from their profile's Enrollment tab."
+                    description="Add a learner above to get started."
                   />
                 </div>
               ) : (
@@ -167,6 +183,62 @@ export function CohortsView({
       )}
 
       <NewCohortDialog open={newOpen} onOpenChange={setNewOpen} pathwayId={pathwayId} />
+    </div>
+  );
+}
+
+/** ADM13-Cohorts' missing half — the empty state used to tell the admin to "add learners from
+ * their profile's Enrollment tab," but nothing there could do it either (see
+ * docs/plans — cohort-assignment fix). Calls the same addLearnerToCohort action as that tab. */
+function AddLearnerControl({
+  cohortId,
+  cohortName,
+  candidates,
+}: {
+  cohortId: string;
+  cohortName: string;
+  candidates: LearnerRecord[];
+}) {
+  const router = useRouter();
+  const [learnerId, setLearnerId] = useState('');
+  const [pending, startTransition] = useTransition();
+
+  function handleAdd() {
+    if (!learnerId) return;
+    startTransition(async () => {
+      try {
+        await setLearnerCohort(learnerId, cohortId);
+        const added = candidates.find((l) => l.id === learnerId);
+        toast.success(`${added?.name ?? 'Learner'} added to ${cohortName}`);
+        setLearnerId('');
+        router.refresh();
+      } catch (e) {
+        toast.error(e instanceof Error ? e.message : 'Could not add learner.');
+      }
+    });
+  }
+
+  return (
+    <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+      <select
+        className="ov-select"
+        value={learnerId}
+        onChange={(e) => setLearnerId(e.target.value)}
+        disabled={pending || candidates.length === 0}
+        aria-label={`Add a learner to ${cohortName}`}
+      >
+        <option value="">
+          {candidates.length === 0 ? 'No learners to add' : 'Search learners by name…'}
+        </option>
+        {candidates.map((l) => (
+          <option key={l.id} value={l.id}>
+            {l.name}
+          </option>
+        ))}
+      </select>
+      <Button size="sm" onClick={handleAdd} disabled={!learnerId || pending}>
+        {pending ? 'Adding…' : '+ Add learner'}
+      </Button>
     </div>
   );
 }

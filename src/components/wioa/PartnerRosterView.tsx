@@ -10,9 +10,11 @@ import {
   DataTableCardHeader,
   DataTableFilters,
   Dialog,
+  RowActionsMenu,
   StateCard,
   Textarea,
 } from '@/components/ui';
+import { DropdownMenuItem } from '@/components/admin-ui/dropdown-menu';
 import { Icon } from '@/components/icons';
 import type { WioaCaseSummary } from '@/lib/data/wioa';
 import { addWioaCaseNote, sendWioaCaseReminder } from '@/lib/actions/wioa';
@@ -231,11 +233,6 @@ export function PartnerRosterView({ rows }: { rows: PartnerRosterRow[] }) {
           </thead>
           <tbody>
             {pageRows.map((r) => {
-              // One contextual action per row, matching the board: missing documents is the
-              // most urgent state (primary "Send reminder"); no note yet is the next most
-              // useful ("Add note"); otherwise just "View".
-              const action =
-                r.missingDocumentCount > 0 ? 'remind' : !r.lastFollowUp ? 'note' : 'view';
               return (
                 <tr key={r.id}>
                   <td>
@@ -280,24 +277,25 @@ export function PartnerRosterView({ rows }: { rows: PartnerRosterRow[] }) {
                     {formatFollowUp(r.lastFollowUp)}
                   </td>
                   <td style={{ textAlign: 'right' }}>
-                    {action === 'remind' ? (
-                      <button
-                        type="button"
-                        className="btn-primary btn-sm"
-                        disabled={sendingReminderId === r.id}
-                        onClick={() => sendReminder(r)}
-                      >
-                        {sendingReminderId === r.id ? 'Sending…' : 'Send reminder'}
-                      </button>
-                    ) : action === 'note' ? (
-                      <button type="button" className="dtbtn" onClick={() => setNoteFor(r)}>
-                        Add note
-                      </button>
-                    ) : (
-                      <Link href={`/partner/${r.id}`} className="dtbtn">
+                    <RowActionsMenu label={`Actions for ${r.learnerName}`}>
+                      <DropdownMenuItem onSelect={() => router.push(`/partner/${r.id}`)}>
+                        <Icon name="chevron-right" className="h-4 w-4" />
                         View
-                      </Link>
-                    )}
+                      </DropdownMenuItem>
+                      {r.missingDocumentCount > 0 && (
+                        <DropdownMenuItem
+                          onSelect={() => sendReminder(r)}
+                          disabled={sendingReminderId === r.id}
+                        >
+                          <Icon name="mail" className="h-4 w-4" />
+                          {sendingReminderId === r.id ? 'Sending…' : 'Send reminder'}
+                        </DropdownMenuItem>
+                      )}
+                      <DropdownMenuItem onSelect={() => setNoteFor(r)}>
+                        <Icon name="message-circle" className="h-4 w-4" />
+                        Add note
+                      </DropdownMenuItem>
+                    </RowActionsMenu>
                   </td>
                 </tr>
               );

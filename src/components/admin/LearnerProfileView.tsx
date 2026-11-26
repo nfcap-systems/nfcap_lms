@@ -10,7 +10,8 @@ import { Badge as AdminBadge, type badgeVariants } from '@/components/admin-ui/b
 import { Button as AdminButton } from '@/components/admin-ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/admin-ui/card';
 import { Progress } from '@/components/admin-ui/progress';
-import { Badge, CompletionRing, ProfileHeader, ProfileTabs } from '@/components/ui';
+import { Badge, CompletionRing, ProfileHeader, ProfileTabs, RowActionsMenu } from '@/components/ui';
+import { DropdownMenuItem } from '@/components/admin-ui/dropdown-menu';
 import { Icon } from '@/components/icons';
 import { getInitials } from '@/lib/utils';
 import type { AdminCourse } from '@/lib/data/courses';
@@ -20,6 +21,8 @@ import type { WioaCaseRecord, LearnerProfile, LearnerFundingStatus } from '@/lib
 import type { Credential } from '@/lib/data/credentials';
 import type { CriterionReviewData } from '@/lib/data/criterionReview';
 import { setEvidenceStatus, grantCourseUnlock, getEvidenceFileUrl } from '@/lib/actions/progress';
+import { setLearnerCohort } from '@/lib/actions/cohorts';
+import type { CohortOption } from '@/lib/data/cohorts';
 import { courseLessonCount } from '@/lib/types';
 import { getCourseStatus, courseStatusLabel, courseStatusTone } from '@/lib/course-status';
 import type { StatusTone } from '@/components/ui/Badge';
@@ -73,6 +76,8 @@ export function LearnerProfileView({
   courseUnlocks,
   criteriaCounts = {},
   cohortName,
+  cohortId,
+  cohorts,
   fundingStatus,
   wioaCases,
   credentials,
@@ -92,6 +97,10 @@ export function LearnerProfileView({
    * course with zero criteria. */
   criteriaCounts?: Record<string, number>;
   cohortName: string | null;
+  /** The learner's current CohortMembership, if any — drives the Enrollment tab's assignment
+   * select below. `cohorts` is every cohort to offer in that select. */
+  cohortId: string | null;
+  cohorts: CohortOption[];
   fundingStatus: LearnerFundingStatus;
   wioaCases: WioaCaseRecord[];
   credentials: Credential[];
@@ -214,7 +223,8 @@ export function LearnerProfileView({
           courseUnlocks={courseUnlocks ?? {}}
           criteriaCounts={criteriaCounts}
           pathway={pathway}
-          cohortName={cohortName}
+          cohortId={cohortId}
+          cohorts={cohorts}
           currentCourse={currentCourse}
           percent={percent}
           completedCount={completedCount}
@@ -482,7 +492,8 @@ function EnrollmentTab({
   courseUnlocks,
   criteriaCounts,
   pathway,
-  cohortName,
+  cohortId,
+  cohorts,
   currentCourse,
   percent,
   completedCount,
@@ -495,7 +506,8 @@ function EnrollmentTab({
   courseUnlocks: Record<string, CourseUnlockRecord>;
   criteriaCounts: Record<string, number>;
   pathway: string | null;
-  cohortName: string | null;
+  cohortId: string | null;
+  cohorts: CohortOption[];
   currentCourse: AdminCourse | null;
   percent: number;
   completedCount: number;
@@ -518,6 +530,18 @@ function EnrollmentTab({
     });
   }
 
+  function changeCohort(newCohortId: string) {
+    startTransition(async () => {
+      try {
+        await setLearnerCohort(learner.id, newCohortId || null);
+        toast.success(newCohortId ? 'Cohort updated' : 'Removed from cohort');
+        router.refresh();
+      } catch (e) {
+        toast.error(e instanceof Error ? e.message : 'Could not update cohort.');
+      }
+    });
+  }
+
   return (
     <div className="flex flex-col gap-4" style={{ paddingTop: 18 }}>
       <div>
@@ -530,7 +554,19 @@ function EnrollmentTab({
             </div>
             <div className="ov-field">
               <span className="ov-sub">Cohort</span>
-              <span className="ov-val">{cohortName ?? 'No cohort'}</span>
+              <select
+                className="ov-select"
+                value={cohortId ?? ''}
+                onChange={(e) => changeCohort(e.target.value)}
+                aria-label="Assign learner to cohort"
+              >
+                <option value="">No cohort</option>
+                {cohorts.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
           <div className="ov-detcol">
@@ -945,7 +981,7 @@ function DocumentsTab({
               <th>Category</th>
               <th>Updated</th>
               <th>Status</th>
-              <th style={{ textAlign: 'right' }}>Access</th>
+              <th style={{ textAlign: 'right' }}>Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -972,18 +1008,17 @@ function DocumentsTab({
                       <Icon name="lock" className="h-3 w-3" />
                       Restricted
                     </span>
-                  ) : row.download ? (
-                    <button
-                      type="button"
-                      className="iconbtn-sm"
-                      aria-label={`Download ${row.name}`}
-                      onClick={row.download}
-                      style={{ marginLeft: 'auto' }}
-                    >
-                      <Icon name="download" className="h-3.5 w-3.5" />
-                    </button>
                   ) : (
-                    <span style={{ fontSize: 12, color: 'var(--ink-faint)' }}>—</span>
+                    <RowActionsMenu label={`Actions for ${row.name}`}>
+                      {row.download ? (
+                        <DropdownMenuItem onSelect={row.download}>
+                          <Icon name="download" className="h-4 w-4" />
+                          Download
+                        </DropdownMenuItem>
+                      ) : (
+                        <DropdownMenuItem disabled>No file on record</DropdownMenuItem>
+                      )}
+                    </RowActionsMenu>
                   )}
                 </td>
               </tr>

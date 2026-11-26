@@ -12,9 +12,11 @@ import {
   DataTableFilters,
   Dialog,
   Field,
+  RowActionsMenu,
   StateCard,
   Textarea,
 } from '@/components/ui';
+import { DropdownMenuItem } from '@/components/admin-ui/dropdown-menu';
 import type { StatusTone } from '@/components/ui/Badge';
 import { Icon } from '@/components/icons';
 import type { WioaCaseSummary } from '@/lib/data/wioa';
@@ -583,30 +585,20 @@ function CaseRow({
         )}
       </td>
       <td style={{ textAlign: 'right' }}>
-        <div style={{ display: 'inline-flex', gap: 2 }}>
-          <button
-            type="button"
-            className="rowkebab"
-            aria-label={`Send document reminder to ${c.learnerName}`}
-            title="Send document reminder email"
-            disabled={sendingReminder}
-            onClick={remind}
-          >
-            <Icon name="mail" className="h-4 w-4" />
-          </button>
-          <button
-            type="button"
-            className="rowkebab"
-            aria-label={`Add a note to ${c.learnerName}'s case`}
-            title="Add internal note"
-            onClick={() => onAddNote(c.id, c.learnerName)}
-          >
-            <Icon name="message-circle" className="h-4 w-4" />
-          </button>
-          <Link href={`${basePath}/${c.id}`} className="rowkebab" aria-label="View case">
+        <RowActionsMenu label={`Actions for ${c.learnerName}`}>
+          <DropdownMenuItem onSelect={() => router.push(`${basePath}/${c.id}`)}>
             <Icon name="chevron-right" className="h-4 w-4" />
-          </Link>
-        </div>
+            View case
+          </DropdownMenuItem>
+          <DropdownMenuItem onSelect={remind} disabled={sendingReminder}>
+            <Icon name="mail" className="h-4 w-4" />
+            {sendingReminder ? 'Sending…' : 'Send document reminder'}
+          </DropdownMenuItem>
+          <DropdownMenuItem onSelect={() => onAddNote(c.id, c.learnerName)}>
+            <Icon name="message-circle" className="h-4 w-4" />
+            Add note
+          </DropdownMenuItem>
+        </RowActionsMenu>
       </td>
     </tr>
   );

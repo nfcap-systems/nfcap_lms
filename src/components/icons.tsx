@@ -46,7 +46,9 @@ export type IconName =
   | 'alert-circle'
   | 'shield'
   | 'sparkles'
-  | 'message-circle';
+  | 'message-circle'
+  | 'more-horizontal'
+  | 'more-vertical';
 
 type IconProps = SVGProps<SVGSVGElement>;
 
@@ -327,6 +329,20 @@ const paths: Record<IconName, React.ReactNode> = {
     </>
   ),
   'message-circle': <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />,
+  'more-horizontal': (
+    <>
+      <circle cx="5" cy="12" r="1.5" fill="currentColor" stroke="none" />
+      <circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none" />
+      <circle cx="19" cy="12" r="1.5" fill="currentColor" stroke="none" />
+    </>
+  ),
+  'more-vertical': (
+    <>
+      <circle cx="12" cy="5" r="1.5" fill="currentColor" stroke="none" />
+      <circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none" />
+      <circle cx="12" cy="19" r="1.5" fill="currentColor" stroke="none" />
+    </>
+  ),
 };
 
 export function Icon({ name, ...props }: { name: IconName } & IconProps) {
