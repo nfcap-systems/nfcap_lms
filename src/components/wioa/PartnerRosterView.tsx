@@ -35,15 +35,23 @@ function initials(name: string): string {
   return ((parts[0]?.[0] ?? '') + (parts[1]?.[0] ?? '')).toUpperCase() || '?';
 }
 
+/** EMAIL communications store their full HTML body (e.g. sendWioaCaseReminder's `<p>...</p>`
+ * reminder text in src/lib/actions/wioa.ts) — strip tags before showing a plain-text snippet. */
+function stripHtml(value: string): string {
+  return value
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 function formatFollowUp(followUp: WioaCaseSummary['lastFollowUp']): string {
   if (!followUp) return 'No note yet';
   const date = new Date(followUp.sentAt).toLocaleDateString('en-US', {
     month: 'short',
     day: 'numeric',
   });
-  const snippet = followUp.body
-    ? ` — "${followUp.body.slice(0, 60)}${followUp.body.length > 60 ? '…' : ''}"`
-    : '';
+  const body = followUp.body ? stripHtml(followUp.body) : '';
+  const snippet = body ? ` — "${body.slice(0, 60)}${body.length > 60 ? '…' : ''}"` : '';
   return `${date}${snippet}`;
 }
 

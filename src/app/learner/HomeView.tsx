@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useTransition } from 'react';
+import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -8,7 +8,7 @@ import { toast } from 'sonner';
 import { Button, Badge } from '@/components/ui';
 import { Icon } from '@/components/icons';
 import { LockedCourseDialog, LOCKED_COURSE_COPY } from '@/components/learner/LockedCourseDialog';
-import { markAnnouncementRead } from '@/lib/actions/announcements';
+import { AnnouncementBanner } from '@/components/AnnouncementBanner';
 import { getCertificatePdfBase64 } from '@/lib/actions/credentials';
 import { downloadBase64File } from '@/lib/download';
 import { courseLessonCount, courseDurationMinutes, flattenLessons } from '@/lib/types';
@@ -157,11 +157,6 @@ export function HomeView({
   const sidebarCertificates = credentials.slice(-3).reverse();
 
   const latestWioaCase = wioaCases[0] ?? null;
-  const [banner] = announcements;
-
-  useEffect(() => {
-    if (banner) void markAnnouncementRead(banner.id);
-  }, [banner]);
 
   return (
     <div className="flex flex-col gap-6">
@@ -212,13 +207,7 @@ export function HomeView({
         </div>
       </div>
 
-      {banner && (
-        <div className="announce-banner">
-          <span className="announce-badge">New</span>
-          <span className="announce-title">{banner.title}</span>
-          <p className="announce-desc">{banner.body}</p>
-        </div>
-      )}
+      <AnnouncementBanner announcements={announcements} />
 
       <div className="body-grid">
         <div>

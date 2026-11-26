@@ -7,8 +7,10 @@ import { requireAdmin, requireUser } from './guard';
 import { logAuditEvent } from './audit';
 
 /** Announcements (docs/build/LAYER1_DATA_MODEL_DESIGN.md). Publishing is Admin-only; marking
- * read is any signed-in user, for their own receipt only. No UI wired to these yet
- * (ADM14-AnnouncementsNotifications is not built, Layer 3B). */
+ * read is any signed-in user, for their own receipt only. Surfaced today on Learner Home,
+ * Coordinator All Cases, and Partner My Cases via AnnouncementBanner
+ * (src/components/AnnouncementBanner.tsx) — notification dispatch itself
+ * (ADM14-AnnouncementsNotifications) is still not built. */
 
 export async function publishAnnouncement(params: {
   title: string;
@@ -35,6 +37,8 @@ export async function publishAnnouncement(params: {
   });
   revalidatePath('/admin');
   revalidatePath('/learner');
+  revalidatePath('/coordinator');
+  revalidatePath('/partner');
   return announcement.id;
 }
 
