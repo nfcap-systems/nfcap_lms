@@ -264,6 +264,8 @@ is unverified, say so in the row rather than guess.
 | `CAP-4` | — | — | Blocked on board amendment (not drawn) | — |
 | `CAP-6` | — | — | Blocked on board amendment (not drawn) | — |
 | This kickoff + Phase 6 baseline + defects file | `docs/notifications-and-upload-cap-kickoff` | pushed direct to `stage` through `ad47aaf` | On Stage | 2026-11-27 |
+| Sole-session deviation note | `stage` (local) | commit `f6c9d12`, **not yet pushed** — holding behind PR #37 per Sadin | Committed locally | 2026-11-27 |
+| Task 0 — staging bell verification | — | n/a (verification, no branch) | Done — see note below | 2026-11-27 |
 
 **What `NOTIF-0`/`NOTIF-1` actually shipped** (PR #36, merged 2026-11-27): an internal
 `emitNotification` (`src/lib/notifications/emit.ts`, deliberately *not* a `'use server'` module)
@@ -284,6 +286,29 @@ error-handling convention.
 - No pixel-level comparison against the `LRN18`/`ADM18` boards was done by the executor, because
   the executor drew those boards (see the recorded deviation). The lead's independent UI check is
   the only verification of that, and it is what gated the merge.
+
+**Task 0 — staging verification (2026-11-27, done after the lead/QC session closed).** Deploy to
+Staging run #50 (PR #36's merge, `88496bd`) was green, but per `CLAUDE.local.md` #10 that proves
+nothing about the real user path on its own, so this was checked by hand against
+`https://dev-nfcap.corecloud365.com`, not just the Actions log:
+
+- Confirmed the deployed app is a real production build, not dev mode — static chunk URLs are
+  content-hashed (`05vwmfaw7orbg.js`), no `webpack-hmr`/Fast Refresh traffic. (An earlier pass
+  through this check briefly looked otherwise; that turned out to be `agent-browser` reusing a
+  stale local tab still pointed at `localhost:3000` from this session's own dev-server testing,
+  not anything wrong with staging. Recorded so a future reader doesn't chase the same false lead.)
+- Learner (`learner@nfcap.demo`) and staff (`coordinator@demo.nfcap.test`) both: bell renders with
+  a real unread count, opens the real panel (not a direct URL open), list state shows real rows,
+  clicking an unread notification marks it read and navigates to its `link`, badge count updates
+  and persists across reload, empty state copy is correct once everything's read, and the phone-
+  width (390×844) panel fits the viewport for both roles. Staff-only: All/Unread filter tab
+  correctly narrows the list.
+- **Not an empty state, and that's expected, not a bug:** the brief assumed staging would show the
+  empty state since no real emitter exists yet. Instead it showed the rows `scripts/seed-
+  notifications.ts` wrote during local NOTIF-1 development — confirmed with Sadin 2026-11-27 that
+  dev and staging share one Supabase project at this stage of the build, so this is expected
+  behavior, not a leak between environments or a bug to fix. Flagging it here rather than quietly
+  correcting the brief's assumption without saying why it didn't hold.
 
 **`On Stage` is not `Done`.** `CAP-1`/`CAP-2`/`CAP-5` and `NOTIF-0`/`NOTIF-1` are merged to
 `stage`; `stage` has never been
