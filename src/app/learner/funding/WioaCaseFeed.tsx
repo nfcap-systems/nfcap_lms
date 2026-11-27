@@ -187,9 +187,14 @@ function DocumentCard({ doc }: { doc: WioaDocumentRecord }) {
     setError(null);
     startTransition(async () => {
       try {
-        await uploadWioaDocument(doc.id, file);
-        toast.success(`${doc.requirementName} uploaded`);
-        router.refresh();
+        const result = await uploadWioaDocument(doc.id, file);
+        if (!result.ok) {
+          setError(result.error);
+          toast.error(result.error);
+        } else {
+          toast.success(`${doc.requirementName} uploaded`);
+          router.refresh();
+        }
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Upload failed. Please try again.';
         setError(message);
