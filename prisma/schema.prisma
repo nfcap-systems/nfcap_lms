@@ -636,6 +636,13 @@ model WioaCourseCase {
   @@index([learnerId])
   @@index([courseId])
   @@index([masterCaseId])
+  // DEMO-3/A6: a partial unique index on (masterCaseId, courseId) WHERE "closedAt" IS NULL also
+  // exists in the database, applied by the hand-written migration
+  // 20261127140000_wioa_course_case_open_unique_index — Prisma's schema language has no syntax
+  // for a partial unique index, so it isn't modeled here with `@@unique`. A plain `@@unique` on
+  // these two columns would be wrong: more than one *closed* case per pair is expected (a learner
+  // may legitimately re-request funding after a prior case closed, e.g. FUNDING_DECLINED); only
+  // one *open* case per pair is disallowed.
 }
 
 /// Immutable log of the master case's eligibility-pipeline progress — a row is appended on every

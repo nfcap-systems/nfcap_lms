@@ -162,13 +162,33 @@ describe('advanceWioaFundingStatus', () => {
   it('TUITION_APPROVED unlocks the restricted course with source WIOA_FUNDING', async () => {
     const { courseCase, learnerId, course } = await setupCourseCase();
 
-    await advanceWioaFundingStatus(courseCase.id, 'TUITION_APPROVED');
+    const result = await advanceWioaFundingStatus(courseCase.id, 'TUITION_APPROVED');
 
+    expect(result).toEqual({ ok: true });
     const unlock = await prisma.courseUnlock.findUnique({
       where: { learnerId_courseId: { learnerId, courseId: course.id } },
     });
     expect(unlock).not.toBeNull();
     expect(unlock?.source).toBe('WIOA_FUNDING');
+  });
+
+  it('refuses a transition that is not the next step and returns a result instead of throwing', async () => {
+    const { courseCase } = await setupCourseCase();
+
+    const result = await advanceWioaFundingStatus(
+      courseCase.id,
+      'APPRENTICESHIP_ENROLLMENT_COMPLETE',
+    );
+
+    expect(result).toEqual({
+      ok: false,
+      error: expect.stringMatching(/cannot move this funding request/i),
+    });
+
+    const unchanged = await prisma.wioaCourseCase.findUniqueOrThrow({
+      where: { id: courseCase.id },
+    });
+    expect(unchanged.status).toBe('TRAINING_AUTHORIZATION_PENDING');
   });
 
   it('preserves an existing ADMIN_ASSIGNMENT unlock instead of overwriting its source', async () => {
@@ -177,7 +197,8 @@ describe('advanceWioaFundingStatus', () => {
       data: { learnerId, courseId: course.id, source: 'ADMIN_ASSIGNMENT', grantedBy: fakeUserId() },
     });
 
-    await advanceWioaFundingStatus(courseCase.id, 'TUITION_APPROVED');
+    const result = await advanceWioaFundingStatus(courseCase.id, 'TUITION_APPROVED');
+    expect(result).toEqual({ ok: true });
 
     const unlock = await prisma.courseUnlock.findUniqueOrThrow({
       where: { learnerId_courseId: { learnerId, courseId: course.id } },
