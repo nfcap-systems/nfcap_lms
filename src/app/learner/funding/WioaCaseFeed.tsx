@@ -73,7 +73,9 @@ export function WioaCaseFeed({ wioaCase }: { wioaCase: WioaCaseRecord }) {
           );
           return idx > max ? idx : max;
         }, -1)
-      : WIOA_UI_PHASES.indexOf(WIOA_STATUS_PHASE[wioaCase.status] as (typeof WIOA_UI_PHASES)[number]);
+      : WIOA_UI_PHASES.indexOf(
+          WIOA_STATUS_PHASE[wioaCase.status] as (typeof WIOA_UI_PHASES)[number],
+        );
 
   const phaseDate = (phase: (typeof WIOA_UI_PHASES)[number]) =>
     wioaCase.statusHistory.find((h) => WIOA_STATUS_PHASE[h.status] === phase)?.changedAt ?? null;
