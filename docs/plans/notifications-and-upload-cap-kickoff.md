@@ -132,8 +132,9 @@ Drawn by the executor session, not the lead — see the recorded deviation above
 - `ADM18-NotificationsPanel` — staff shell. Had a row in `docs/MOCKUP-INDEX.md` with status `new`
   that existed only to reconcile the index with the live canvas, with the board itself undrawn;
   the index listed it under missing interaction/state boards. Now drawn.
-- A learner equivalent for `LearnerShell` — did not exist in the index at all. Now drawn; it needs
-  a board id assigned and a row added to `docs/MOCKUP-INDEX.md`, which is still outstanding.
+- A learner equivalent for `LearnerShell` — did not exist in the index at all. Now drawn, assigned
+  the id `LRN18-NotificationsPanel`, and given a row in `docs/MOCKUP-INDEX.md` (commit `2c4cbb1`,
+  pushed straight to `stage` as a docs-only change).
 
 Each board needs **list, empty, read/unread and phone states**, per `DEV-APPROACH.md` line 50.
 
@@ -158,13 +159,13 @@ trail, the user adds it by hand.
 per the mechanism above — that is the record, and it is what satisfies `NOTIF-1`'s board gate
 despite the executor having drawn the boards. No canvas-side comment was added.
 
-**Still outstanding from Step 0** (neither blocks `NOTIF-1`):
+**Closed from Step 0:** the learner board's id and its `docs/MOCKUP-INDEX.md` row, both landed in
+`2c4cbb1`. `MOCKUP-INDEX.md`'s own maintenance rule is the one this plan has already drifted
+against once (see the Phase 5 line in `CLAUDE.md`), so closing it same-day rather than letting it
+sit is the right call.
 
-- The learner board has no board id and no `docs/MOCKUP-INDEX.md` row yet. `MOCKUP-INDEX.md`'s own
-  maintenance rule is the one this plan has already drifted against once (see the Phase 5 line in
-  `CLAUDE.md`), so this should not sit long.
-- The three board *amendments* below are not drawn or approved. `CAP-3`, `CAP-4` and `CAP-6` stay
-  blocked on them.
+**Still outstanding from Step 0** (does not block `NOTIF-1`): the three board *amendments* below
+are not drawn or approved, so `CAP-3`, `CAP-4` and `CAP-6` stay blocked on them.
 
 ## Step 1 — The fix track (buildable immediately, no design dependency)
 
@@ -320,8 +321,8 @@ State as of 2026-11-27, end of day:
   closing Phase 5 feature #6. On Stage, not Done — nothing is in production.
 - Step 0's two notification panel boards are DRAWN and APPROVED, so NOTIF-1 is unblocked. They
   were drawn by the executor, not the lead; that deviation and its one mitigation (the lead's
-  approval) are recorded in the deviations section. The learner board still needs a board id and
-  a docs/MOCKUP-INDEX.md row.
+  approval) are recorded in the deviations section. The learner board is LRN18-NotificationsPanel
+  and its MOCKUP-INDEX.md row landed in 2c4cbb1.
 - Next buildable work is NOTIF-0 (split the emit path) and NOTIF-1 (the two panels). NOTIF-0 has
   no dependency at all. Neither is briefed yet — only this file's Step 2 describes them.
 - The three board amendments (CAP-3, CAP-4, CAP-6) are still undrawn, so those three stay blocked.
