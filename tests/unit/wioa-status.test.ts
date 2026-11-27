@@ -39,16 +39,20 @@ describe('advanceWioaEligibilityStatus', () => {
   ) {
     const board = await createWorkforceBoard();
     const learnerId = fakeUserId();
-    const masterCase = await createWioaMasterCase({ learnerId, workforceBoardId: board.id, status });
+    const masterCase = await createWioaMasterCase({
+      learnerId,
+      workforceBoardId: board.id,
+      status,
+    });
     return { board, learnerId, masterCase };
   }
 
-  it('rejects a transition that is not the next step in the order', async () => {
+  it('refuses a transition that is not the next step in the order', async () => {
     const { masterCase } = await setupMasterCase('REGISTERED');
 
-    await expect(advanceWioaEligibilityStatus(masterCase.id, 'WIOA_ELIGIBLE')).rejects.toThrow(
-      /cannot move/i,
-    );
+    const result = await advanceWioaEligibilityStatus(masterCase.id, 'WIOA_ELIGIBLE');
+
+    expect(result).toEqual({ ok: false, error: expect.stringMatching(/cannot move/i) });
   });
 
   it('allows the linear next-step transition and records status history', async () => {
@@ -72,9 +76,9 @@ describe('advanceWioaEligibilityStatus', () => {
       data: { masterCaseId: masterCase.id, requirementId: requirement.id, status: 'MISSING' },
     });
 
-    await expect(advanceWioaEligibilityStatus(masterCase.id, 'WIOA_ELIGIBLE')).rejects.toThrow(
-      /Proof of ID/,
-    );
+    const result = await advanceWioaEligibilityStatus(masterCase.id, 'WIOA_ELIGIBLE');
+
+    expect(result).toEqual({ ok: false, error: expect.stringMatching(/Proof of ID/) });
 
     const unchanged = await prisma.wioaCase.findUniqueOrThrow({ where: { id: masterCase.id } });
     expect(unchanged.status).toBe('ELIGIBILITY_UNDER_REVIEW');
@@ -88,7 +92,11 @@ describe('advanceWioaEligibilityStatus', () => {
       data: { masterCaseId: masterCase.id, requirementId: accepted.id, status: 'ACCEPTED' },
     });
     await prisma.wioaDocument.create({
-      data: { masterCaseId: masterCase.id, requirementId: notApplicable.id, status: 'NOT_APPLICABLE' },
+      data: {
+        masterCaseId: masterCase.id,
+        requirementId: notApplicable.id,
+        status: 'NOT_APPLICABLE',
+      },
     });
 
     await advanceWioaEligibilityStatus(masterCase.id, 'WIOA_ELIGIBLE');
