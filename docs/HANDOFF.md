@@ -4,33 +4,35 @@ A plain-language overview of this project for anyone joining — no coding backg
 If you need the technical/engineering details, ask whoever hands this off for the developer-level
 notes; this doc is about what the project *is* and *where it stands*.
 
-**Last updated:** 2026-10-25
+**Last updated:** 2026-11-27
 
 ---
 
-## 0. Start here (added 2026-11-18)
+## 0. Start here (updated 2026-11-27)
 
 **How we work** is `docs/DEV-APPROACH.md` — read it straight after this file. It outranks any chat
 message: two Claude sessions (lead/QC and builder), four approval gates, Plane for tickets.
 
-**The current piece of work is the mockup canvas.** Design direction is no longer in a markdown
-file — it is created new in the canvas. In order:
+**This document is the plain-language overview. For what is actually being built right now, read
+`CLAUDE.md`'s "Current state" section** — that is kept current per piece of work; this file is
+updated at milestones and will always lag it a little.
+
+**The design phase is finished.** All four approval gates passed, and the mockup canvas exists with
+its boards drawn and approved. Design work now happens as *amendments* to already-approved boards,
+not as new gates. The current work is the build, phase by phase.
 
 | Read | For |
 | --- | --- |
-| `docs/design/DESIGN_CANVAS_ROADMAP.md` | The execution plan: 92 named boards, the four gates, hard stop rules, the screenshot pipeline, open questions. **Start at gate NFCAP-3, task 3.1.** |
-| `docs/design/LEARNER_UI_REFERENCES.md` | What each screen is modelled on (10 references + the admin template), the brand brief, capture tooling, what was rejected and why |
-| `docs/SITEMAP.md` | Authoritative route → screen → board → ticket → phase → roles map. **Scaffold — filling it is task 3.1.** |
-| `docs/MOCKUP-INDEX.md` | Every board with phase, status, approval. **Scaffold — task 3.2.** Canvas URL goes at the top once it exists. |
+| `docs/client/NFCAP_LMS_Production_Scope_Summary_Client.md` | **The build plan** — what is in scope, what it costs, what order it ships |
+| `CLAUDE.md` → "Current state" | What is done, what is in flight, what is blocked, right now |
+| `docs/SITEMAP.md` | Route → screen → board → ticket → phase → roles map. Populated. |
+| `docs/MOCKUP-INDEX.md` | Every board with phase, status, approval. Populated; canvas URL at the top. |
+| `docs/design/DESIGN_CANVAS_ROADMAP.md` | The design execution plan — historical now that the gates have passed |
+| `docs/design/LEARNER_UI_REFERENCES.md` | What each screen is modelled on, the brand brief, what was rejected and why |
 
 **Dropped, do not use as sources:** `docs/design/NFCAP_DESIGN_SYSTEM.md` and
 `docs/design/NFCAP_DESIGN_TOKENS.md`. The first is kept only for its WCAG contrast computations, the
 dual-tone focus-ring technique and the four course-card states.
-
-**Not started:** no canvas exists yet (it belongs in Manjila's claude.ai account, titled
-"NFCAP Mockups"), no screenshots captured, nothing drawn.
-
-**Three open questions** are listed in the roadmap and block specific boards, not the next tasks.
 
 ---
 
@@ -45,10 +47,12 @@ custom **learning management system (LMS)** — a website where:
 - **NFCAP staff (admin)** build and manage the courses, track every trainee's progress, and review
   the proof of hands-on work before certifying someone.
 
-This is currently a **prototype** — built to prove out the idea, the screens, and the workflows
-before anyone invests in a full production system. It is a real, working website with a real
-database behind it (not just mockups), but it's still intentionally scoped down in a few places
-(explained in Section 6).
+It began as a **prototype** — built to prove out the idea, the screens and the workflows. That
+stage is over: the prototype was accepted and an agreed production build plan is now being worked
+through (65 pieces of work across 9 stages). It is a real, working website with a real database
+behind it, and most of it is built — but **nothing is live for real users yet.** Everything
+completed so far sits on an internal testing environment, not a public one. A few things are still
+deliberately scoped down (explained in Section 6).
 
 ---
 
@@ -107,6 +111,10 @@ a second way to "unlock" a course besides paying for it themselves.
 
 ## 5. Current status
 
+**First, the thing that matters most:** nothing is live for real trainees yet. Work that is
+finished sits on an internal testing environment. "Done" in the list below means built, reviewed
+and working there — not in front of users.
+
 **Done and working:**
 - The entire core trainee journey described in Section 2 (browse → enroll → learn → quiz →
   submit proof → get verified → earn certificate/portfolio).
@@ -114,19 +122,39 @@ a second way to "unlock" a course besides paying for it themselves.
 - Staff tools to set and reorder the overall course sequence.
 - The full funding add-on (Section 4) — matching, outreach, document upload/review, staff
   dashboards, and the funding approval pipeline that unlocks a course.
+- **Proof of hands-on work is now assessed point by point.** Instead of one all-or-nothing
+  approval, each course has a checklist of specific things a trainee must demonstrate; staff mark
+  each one met or not met, can annotate photos, and ask for just the missing pieces again rather
+  than the whole submission. Certification is blocked until every required point is met.
+- **Security, accounts and email.** Sign-in hardening, password reset, email verification, account
+  settings for every role, and staff screens for managing roles and deactivating accounts.
+- **The design system**, applied across the app, so screens are visually consistent.
+- **Downloadable certificates, and a way to check one is genuine.** Certificates download as a PDF,
+  and there is a public page where anyone — an employer, say — can verify a certificate is real
+  without needing an account.
+
+**In progress right now:**
+- **Notifications** — an in-app bell so trainees and staff are told when something needs them
+  (e.g. proof has been reviewed). Deliberately in-app only for now; see Section 7.
 
 **Not done yet:**
-- A general visual polish pass — making sure every screen looks and behaves well on all devices,
-  handles edge cases gracefully (e.g. empty states), and feels fully consistent.
 - A trainee's personal profile page still needs real content.
-- A couple of small, known rough edges in the funding feature (see Section 7) that don't block
-  using it, but would be worth tightening before this goes to real users.
+- Accessibility and performance passes, and the work to put the site live properly (backups,
+  recovery practice, a separate staging copy).
+- Several smaller staff-facing features — messaging between trainees and staff, reporting
+  refinements, and the remaining notification triggers.
 
 **Still an open question for NFCAP (not yet decided):**
 - The exact rule for which courses someone can sign up for freely vs. which require assignment or
   funding approval.
 - Whether NFCAP will ever need more than one training pathway (e.g. different tracks for
   different states or trades) — right now the system assumes just one.
+- **Does any piece of funding paperwork need more than one file?** Each required document holds one
+  file today — uploading again replaces what was there. If, say, "proof of income" really means
+  three months of payslips, that needs rethinking. This one is blocking a piece of work.
+- **The course checklists have no real content yet.** The point-by-point assessment described above
+  works, but the actual points to assess are placeholders until NFCAP's trade experts write the
+  real ones. That is a working session with them, not a coding task.
 
 ---
 
@@ -141,20 +169,29 @@ surprised they're missing, and nobody should quietly add them without a conversa
   roles above) use this system.
 - **No direct connection to government systems.** All the funding back-and-forth with the
   workforce office is handled by a real person, not an automatic data link.
-- **No file storage for the hands-on proof yet** — trainees currently just type a description and
-  attach a filename; actual file upload/storage for that specific piece is still a planned
-  improvement.
-- **No real downloadable certificate (PDF).** Certificates currently display on-screen only.
+- **No automatic re-issuing of certificates.** If a course's content changes after someone is
+  certified, nothing re-checks or re-issues their existing certificate.
 - **Only one straight-line training pathway** — no branching tracks or multiple parallel programs.
 
 ---
 
-## 7. Known rough edges (minor, logged, not urgent)
+## 7. Known rough edges and current constraints
 
-- A trainee can technically re-upload a funding document as many times as they want with no
-  limit — harmless for now, but could pile up unnecessary files if this scales up.
-- The funding-approval paperwork can technically be filled in by staff a little earlier in the
-  process than it logically should be — a minor sequencing gap, not a security or data issue.
+**Both rough edges previously listed here are fixed** (2026-11-27): the unlimited re-upload of
+funding documents now has a sensible limit, with a clear explanation to the trainee when it is
+reached and a record kept for auditing; and the funding paperwork can no longer be filled in out
+of order.
+
+Two constraints remain, neither of them faults in the software:
+
+- **Email cannot be sent to real addresses yet.** Sending email from a domain requires a small
+  technical setup on that domain's settings, which needs access NFCAP has not provided. Until
+  then, email only reaches a single test address. This is why notifications are being built as an
+  in-app bell first — it needs nothing from anyone else, and email can be added later as a second
+  way of delivering the same alerts. **This must be resolved before real trainees use the system**,
+  since sign-up confirmation and password reset both depend on it.
+- **The course assessment checklists contain placeholder content** until NFCAP's trade experts
+  write the real ones (see Section 5).
 
 ---
 
@@ -171,6 +208,20 @@ not a silent change.
 
 ## 9. Where to go for more detail
 
-This document is the plain-language summary. If you (or whoever you're handing this to) need the
-technical, file-by-file detail — exact screens, data tables, code locations, and a full
-phase-by-phase build log — that level of documentation also exists and can be provided separately.
+This document is the plain-language summary, and it is updated at milestones — so it will always
+lag the day-to-day state a little. For anything time-sensitive, go to the source:
+
+| Question | Where |
+| --- | --- |
+| What is being built right now, and what is blocked | `CLAUDE.md` → "Current state" |
+| What is in scope, what it costs, what order it ships | `docs/client/NFCAP_LMS_Production_Scope_Summary_Client.md` |
+| Detail behind any one feature | `docs/client/NFCAP_LMS_Feature_Detail_Client.md` |
+| Stage-by-stage build progress | `docs/build/PHASE_<n>_PROGRESS.md` |
+| How the team works | `docs/DEV-APPROACH.md` |
+
+**A note for anyone maintaining this file:** it is named as the onboarding entry point in
+`CLAUDE.md`, so when it goes stale it misleads *every* new person and session that starts here.
+Between 2026-10-25 and 2026-11-27 it went a month without an update while four stages of work
+shipped, and in that time it was telling readers the design work hadn't started, that proof-of-work
+files couldn't be uploaded, and that certificates couldn't be downloaded — all three long since
+built. Update it at the end of each stage, not "when there's time."
