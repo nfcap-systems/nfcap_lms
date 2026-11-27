@@ -31,10 +31,24 @@ import {
   type WioaFundingFields,
   type WioaDocumentVersionRecord,
 } from '@/lib/actions/wioa';
+import { advanceWioaFundingStatus } from '@/lib/actions/wioa';
 import type { WioaCaseDetail, WioaDocumentRecord } from '@/lib/data/wioa';
 import type { LearnerRecord } from '@/lib/data/learners';
-import type { WioaEligibilityStatus, AppointmentType } from '@/generated/prisma/enums';
-import { WIOA_STATUS_LABEL, WIOA_STATUS_PHASE, nextStatusOptions } from '@/lib/wioa/status';
+import type {
+  WioaEligibilityStatus,
+  WioaFundingStatus,
+  AppointmentType,
+} from '@/generated/prisma/enums';
+import {
+  WIOA_STATUS_LABEL,
+  WIOA_STATUS_PHASE,
+  nextStatusOptions,
+  WIOA_FUNDING_STATUS_ORDER,
+  WIOA_FUNDING_STATUS_LABEL,
+  nextFundingStatusOptions,
+} from '@/lib/wioa/status';
+
+type FundingRequest = NonNullable<WioaCaseDetail['fundingRequests']>[number];
 
 const docStatusTone: Record<
   WioaDocumentRecord['status'],
@@ -146,7 +160,6 @@ export function WioaCaseDetailView({
                 </Badge>
                 <span className="pbadge">{WIOA_STATUS_LABEL[wioaCase.status]}</span>
                 {wioaCase.boardName && <span className="pbadge">{wioaCase.boardName}</span>}
-                <span className="pbadge">{wioaCase.courseTitle}</span>
               </div>
             </div>
           </>
@@ -240,8 +253,17 @@ export function WioaCaseDetailView({
             )}
 
             {partnerStaffRoster && (
-              <div style={{ marginTop: 20 }}>
-                <FundingCard wioaCase={wioaCase} />
+              <div style={{ marginTop: 20, display: 'flex', flexDirection: 'column', gap: 16 }}>
+                <div className="ov-h">Funding</div>
+                {!wioaCase.fundingRequests || wioaCase.fundingRequests.length === 0 ? (
+                  <p style={{ fontSize: 13.5, color: 'var(--ink-muted)' }}>
+                    No course funding request exists yet for this case.
+                  </p>
+                ) : (
+                  wioaCase.fundingRequests.map((fr) => (
+                    <FundingSection key={fr.id} courseCase={fr} />
+                  ))
+                )}
               </div>
             )}
           </div>
@@ -660,14 +682,144 @@ function toDateInput(value: Date | string | null | undefined): string {
   return new Date(value).toISOString().slice(0, 10);
 }
 
-/** The 8 ETPL/funding milestones as one form (WIOA_INTEGRATION_PLAN.md Section 5/spec §14 —
- * tracked as separate fields, not a single status). Saves both EtplFundingRequest and
- * FundingAuthorization together via updateWioaFunding since Coordinator fills them in
- * incrementally as the case progresses, not all at once. */
-function FundingCard({ wioaCase }: { wioaCase: WioaCaseDetail }) {
+/** One course's funding pipeline: the step-advance control (DEMO-3/A2) plus the ETPL/funding
+ * milestone fields (DEMO-3/A4) presented underneath the step they belong to, so it's unambiguous
+ * which control actually moves the case (the enum, not the form). One instance per entry in
+ * `wioaCase.fundingRequests` (DEMO-3/A3) — no more pinning to the first course case. */
+function FundingSection({ courseCase }: { courseCase: FundingRequest }) {
+  return (
+    <Card>
+      <CardHeader>
+        <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
+          <CardTitle>{courseCase.courseTitle}</CardTitle>
+          <span className="pbadge">{WIOA_FUNDING_STATUS_LABEL[courseCase.status]}</span>
+        </div>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-4">
+        <FundingAdvanceControl courseCase={courseCase} />
+        <div style={{ height: 1, background: 'var(--nfcap-border)' }} />
+        <FundingDetailsForm courseCase={courseCase} />
+      </CardContent>
+    </Card>
+  );
+}
+
+/** DEMO-3/A2 — the funding advance control, one per course case. Next statuses only ever come
+ * from `nextFundingStatusOptions`, never a free list of all five. Errors are shown inline from
+ * `result.ok === false` (DEMO-3/A1, CLAUDE.md's error-handling convention), not via try/catch. */
+function FundingAdvanceControl({ courseCase }: { courseCase: FundingRequest }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
-  const funding = wioaCase.funding;
+  const options = nextFundingStatusOptions(courseCase.status);
+  const stepIndex = WIOA_FUNDING_STATUS_ORDER.indexOf(courseCase.status);
+  const [nextStatus, setNextStatus] = useState<WioaFundingStatus | ''>('');
+  const [scheduleAppointment, setScheduleAppointment] = useState(false);
+  const [scheduledAt, setScheduledAt] = useState('');
+  const [notes, setNotes] = useState('');
+  const [error, setError] = useState('');
+
+  function advance() {
+    if (!nextStatus) return;
+    setError('');
+    startTransition(async () => {
+      const result = await advanceWioaFundingStatus(
+        courseCase.id,
+        nextStatus,
+        scheduleAppointment && scheduledAt ? { scheduledAt, notes: notes || undefined } : undefined,
+      );
+      if (!result.ok) {
+        setError(result.error);
+        toast.error(result.error);
+        return;
+      }
+      toast.success('Funding status updated');
+      setNextStatus('');
+      setScheduleAppointment(false);
+      setScheduledAt('');
+      setNotes('');
+      router.refresh();
+    });
+  }
+
+  return (
+    <div>
+      <p className="panel-sub" style={{ margin: '0 0 10px' }}>
+        {stepIndex >= 0 && `Step ${stepIndex + 1} of ${WIOA_FUNDING_STATUS_ORDER.length}`}
+      </p>
+      {options.length === 0 ? (
+        <p style={{ fontSize: 12.5, color: 'var(--ink-muted)' }}>
+          This funding request is closed — no further status change is possible.
+        </p>
+      ) : (
+        <div className="flex flex-col gap-3">
+          <Field
+            label="New funding status"
+            htmlFor={`fundingStatus-${courseCase.id}`}
+            error={error || undefined}
+          >
+            <Select
+              id={`fundingStatus-${courseCase.id}`}
+              value={nextStatus}
+              onChange={(e) => {
+                setError('');
+                setNextStatus(e.target.value as WioaFundingStatus);
+              }}
+            >
+              <option value="">Select next status</option>
+              {options.map((s) => (
+                <option key={s} value={s}>
+                  {WIOA_FUNDING_STATUS_LABEL[s]}
+                </option>
+              ))}
+            </Select>
+          </Field>
+
+          <label className="flex items-center gap-2 text-sm text-[var(--ink)]">
+            <input
+              type="checkbox"
+              checked={scheduleAppointment}
+              onChange={(e) => setScheduleAppointment(e.target.checked)}
+            />
+            Schedule a follow-up appointment
+          </label>
+
+          {scheduleAppointment && (
+            <>
+              <Field label="Appointment date/time" htmlFor={`fundingAppt-${courseCase.id}`}>
+                <Input
+                  id={`fundingAppt-${courseCase.id}`}
+                  type="datetime-local"
+                  value={scheduledAt}
+                  onChange={(e) => setScheduledAt(e.target.value)}
+                />
+              </Field>
+              <Field label="Notes (optional)" htmlFor={`fundingApptNotes-${courseCase.id}`}>
+                <Textarea
+                  id={`fundingApptNotes-${courseCase.id}`}
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  rows={2}
+                />
+              </Field>
+            </>
+          )}
+
+          <Button size="sm" disabled={!nextStatus || pending} onClick={advance} className="w-fit">
+            {pending ? 'Saving…' : 'Save funding status'}
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** DEMO-3/A4 — the 12 ETPL/funding fields as attributes recorded against the step above, not a
+ * flat form that advances anything itself. Saves via updateWioaFunding, keyed to this course
+ * case's id (DEMO-3/A3 — no more pinning to the first course case). */
+function FundingDetailsForm({ courseCase }: { courseCase: FundingRequest }) {
+  const router = useRouter();
+  const [pending, startTransition] = useTransition();
+  const funding = courseCase.funding;
   const auth = funding?.authorization;
 
   const [trainingProgram, setTrainingProgram] = useState(funding?.trainingProgram ?? '');
@@ -710,13 +862,8 @@ function FundingCard({ wioaCase }: { wioaCase: WioaCaseDetail }) {
       trainingStartDate: trainingStartDate || undefined,
       authorizationStatus: authorizationStatus || undefined,
     };
-    const courseCaseId = wioaCase.fundingRequests?.[0]?.id;
-    if (!courseCaseId) {
-      setError('No course funding request exists yet for this case.');
-      return;
-    }
     startTransition(async () => {
-      const result = await updateWioaFunding(courseCaseId, fields);
+      const result = await updateWioaFunding(courseCase.id, fields);
       if (!result.ok) {
         setError(result.error);
         toast.error(result.error);
@@ -728,128 +875,126 @@ function FundingCard({ wioaCase }: { wioaCase: WioaCaseDetail }) {
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Funding</CardTitle>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-4">
-        <Field label="Training program" htmlFor="trainingProgram">
-          <Input
-            id="trainingProgram"
-            value={trainingProgram}
-            onChange={(e) => setTrainingProgram(e.target.value)}
-          />
-        </Field>
+    <div className="flex flex-col gap-4">
+      <p className="mb-0 text-sm font-medium text-[var(--ink)]">
+        Funding &amp; authorization details
+      </p>
+      <Field label="Training program" htmlFor={`trainingProgram-${courseCase.id}`}>
+        <Input
+          id={`trainingProgram-${courseCase.id}`}
+          value={trainingProgram}
+          onChange={(e) => setTrainingProgram(e.target.value)}
+        />
+      </Field>
 
-        <label className="flex items-center gap-2 text-sm text-[var(--ink)]">
-          <input
-            type="checkbox"
-            checked={etplProviderConfirmed}
-            onChange={(e) => setEtplProviderConfirmed(e.target.checked)}
-          />
-          ETPL provider confirmed
-        </label>
+      <label className="flex items-center gap-2 text-sm text-[var(--ink)]">
+        <input
+          type="checkbox"
+          checked={etplProviderConfirmed}
+          onChange={(e) => setEtplProviderConfirmed(e.target.checked)}
+        />
+        ETPL provider confirmed
+      </label>
 
-        <Field label="Request submitted at" htmlFor="submittedAt">
-          <Input
-            id="submittedAt"
-            type="datetime-local"
-            value={submittedAt}
-            onChange={(e) => setSubmittedAt(e.target.value)}
-          />
-        </Field>
-        <Field label="Case manager notified at" htmlFor="caseManagerNotifiedAt">
-          <Input
-            id="caseManagerNotifiedAt"
-            type="datetime-local"
-            value={caseManagerNotifiedAt}
-            onChange={(e) => setCaseManagerNotifiedAt(e.target.value)}
-          />
-        </Field>
-        <Field
-          label="Requested amount"
-          htmlFor="requestedAmount"
-          hint="What was asked for, before the board's own approved amount below"
-        >
-          <Input
-            id="requestedAmount"
-            type="number"
-            min="0"
-            step="0.01"
-            value={requestedAmount}
-            onChange={(e) => setRequestedAmount(e.target.value)}
-          />
-        </Field>
-        <Field label="Funding review status" htmlFor="fundingReviewStatus">
-          <Input
-            id="fundingReviewStatus"
-            value={fundingReviewStatus}
-            onChange={(e) => setFundingReviewStatus(e.target.value)}
-            placeholder="e.g. Pending, Approved, Denied"
-          />
-        </Field>
-        <Field label="Request status" htmlFor="requestStatus">
-          <Input
-            id="requestStatus"
-            value={requestStatus}
-            onChange={(e) => setRequestStatus(e.target.value)}
-          />
-        </Field>
+      <Field label="Request submitted at" htmlFor={`submittedAt-${courseCase.id}`}>
+        <Input
+          id={`submittedAt-${courseCase.id}`}
+          type="datetime-local"
+          value={submittedAt}
+          onChange={(e) => setSubmittedAt(e.target.value)}
+        />
+      </Field>
+      <Field label="Case manager notified at" htmlFor={`caseManagerNotifiedAt-${courseCase.id}`}>
+        <Input
+          id={`caseManagerNotifiedAt-${courseCase.id}`}
+          type="datetime-local"
+          value={caseManagerNotifiedAt}
+          onChange={(e) => setCaseManagerNotifiedAt(e.target.value)}
+        />
+      </Field>
+      <Field
+        label="Requested amount"
+        htmlFor={`requestedAmount-${courseCase.id}`}
+        hint="What was asked for, before the board's own approved amount below"
+      >
+        <Input
+          id={`requestedAmount-${courseCase.id}`}
+          type="number"
+          min="0"
+          step="0.01"
+          value={requestedAmount}
+          onChange={(e) => setRequestedAmount(e.target.value)}
+        />
+      </Field>
+      <Field label="Funding review status" htmlFor={`fundingReviewStatus-${courseCase.id}`}>
+        <Input
+          id={`fundingReviewStatus-${courseCase.id}`}
+          value={fundingReviewStatus}
+          onChange={(e) => setFundingReviewStatus(e.target.value)}
+          placeholder="e.g. Pending, Approved, Denied"
+        />
+      </Field>
+      <Field label="Request status" htmlFor={`requestStatus-${courseCase.id}`}>
+        <Input
+          id={`requestStatus-${courseCase.id}`}
+          value={requestStatus}
+          onChange={(e) => setRequestStatus(e.target.value)}
+        />
+      </Field>
 
-        <div className="border-t border-[var(--nfcap-border)] pt-4">
-          <p className="mb-3 text-sm font-medium text-[var(--ink)]">Authorization</p>
-          <div className="flex flex-col gap-4">
-            <Field label="ITA issued at" htmlFor="itaIssuedAt">
-              <Input
-                id="itaIssuedAt"
-                type="datetime-local"
-                value={itaIssuedAt}
-                onChange={(e) => setItaIssuedAt(e.target.value)}
-              />
-            </Field>
-            <Field label="Approved amount" htmlFor="approvedAmount">
-              <Input
-                id="approvedAmount"
-                type="number"
-                min="0"
-                step="0.01"
-                value={approvedAmount}
-                onChange={(e) => setApprovedAmount(e.target.value)}
-              />
-            </Field>
-            <Field label="Approval date" htmlFor="approvalDate">
-              <Input
-                id="approvalDate"
-                type="date"
-                value={approvalDate}
-                onChange={(e) => setApprovalDate(e.target.value)}
-              />
-            </Field>
-            <Field label="Training start date" htmlFor="trainingStartDate">
-              <Input
-                id="trainingStartDate"
-                type="date"
-                value={trainingStartDate}
-                onChange={(e) => setTrainingStartDate(e.target.value)}
-              />
-            </Field>
-            <Field label="Authorization status" htmlFor="authorizationStatus">
-              <Input
-                id="authorizationStatus"
-                value={authorizationStatus}
-                onChange={(e) => setAuthorizationStatus(e.target.value)}
-              />
-            </Field>
-          </div>
+      <div className="border-t border-[var(--nfcap-border)] pt-4">
+        <p className="mb-3 text-sm font-medium text-[var(--ink)]">Authorization</p>
+        <div className="flex flex-col gap-4">
+          <Field label="ITA issued at" htmlFor={`itaIssuedAt-${courseCase.id}`}>
+            <Input
+              id={`itaIssuedAt-${courseCase.id}`}
+              type="datetime-local"
+              value={itaIssuedAt}
+              onChange={(e) => setItaIssuedAt(e.target.value)}
+            />
+          </Field>
+          <Field label="Approved amount" htmlFor={`approvedAmount-${courseCase.id}`}>
+            <Input
+              id={`approvedAmount-${courseCase.id}`}
+              type="number"
+              min="0"
+              step="0.01"
+              value={approvedAmount}
+              onChange={(e) => setApprovedAmount(e.target.value)}
+            />
+          </Field>
+          <Field label="Approval date" htmlFor={`approvalDate-${courseCase.id}`}>
+            <Input
+              id={`approvalDate-${courseCase.id}`}
+              type="date"
+              value={approvalDate}
+              onChange={(e) => setApprovalDate(e.target.value)}
+            />
+          </Field>
+          <Field label="Training start date" htmlFor={`trainingStartDate-${courseCase.id}`}>
+            <Input
+              id={`trainingStartDate-${courseCase.id}`}
+              type="date"
+              value={trainingStartDate}
+              onChange={(e) => setTrainingStartDate(e.target.value)}
+            />
+          </Field>
+          <Field label="Authorization status" htmlFor={`authorizationStatus-${courseCase.id}`}>
+            <Input
+              id={`authorizationStatus-${courseCase.id}`}
+              value={authorizationStatus}
+              onChange={(e) => setAuthorizationStatus(e.target.value)}
+            />
+          </Field>
         </div>
+      </div>
 
-        {error && <p className="text-xs text-[var(--status-problem)]">{error}</p>}
+      {error && <p className="text-xs text-[var(--status-problem)]">{error}</p>}
 
-        <Button size="sm" disabled={pending} onClick={save} className="w-fit">
-          {pending ? 'Saving…' : 'Save funding details'}
-        </Button>
-      </CardContent>
-    </Card>
+      <Button size="sm" disabled={pending} onClick={save} className="w-fit">
+        {pending ? 'Saving…' : 'Save funding details'}
+      </Button>
+    </div>
   );
 }
 
