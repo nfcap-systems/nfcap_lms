@@ -1,5 +1,10 @@
 # NFCAP Mockups — Board Index
 
+**Reconciled 2026-11-27.** Per this file's own maintenance rule below: several routing-gap entries
+had been built and shipped since they were flagged, and one real gap (Coordinator/Partner
+Announcements) was never added at all. See the "✅ RESOLVED 2026-11-27" markers below for what
+changed and the evidence for each.
+
 ## 📋 Backlog — deferred by explicit user decision 2026-11-22, revisit later
 
 User reviewed the full open-items list this session and said to park all of it and move to
@@ -24,8 +29,15 @@ execution; nothing below is forgotten, it's deliberately not being worked now.
    `RPT01`/`02`, `SET01` render correctly since publish; the CRD/PTN/RPT/SET visual-shell-reuse +
    per-role data-boundary sync checklist was never verified board-by-board.
 6. **Routing gaps** (boards exist, no real app route yet — tracked for Plane tickets after gate
-   NFCAP-6, not a canvas defect): `LRN03`, `LRN06`, `LRN06d/e/f`, `LRN09`, `LRN10b`, `LRN14`/`LRN15`,
-   `JRN09`/`11`/`12`.
+   NFCAP-6, not a canvas defect): `LRN03`, `LRN14`/`LRN15`. **✅ RESOLVED 2026-11-27** for the rest
+   of this list — `LRN06`, `LRN06d/e/f`, `LRN09`, `LRN10b`, `JRN09`/`11`/`12` all shipped (Phase 3
+   PRs #20–#22, Phase 4/5 work in PR #24) and were still sitting here as open gaps weeks later. See
+   the Routing gaps section below for per-board detail. **New gap found in this pass, not
+   previously tracked anywhere**: Coordinator/Partner Announcements (`/coordinator`, `/partner`,
+   PR #33, 2026-11-26) shipped with **no board ever drawn** — `docs/SITEMAP.md` itself already
+   flagged Announcements as "~100h+ of plan scope with zero boards" before this was built; it was
+   built anyway without raising a ticket first, a real `docs/DEV-APPROACH.md` gate skip, not just a
+   missing index entry.
 
 ## 🔒 Maintenance rule — reconcile this file against the real canvas every session
 
@@ -98,13 +110,23 @@ picked up by the builder session. This list is the single place to check before 
 | Board | What it needs | Target phase |
 | --- | --- | --- |
 | `LRN03-CourseOverview` | A syllabus/overview screen before the player — today the app jumps straight to `/learner/courses/[courseId]` | unscoped — raise with product owner first |
-| `LRN06-EvidenceCriteria` | Per-criterion evidence model (holistic vs. per-criterion choice, criteria tree) | Phase 3 |
-| `LRN06d-EvidenceNotMet`, `LRN06e-EvidenceResubmit`, `LRN06f-AttemptHistory` | Evidence review/rejection flow, resubmission, attempt history | Phase 3 |
-| `LRN09-PublicVerify` | Public (no-login) credential verification page | Phase 4 |
-| `LRN10b-EligibilitySelfCheck` | Pre-screening eligibility quiz before applying | Phase 5 |
 | `LRN14-MessagingThreads`, `LRN15-MessagingConversation` | Trainee ↔ Staff Messaging (36h estimate) | Phase 6 |
-| `JRN09-AdminReview` (reviewer queue, per-criterion review, annotation) | Entire admin evidence-review flow | Phase 3 |
-| `JRN11-EvidenceLoop`, `JRN12-ReviewLoop` | The retry/re-review loop around the above | Phase 3 |
+
+**✅ RESOLVED 2026-11-27 — all shipped, were still listed above as "no route" weeks after merging:**
+| Board | Real route | Shipped in |
+| --- | --- | --- |
+| `LRN06-EvidenceCriteria` | `EvidenceView`'s criteria checklist | Phase 3, PRs #20–#21 |
+| `LRN06d-EvidenceNotMet`, `LRN06e-EvidenceResubmit` | `GuidedEvidenceCapture`/`EvidenceNotMet` | Phase 3, PR #21 |
+| `LRN06f-AttemptHistory` | `/learner/courses/[courseId]/attempts/[criterionId]` | Phase 3, PR #21 |
+| `LRN09-PublicVerify` | `/verify/[slug]` | Phase 4, PR #24 (commit `2c59e17`) |
+| `LRN10b-EligibilitySelfCheck` | `/eligibility` | Phase 5, PR #24 (commit `bcf1ac8`) |
+| `JRN09-AdminReview` (reviewer queue, per-criterion review, annotation) | `/admin/reviews`, `/admin/learners/[learnerId]/review/[courseId]` | Phase 3, PRs #18–#20 |
+| `JRN11-EvidenceLoop`, `JRN12-ReviewLoop` | Same screens as `JRN09` — the retry/resubmit loop around them | Phase 3, PRs #19–#21 |
+
+**✅ Drawn 2026-11-27 (retroactively, closing the gate-skip found the same day) — not yet approved:**
+| Board | Status |
+| --- | --- |
+| `CRD01-CaseList`, `PTN01-Roster` — Coordinator/Partner Announcements banner | `/coordinator`, `/partner` already showed a live announcement banner (`AnnouncementBanner`, PR #33, 2026-11-26) with **zero board ever drawn for it** — a real `docs/DEV-APPROACH.md` gate skip (built before a board existed, no ticket raised), not just a missing index row; `docs/SITEMAP.md` had already flagged Announcements as "~100h+ of plan scope with zero boards" before this shipped. Both existing boards updated to add the banner, ported 1:1 from `LRN01-Home`'s already-approved pattern (now promoted into shared `nfcap.css`). Drawn and published to the canvas. **Approved verbally, in this session, 2026-11-27** — the canvas's own comment system is `composer_only` (Claude can't originate a new comment there, same limitation Step 0 of `docs/plans/phase-3-and-design-migration-kickoff.md` hit); add the actual canvas "Approved" comment by hand if the official trail is wanted too.
 
 **Route exists today, but its future shape is unsettled (not missing — undecided):**
 | Board | Open question |

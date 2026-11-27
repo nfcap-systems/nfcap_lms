@@ -118,12 +118,17 @@ canonical `.dtcard` reference per `docs/MOCKUP-INDEX.md` line 260), `ADM08-Pathw
 
 ## Progress log (update as each batch finishes)
 
+**Reconciled 2026-11-27:** all four "not pushed" rows below were verified merged to `stage` via
+PR #24 (merge commit `66df6d5`, 2026-11-24) — same branch, same staleness pattern found across
+`CLAUDE.md`, `wioa-spec-alignment-kickoff.md`, `PHASE_5_PROGRESS.md` and `mockup-complete-build.md`
+in the same pass. Visual-pass-owed caveats are left as-is; only the push/merge status was wrong.
+
 | Batch | Branch | PR / merge commit | State | Date |
 | --- | --- | --- | --- | --- |
-| A — Dashboard, Learners, Audit Log | `feature/admin-ui-parity-dashboard-learners-audit` | commit `26e4a22`, not pushed | Committed; later commits piled on top. Visual pass still owed by the user. | 2026-11-23 |
-| B — Courses, Pathway, Roles | `feature/admin-ui-parity-dashboard-learners-audit` | not identified by a dedicated PR; folded into other commits on this branch | **Closed 2026-11-24.** Courses, Pathway (collapsed to one route), and Roles all confirmed retrofitted — zero `admin-ui` imports. Settings placeholder left untouched (trivial, optional per this doc). Visual pass against the boards still owed by the user; `npm run build` not yet re-run for this batch. | 2026-11-24 |
-| C — WIOA admin trio | `feature/admin-ui-parity-dashboard-learners-audit` | not pushed | **Closed 2026-11-24.** Boards, Document Requirements, Email Template all retrofitted — zero `admin-ui` imports. See Batch C detail below. | 2026-11-24 |
-| ADM06/ADM07 — Curriculum Builder + Criteria Authoring | `feature/admin-ui-parity-dashboard-learners-audit` | not pushed | **Not an original batch — added 2026-11-24 at the user's explicit request to drop the "deferred" scope boundary and build it now.** See detail below. | 2026-11-24 |
+| A — Dashboard, Learners, Audit Log | `feature/admin-ui-parity-dashboard-learners-audit` | commit `26e4a22`, merged to `stage` via PR #24 (`66df6d5`) | Committed; later commits piled on top. Visual pass still owed by the user. | 2026-11-23 |
+| B — Courses, Pathway, Roles | `feature/admin-ui-parity-dashboard-learners-audit` | merged to `stage` via PR #24 (`66df6d5`) | **Closed 2026-11-24.** Courses, Pathway (collapsed to one route), and Roles all confirmed retrofitted — zero `admin-ui` imports. Settings placeholder left untouched (trivial, optional per this doc). Visual pass against the boards still owed by the user. | 2026-11-24 |
+| C — WIOA admin trio | `feature/admin-ui-parity-dashboard-learners-audit` | merged to `stage` via PR #24 (`66df6d5`) | **Closed 2026-11-24.** Boards, Document Requirements, Email Template all retrofitted — zero `admin-ui` imports. See Batch C detail below. | 2026-11-24 |
+| ADM06/ADM07 — Curriculum Builder + Criteria Authoring | `feature/admin-ui-parity-dashboard-learners-audit` | merged to `stage` via PR #24 (`66df6d5`) | **Not an original batch — added 2026-11-24 at the user's explicit request to drop the "deferred" scope boundary and build it now.** See detail below. | 2026-11-24 |
 
 ### Batch A detail
 

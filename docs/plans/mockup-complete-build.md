@@ -5,6 +5,11 @@ structure, behaviour and logic — not just a re-skin of the screens that alread
 
 Canvas: `https://claude.ai/artifact/6othp9hKDpwXeLJsWtkt3Y` (163 files, ~140 real boards).
 
+**Reconciled 2026-11-27** (first update since 2026-11-24, despite 10 PRs — #25–#34 — merging in
+between). See the Progress log's own reconciliation note for what changed. This doc went 3 days
+stale the same way `docs/MOCKUP-INDEX.md` and `CLAUDE.md`'s WIOA status did — re-check it against
+real `git`/`gh` state periodically, not just when something prompts a full audit.
+
 ## Strategy (user decision, 2026-11-24)
 
 **Work is driven by the boards, not by the scope plan's phase order.** Each work unit is a board or
@@ -231,8 +236,8 @@ Furthest from matched. Exercises the staff shell hardest, so it shakes out Layer
 | `WIOA01`–`WIOA04` | `/admin/wioa/*` | Two are dialog-heavy. Retrofit to the locked `.dtcard` pattern from `ADM03`, **not** to `WIOA01`'s own stale table. | parity |
 | `ADM10`, `ADM25`, `ADM11` | `/admin/reviews`, review screen | Shipped (#6, #7). **#7's certification gate was merged CI-green with no manual pass** — see §Verification debt. | 3 (done) |
 | `ADM12-PhotoAnnotation` | inside the review screen | **BUILT on stage** (PR #20) — `src/components/admin/PhotoAnnotationDialog.tsx`, `.tool` class in `design-system.css`. **Verify parity; do not rebuild.** | 3 — done |
-| `ADM13-Cohorts` | **no route** | `Cohort`/`CohortMembership`/`CohortDeadline` + CRUD actions exist (Layer 1, 2026-11-24). No UI. | 6 (24h) |
-| `ADM14-AnnouncementsNotifications` | **no route** | `Announcement`/`Notification` + actions exist (Layer 1, 2026-11-24). No UI. | 6 (14+18h) |
+| `ADM13-Cohorts` | **`/admin/cohorts` — built, PR #32 (2026-11-26)** | `CohortsView.tsx`, real cohort assignment over the Layer 1 backend. **Board parity not verified** — corrected 2026-11-27, was still showing "no route" three PRs after it shipped. | 6 (24h) |
+| `ADM14-AnnouncementsNotifications` | **`/admin/announcements` — built, commit `33eada5` (2026-11-24)** | Compose/list UI over the Layer 1 backend. **Board parity not verified.** Corrected 2026-11-27 — same staleness as the row above. Coordinator/Partner surfaces (not this board) also got a banner this week; see Progress log. | 6 (14+18h) |
 | `ADM15-DataInOut` | **no route** | CSV enrol + export. | 6 (18+14h) |
 | `ADM26-Inbox`, `ADM22-InboxEmpty` | **no route** | Messaging models + RLS + actions exist (Layer 1, 2026-11-24). No UI. Also blocked on Layer 2's real finding: Admin and Coordinator/Partner use two different sidebar implementations, not one shared shell — see Layer 2 row below. | 6 (36h, shared with `LRN14/15`) |
 | `RPT01-AdminReporting` | `/admin/analytics` | **11-line placeholder rendering the word "Future".** Hide from nav until built. | 6 — Admin Reporting Depth (28h) |
@@ -262,9 +267,9 @@ Board-backed work remaining, by phase. Hours from the scope doc, not estimated h
 | --- | ---: | --- | ---: |
 | 3 — Evidence & Competency | 260h | **COMPLETE** — all 11 engineering features merged (PRs #13–#22) | **0h** (only #5, 12h of NFCAP trade-expert sessions, is non-engineering — confirm with the client whether it's considered delivered) |
 | 4 — Credential Integrity | 80h | PDF Certificate (20h), Public Verification (20h, scope-reduced — QR dropped), Shareable Portfolio (18h) — 58h shipped, merged to `stage` via PR #24. Expiry & Renewal Reminders (22h) dropped by decision, not outstanding — see `docs/build/PHASE_4_PROGRESS.md` | **0h — functionally complete**, pending client sign-off on both dropped-scope decisions |
-| 5 — Funding Productisation | 130h | part of Funding Impact Reporting | **~130h** |
-| 6 — Communication & Operations | 184h | — | **184h** |
-| **Board-backed total** | | | **~394h** |
+| 5 — Funding Productisation | 130h | **Corrected 2026-11-27 — nearly complete, not 0h.** Per `docs/build/PHASE_5_PROGRESS.md` (merged to `stage` via PR #29, 2026-11-25): features #1,2,3,4,5,7 built/verified against the new master/course case architecture. Only #6 (Document Upload Limits, 8h) has open verification work. | **~8h** |
+| 6 — Communication & Operations | 184h | **Corrected 2026-11-27 — partial, not 0h.** Cohorts & Deadlines (24h, `/admin/cohorts`, PR #32) and part of Announcements (14h backend+Admin UI, commit `33eada5`; Coordinator/Partner surfaced this week too, PR #33 — no board for either) are real. Messaging (36h), Notification Coverage (18h), Data Export/Import (18h+14h) still have no UI. | **~142h** |
+| **Board-backed total** | | | **~346h** (was ~394h; corrected for Phase 5/6 progress above) |
 | UI parity (Layers 0/2 + 3B retrofits) | not in the 65-feature plan | | unestimated, ~80–120h |
 | 7 — Accessibility, 8 — Hardening & Launch | | | **stay phase-wise** — no boards drive them |
 
@@ -307,6 +312,42 @@ with this ledger as the roadmap.
    verification mechanism, no QR graphic will be built. Client scope doc still names a QR code;
    needs client sign-off, see `docs/build/PHASE_4_PROGRESS.md`.
 8. **`SET01-AdminSettings` content** — still has no product decision.
+
+## Deviations from `docs/DEV-APPROACH.md` — found and logged 2026-11-27
+
+Found during a doc-reconciliation pass, not invented after the fact. Logged here rather than
+silently fixed, per this doc's own working pattern (§"Decisions" above) and
+`phase-3-and-design-migration-kickoff.md`'s established "deviations consciously accepted" section.
+
+1. **Coordinator/Partner Announcements built with no board ever drawn or approved.** `AnnouncementBanner`
+   shipped to `/coordinator` and `/partner` via PR #33 (2026-11-26) — a real gate skip, not just a
+   missing index entry: `docs/DEV-APPROACH.md`'s order is sitemap → design direction → journeys →
+   **all mockups approved** → build, and it also says *"if a mockup exposes a gap in the plan,
+   raise it as a Plane ticket for Manjila; don't fold it in silently."* `docs/SITEMAP.md` already
+   knew Announcements had zero boards before this was built (§Findings, F6) and it was folded in
+   silently anyway, during this session.
+   **Resolved 2026-11-27 (partially):** the user asked for the board to actually be drawn, matching
+   the "100%-match" rule (compare the board to the shipped screen). `CRD01-CaseList.dc.html` and
+   `PTN01-Roster.dc.html` both updated with the banner, built locally first in `temp_ss/`,
+   screenshotted, user-verified, then published to the canvas (`nfcap.css` gained the promoted
+   `.announce-banner` classes, no longer `LRN01-Home`-local). **Approved verbally, in this session,
+   2026-11-27** (the canvas's `composer_only` comment system means Claude can't originate the
+   actual canvas comment — same limitation logged in Step 0 of
+   `phase-3-and-design-migration-kickoff.md`; add the real "Approved" comment by hand for the
+   official trail). Still open: the Plane ticket for the original process miss hasn't been raised
+   yet (blocked on Plane connection).
+2. **`J14` (Coordinator/Partner day-to-day journey) has never been drawn**, self-flagged already in
+   `docs/SITEMAP.md`'s Journeys section ("covered only by J3–J5"). `DEV-APPROACH.md` requires one
+   journey per role; this one has none. Not newly caused by this session, but surfaced again by the
+   Announcements gap above — the banner's placement is exactly the kind of day-to-day UI a real J14
+   board would have settled instead of leaving to ad hoc judgment.
+3. **Partner reports has no board** (`docs/SITEMAP.md` F5 — `RPT02-FundingImpact` only covers
+   Coordinator; the Partner reports route has none). Pre-existing, not caused here, but the same
+   category of gap as #1 and worth closing in the same pass rather than separately.
+
+None of these block anything currently on `stage` — they're a record of what's owed to the canvas,
+not a build blocker. Raise all three as Plane tickets once Plane is connected (see the backlog
+item already pending from this session for the multi-course-funding-request Coordinator UI gap).
 
 ---
 
@@ -355,27 +396,38 @@ it is demoed as working.**
 Accuracy rule, same as the Phase 3 tracker: update the moment a state changes, verify against real
 `git`/`gh` state, never write "merged" without checking it merged.
 
+**Reconciled 2026-11-27.** This table hadn't been touched since 2026-11-24 despite 10 more PRs
+(#25–#34) merging to `stage` in the meantime. Every row below marked "not pushed" was verified via
+`git merge-base --is-ancestor <commit> 66df6d5` — all of them are genuine ancestors of PR #24's
+merge commit, i.e. actually merged, not still sitting on a branch. New rows added below for the
+PRs since then that touch this doc's scope; PRs #26 (demo-data chore), #29 (Phase 5/WIOA — own doc,
+`docs/plans/wioa-spec-alignment-kickoff.md`), #30/#31 (auth bug fixes, not board work) and #34
+(error-handling fix, not board work) are out of this doc's scope and intentionally not logged here.
+
 | Layer / cluster | Branch | PR / merge commit | State | Date |
 | --- | --- | --- | --- | --- |
 | L0 — Token collision rename | `feature/admin-ui-parity-dashboard-learners-audit` | **PR #23, MERGED to `stage`** (`cf95afe`) | **Done.** Renamed `--radius-sm/md/lg/xl`, `--shadow-sm/md/lg`, `--accent`/`--accent-hover`/`--accent-contrast`, `--border`, `--sidebar-*`, `--font-mono` to `--nfcap-*`. `tsc`/`eslint`/`prettier` clean. | 2026-11-24 |
 | L0 — Literal nfcap.css class diff | `feature/admin-ui-parity-dashboard-learners-audit` | **PR #23, MERGED to `stage`** (`cf95afe`) | **Done.** Diffed `nfcap.css` vs `design-system.css` programmatically via `postcss`; fixed 7 real deviations (`.btn-secondary`, `.tcheck`, `.av`/`.note-av`/`.pring .avatar`, `.av-dot.active`, `.pagehdr h1`, `.dtsearch`). | 2026-11-24 |
-| L1 — Data-model design pass (doc) | `feature/admin-ui-parity-dashboard-learners-audit` | `ffd9d36`, not pushed | **Done.** `docs/build/LAYER1_DATA_MODEL_DESIGN.md` — every cross-cutting decision settled (read-state pattern, RLS scope, stalled-case computed-not-stored, quiz depth design). | 2026-11-24 |
-| L1 — Migration set | same | `ffd9d36`, not pushed | **Done, APPLIED to the live DB** — confirmed by direct query (`information_schema`/`to_regclass`), not just `prisma migrate status`. Real incident along the way: shipped in the same session as dependent backend code with no `migrate deploy` run, broke `/learner` at runtime — see `CLAUDE.local.md` #8 and commit `a3fac1a` for the fix (`predev` now gates on `prisma migrate status`). | 2026-11-24 |
-| L1 — Backend actions (new, not in original plan — real build output) | same | `df4668c`, not pushed | **Done.** `src/lib/actions/`+`src/lib/data/` for Cohorts, Announcements, Notifications, Messaging (RLS), stalled-case detection, credential/portfolio share tokens, eligibility scoring, quiz-pool/shuffle/attempt-limit logic. No UI. | 2026-11-24 |
-| L2 — Staff shell + interaction boards | same | `fdff64b`, not pushed (docs only) | **Investigated, not built.** Real premise correction: two shells, not one — see `docs/build/LAYER2_SHELL_FINDINGS.md`. Overflow bug narrowed, not fixed (needs a real browser). | 2026-11-24 |
+| L1 — Data-model design pass (doc) | `feature/admin-ui-parity-dashboard-learners-audit` | `ffd9d36`, merged to `stage` via PR #24 (`66df6d5`) | **Done.** `docs/build/LAYER1_DATA_MODEL_DESIGN.md` — every cross-cutting decision settled (read-state pattern, RLS scope, stalled-case computed-not-stored, quiz depth design). | 2026-11-24 |
+| L1 — Migration set | same | `ffd9d36`, merged to `stage` via PR #24 (`66df6d5`) | **Done, APPLIED to the live DB** — confirmed by direct query (`information_schema`/`to_regclass`), not just `prisma migrate status`. Real incident along the way: shipped in the same session as dependent backend code with no `migrate deploy` run, broke `/learner` at runtime — see `CLAUDE.local.md` #8 and commit `a3fac1a` for the fix (`predev` now gates on `prisma migrate status`). | 2026-11-24 |
+| L1 — Backend actions (new, not in original plan — real build output) | same | `df4668c`, merged to `stage` via PR #24 (`66df6d5`) | **Done.** `src/lib/actions/`+`src/lib/data/` for Cohorts, Announcements, Notifications, Messaging (RLS), stalled-case detection, credential/portfolio share tokens, eligibility scoring, quiz-pool/shuffle/attempt-limit logic. No UI. | 2026-11-24 |
+| L2 — Staff shell + interaction boards | same | `fdff64b`, merged to `stage` via PR #24 (`66df6d5`) | **Investigated, not built.** Real premise correction: two shells, not one — see `docs/build/LAYER2_SHELL_FINDINGS.md`. Overflow bug narrowed, not fixed (needs a real browser). | 2026-11-24 |
 | L2 — Learner shell verify | same | — | **Partially done, with a bad result.** `LearnerFooter` claimed "matched" but didn't exist — built it 2026-11-24 (commit `2c59e17`) while doing `LRN09`. `LearnerHeader` itself still unverified. | 2026-11-24 |
 | C1 — Redraw `LRN10` funding timeline (canvas) | n/a — canvas | n/a | Not started — lead/QC session's job, not builder's | |
 | C2 — Draw `/learner/profile` board (canvas) | n/a — canvas | n/a | Not started — lead/QC session's job, not builder's | |
 | C3 — Bring 4 stale boards onto the `.dtcard` pattern (canvas) | n/a — canvas | n/a | Not started — lead/QC session's job, not builder's | |
-| 3A — Learner: `LRN09-PublicVerify` | `feature/admin-ui-parity-dashboard-learners-audit` | `2c59e17`, not pushed | **Done.** `/verify/[slug]`, read the board directly, ported literally. Not wired: nothing calls `generateCertificatePublicSlug` yet, so no real slug is reachable from the app. | 2026-11-24 |
-| 3A — Learner: `LRN10b-EligibilitySelfCheck` | same | `bcf1ac8`, not pushed | **Done.** `/eligibility`, read the board directly, ported literally. One real seeded question (the board's own example); no fabricated content. | 2026-11-24 |
-| 3A — Learner: `LRN01-Home` | same | not pushed | **Rebuilt 2026-11-24** to match the board, with one deliberately-scoped exception. Added: announcement banner (real `Announcement` data, Layer 1), Course Catalog discovery section, "Up next" row below the Continue hero, Portfolio-evidence preview (flattened from `credentials`), "To be reviewed" panel (real pending-evidence query), moved Certificates into the sidebar as a compact list (download disabled — Phase 4, same disclosure `CertificatesView.tsx` already uses), stripped the hero down to the board's plain 3-stat greeting (was a 4-stat photo banner). **Still not built: the mentor panel** — no mentor-assignment model anywhere in `prisma/schema.prisma`; left as "Not yet assigned" rather than fabricate a name or button. `tsc`/`eslint`/`prettier` clean; not yet visually confirmed in a browser. | 2026-11-24 |
+| 3A — Learner: `LRN09-PublicVerify` | `feature/admin-ui-parity-dashboard-learners-audit` | `2c59e17`, merged to `stage` via PR #24 (`66df6d5`) | **Done.** `/verify/[slug]`, read the board directly, ported literally. Not wired: nothing calls `generateCertificatePublicSlug` yet, so no real slug is reachable from the app. | 2026-11-24 |
+| 3A — Learner: `LRN10b-EligibilitySelfCheck` | same | `bcf1ac8`, merged to `stage` via PR #24 (`66df6d5`) | **Done.** `/eligibility`, read the board directly, ported literally. One real seeded question (the board's own example); no fabricated content. | 2026-11-24 |
+| 3A — Learner: `LRN01-Home` | same | merged to `stage` via PR #24 (`66df6d5`) | **Rebuilt 2026-11-24** to match the board, with one deliberately-scoped exception. Added: announcement banner (real `Announcement` data, Layer 1), Course Catalog discovery section, "Up next" row below the Continue hero, Portfolio-evidence preview (flattened from `credentials`), "To be reviewed" panel (real pending-evidence query), moved Certificates into the sidebar as a compact list (download disabled — Phase 4, same disclosure `CertificatesView.tsx` already uses), stripped the hero down to the board's plain 3-stat greeting (was a 4-stat photo banner). **Still not built: the mentor panel** — no mentor-assignment model anywhere in `prisma/schema.prisma`; left as "Not yet assigned" rather than fabricate a name or button. `tsc`/`eslint`/`prettier` clean; not yet visually confirmed in a browser. | 2026-11-24 |
 | 3A — Learner: other "matched" boards (`LRN02`+`02b`+`02c`, `LRN07`+`07b`, `LRN08`+`08b`, `LRN13`, `LRN11`, `LRN12`, auth, `LearnerHeader`) | — | — | **Re-checked 2026-11-24 — confirmed real drift, same pattern as `LRN01`.** Full findings in `docs/build/LRN_BATCH_DRIFT.md`. `LearnerHeader` and `LearnerShell`'s page-body wrapper are now fixed (see rows above/below). Still open: `LRN02b-PathwayLocked` and `LRN07b`/`LRN08b` empty states are unbuilt or wrong-condition; `LRN11-Account` is missing its entire sidebar; `LRN13-OpenCourseEnrol` has a **product-logic contradiction** (board: self-pay/no-eligibility-check; code, confirmed correct by the user: staff-assigned/restricted — the board needs redrawing, not the code); `LRN16-AuthFlow` still doesn't exist on canvas, so `/login` etc. have no board at all; mentor assignment (blocks part of `LRN01`/`07`/`08`/`13`) still has no schema. | 2026-11-24 |
-| L2 — `LearnerShell` page-body fix | same | not pushed | **Fixed 2026-11-24**, found while rebuilding Home. `.lshell-card` (a page-wide bordered card) and the fixed 1280px `.lshell-main` matched no board — removed/corrected to the board's real `max-width:1300px;margin:0 auto;padding:36px 24px 56px` pattern (the majority case: Home/Portfolio/Certificates/Explore). My Learning/Account's boards use 1140px and still render ~160px too wide until each gets its own override. See `docs/build/LRN_BATCH_DRIFT.md`. | 2026-11-24 |
-| 3A — Learner: `LRN02`/`02b`/`02c`, `LRN07`/`07b`, `LRN08`/`08b`, `LRN11` | same | not pushed | **Fixed 2026-11-24.** My Learning: honest locked-course copy (real `CourseUnlock` mechanism, not the board's "complete X to unlock" wording — same pattern applied to `LRN08`'s locked tier and `LRN01`/`HomeView`'s pathway strip), real `LockedCourseDialog` modal, empty state matches `LRN02c`. Portfolio: real evidence thumbnails, working "Share your portfolio" link, empty state matches `LRN07b`. Certificates: 4th stat added, "How verification works" copy corrected (it wrongly said public verification was Phase 4/unavailable — `LRN09` already shipped), real "Copy verify link" per certificate, empty-state condition fixed to `credentials.length === 0` (was `pathway.length === 0`, rendering the wrong screen for the common case). Account: sidebar built (profile summary, security tip, support link; "Learner ID" omitted — no such field exists, not fabricated). `LRN12`/`LRN13`: **no code change**, user-confirmed — both boards encode a narrative (address-at-signup; self-pay enrollment) that contradicts already-correct product behavior; flagged for the canvas, not the code. | 2026-11-24 |
-| 3A — Learner (overview/player/quiz restructure) | same | not pushed | **Built 2026-11-24** — `LRN03-CourseOverview`, `LRN04-Player`, `LRN05`/`05b`/`05c` (`CourseOverviewView`, `LessonPlayerView`, `QuizFlow`). `LRN05b`'s chromeless quiz-question chrome is a fixed full-screen overlay above the shared header, not a Next.js layout/route-group restructure. `EvidenceView` (already matching its boards, Phase 3) relocated to its own `/evidence` route, internals untouched. `CourseLearningView.tsx`/`QuizView.tsx`/`LessonSidebar.tsx` deleted (fully superseded, no other importers). A later pass added `RestrictedCourseNotice` and fixed a real deep-link gap the new routes had (didn't re-check restricted-course access the way the Overview page did) — verified correct, kept. Question-bank pool/shuffle (`Assessment.questionsPerAttempt`/`randomizeOrder`, Layer 1 schema fields) still isn't wired to any selection logic — same gap as before this restructure, not newly introduced. | 2026-11-24 |
+| L2 — `LearnerShell` page-body fix | same | merged to `stage` via PR #24 (`66df6d5`) | **Fixed 2026-11-24**, found while rebuilding Home. `.lshell-card` (a page-wide bordered card) and the fixed 1280px `.lshell-main` matched no board — removed/corrected to the board's real `max-width:1300px;margin:0 auto;padding:36px 24px 56px` pattern (the majority case: Home/Portfolio/Certificates/Explore). My Learning/Account's boards use 1140px and still render ~160px too wide until each gets its own override. See `docs/build/LRN_BATCH_DRIFT.md`. | 2026-11-24 |
+| 3A — Learner: `LRN02`/`02b`/`02c`, `LRN07`/`07b`, `LRN08`/`08b`, `LRN11` | same | merged to `stage` via PR #24 (`66df6d5`) | **Fixed 2026-11-24.** My Learning: honest locked-course copy (real `CourseUnlock` mechanism, not the board's "complete X to unlock" wording — same pattern applied to `LRN08`'s locked tier and `LRN01`/`HomeView`'s pathway strip), real `LockedCourseDialog` modal, empty state matches `LRN02c`. Portfolio: real evidence thumbnails, working "Share your portfolio" link, empty state matches `LRN07b`. Certificates: 4th stat added, "How verification works" copy corrected (it wrongly said public verification was Phase 4/unavailable — `LRN09` already shipped), real "Copy verify link" per certificate, empty-state condition fixed to `credentials.length === 0` (was `pathway.length === 0`, rendering the wrong screen for the common case). Account: sidebar built (profile summary, security tip, support link; "Learner ID" omitted — no such field exists, not fabricated). `LRN12`/`LRN13`: **no code change**, user-confirmed — both boards encode a narrative (address-at-signup; self-pay enrollment) that contradicts already-correct product behavior; flagged for the canvas, not the code. | 2026-11-24 |
+| 3A — Learner (overview/player/quiz restructure) | same | merged to `stage` via PR #24 (`66df6d5`) | **Built 2026-11-24** — `LRN03-CourseOverview`, `LRN04-Player`, `LRN05`/`05b`/`05c` (`CourseOverviewView`, `LessonPlayerView`, `QuizFlow`). `LRN05b`'s chromeless quiz-question chrome is a fixed full-screen overlay above the shared header, not a Next.js layout/route-group restructure. `EvidenceView` (already matching its boards, Phase 3) relocated to its own `/evidence` route, internals untouched. `CourseLearningView.tsx`/`QuizView.tsx`/`LessonSidebar.tsx` deleted (fully superseded, no other importers). A later pass added `RestrictedCourseNotice` and fixed a real deep-link gap the new routes had (didn't re-check restricted-course access the way the Overview page did) — verified correct, kept. Question-bank pool/shuffle (`Assessment.questionsPerAttempt`/`randomizeOrder`, Layer 1 schema fields) still isn't wired to any selection logic — same gap as before this restructure, not newly introduced. | 2026-11-24 |
 | 3A — Learner (funding) | | | Blocked on C1 | |
 | 3A — Learner (profile) | | | Blocked on C2 | |
 | 3B — Admin (Batch A) | `feature/admin-ui-parity-dashboard-learners-audit` | **PR #23, MERGED to `stage`** (`cf95afe`) | **Merged.** `npm run build`/`tsc`/`lint` clean. **Visual pass still owed by the user — never confirmed.** | 2026-11-24 |
-| 3B — Admin (remaining) | | | Not started (backend for `ADM13`/`ADM14`/`ADM26` exists now, see L1 row) | |
-| 3C — Coordinator + Partner | | | Not started | |
+| 3B — Admin: `ADM13-Cohorts` | `/admin/cohorts` | `feature/admin-ui-parity-dashboard-learners-audit` (PR #32) | **Built.** `CohortsView.tsx` + `/admin/cohorts/page.tsx`, real cohort assignment over the Layer 1 backend. Board parity not re-verified in this pass. | 2026-11-26 |
+| 3B — Admin: `ADM14-AnnouncementsNotifications` | `/admin/announcements` | `feature/admin-ui-parity-dashboard-learners-audit` | **Built** (commit `33eada5`, confirmed on `stage` via `git merge-base`, exact PR not re-derived this pass). Admin compose/list UI over the Layer 1 backend. Board parity not re-verified. | 2026-11-24 |
+| 3B — Admin: `ADM26-Inbox`/`LRN14`/`LRN15` (Messaging) | — | — | **Still not started.** No route exists for either side as of this reconciliation (2026-11-27). | — |
+| 3C — Coordinator + Partner: Announcements | `/coordinator`, `/partner` | `feature/learner-mobile-nav-v2` (PR #33) | **Built this week (2026-11-26), outside this doc's original scope.** `AnnouncementBanner` on both dashboards, mirroring Learner Home. **No board was ever drawn for this** — `docs/SITEMAP.md` itself flags Announcements as "~100h+ of plan scope with zero boards." Logged here as a reconciliation finding, not as parity-verified work; see the dev-approach gap this raised. | 2026-11-26 |
+| 3C — Coordinator + Partner (everything else) | | | **Still "verification only, not done"** — the per-board visual-confirm pass this row originally called for (`CRD01`–`CRD05`, `PTN01/02`, `RPT01/02`, `SET01`) has not happened. Corrected from a flat "Not started," which was also wrong (3A-level cases list/detail/reports were already matched per the 3C table above) — this row conflated "not re-verified" with "not built." | 2026-11-27 |

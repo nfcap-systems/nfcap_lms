@@ -2,10 +2,12 @@
 
 ## Status as of 2026-11-25 (same-day follow-up session)
 
-**6 of 7 gaps closed. Only #6 remains, deliberately paused on a product decision.** Nothing is
-committed or pushed yet — everything below is still on `feature/phase5-funding-productisation` as
-uncommitted working-tree changes, verified by building, `tsc`/`eslint`, and live `agent-browser`
-walkthroughs as Learner/Coordinator/Partner Staff.
+**6 of 7 gaps closed. Only #6 remains, deliberately paused on a product decision.** **Merged to
+`stage` 2026-11-25** via PR #29 (`feature/phase5-funding-productisation`, commit `2c2abb7`, merge
+commit `65e11ca2`) — this section previously said "nothing is committed or pushed yet," written in
+the same commit that merged it; corrected 2026-11-27 during a doc-reconciliation pass. Everything
+below was verified by building, `tsc`/`eslint`, and live `agent-browser` walkthroughs as
+Learner/Coordinator/Partner Staff before that merge.
 
 - **#1 (case structure) — fully resolved**, not just planned. Two migrations applied to staging
   and verified against real data:
@@ -233,33 +235,34 @@ isn't mistaken for one later.)
 
 1. **#6** — needs a product decision (dashboard-only-with-fixes vs. real notifications/emails)
    before any code.
-2. **#6 aside, nothing else from this doc is blocking** — push/deploy readiness is now a commit
-   and CI question, not a correctness question. See `docs/build/PHASE_5_PROGRESS.md` for Phase 5's
-   own remaining item (Document Upload Limits — the 10-upload cap logic exists and is unchanged by
-   today's rewrite, but was never exercised with 10 real uploads).
-3. Nothing in this doc or `PHASE_5_PROGRESS.md` is committed or pushed yet — still uncommitted
-   working-tree changes on `feature/phase5-funding-productisation`, same as the day this doc was
-   first written.
+2. **#6 aside, nothing else from this doc is blocking.** See `docs/build/PHASE_5_PROGRESS.md` for
+   Phase 5's own remaining item (Document Upload Limits — the 10-upload cap logic exists and is
+   unchanged by today's rewrite, but was never exercised with 10 real uploads).
+3. **Corrected 2026-11-27:** everything in this doc (the #1 architecture split and gaps #2-5/#7)
+   merged to `stage` 2026-11-25 via PR #29 — see the Status section above. This doc previously said
+   it was still uncommitted; that line was written in the same commit that merged it and was never
+   updated afterward.
 
 ## Resume prompt for the next session
 
+**Superseded 2026-11-27 — #1 and gaps #2-5/#7 already merged to `stage` via PR #29 (2026-11-25,
+commit `2c2abb7`).** The prompt below was written before that merge and still describes the work as
+uncommitted; kept for history, but start from gap #6 directly instead of re-verifying what's
+already on `stage`.
+
 ```
-Resume: NFCAP LMS — WIOA spec alignment, gap #6, then push Phase 5
+Resume: NFCAP LMS — WIOA spec alignment, gap #6 (automation triggers)
 
-Repo: c:\Users\sthas\Projects\nfcap_lms. Base branch: stage, working branch:
-feature/phase5-funding-productisation. Read CLAUDE.md and CLAUDE.local.md first.
+Repo: c:\Users\sthas\Projects\nfcap_lms. Base branch: stage. Read CLAUDE.md and CLAUDE.local.md
+first.
 
-Context: docs/plans/wioa-spec-alignment-kickoff.md has the full history. As of 2026-11-25, 6 of 7
-spec-alignment gaps are resolved, including #1 (the full per-course -> master+funding case-
-structure split — schema, migrations, RLS, every consumer, and live-verified UI across Learner/
-Coordinator/Partner Staff roles). Only #6 (automation triggers) remains, deliberately paused on a
-product decision: dashboard-only (fix the missing appointment-reminder trigger + the calendar-vs-
-business-day bug) vs. real notifications/emails off the 5 triggers (materially bigger lift). Ask
-before picking a direction.
-
-Nothing from this branch has been committed or pushed yet — everything (the #1 architecture split
-and gaps #2-5/#7) is still uncommitted working-tree changes, verified via tsc/eslint and live
-agent-browser walkthroughs but not through a real code review or CI run.
+Context: docs/plans/wioa-spec-alignment-kickoff.md has the full history. 6 of 7 spec-alignment gaps
+are resolved and merged to stage (PR #29, 2026-11-25), including #1 (the full per-course ->
+master+funding case-structure split — schema, migrations, RLS, every consumer, and live-verified UI
+across Learner/Coordinator/Partner Staff roles). Only #6 (automation triggers) remains, deliberately
+paused on a product decision: dashboard-only (fix the missing appointment-reminder trigger + the
+calendar-vs-business-day bug) vs. real notifications/emails off the 5 triggers (materially bigger
+lift). Ask before picking a direction.
 
 Process: same as every prior phase — confirm with the user before merging, UI-verify before
 merge, CI green is not approval by itself. Nothing gets pushed without explicit go-ahead.

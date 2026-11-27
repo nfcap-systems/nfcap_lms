@@ -7,9 +7,11 @@ through `PHASE_4_PROGRESS.md`'s convention. Built on branch `feature/phase5-fund
 
 ## Status as of 2026-11-25 (updated, same-day follow-up session)
 
-**Nothing in this phase is committed or pushed yet, but it is now ready to be** — the
-architecture question that blocked committing is resolved. `docs/plans/wioa-spec-alignment-
-kickoff.md`'s #1 (case structure) has been fully built: the case/course split, migrations applied
+**Merged to `stage` 2026-11-25 via PR #29** (`feature/phase5-funding-productisation`, commit
+`2c2abb7`, merge commit `65e11ca2`) — this section previously said nothing was committed/pushed
+yet, written in the same commit that merged it; corrected 2026-11-27 during a doc-reconciliation
+pass. `docs/plans/wioa-spec-alignment-kickoff.md`'s #1 (case structure) has been fully built: the
+case/course split, migrations applied
 to staging and verified against live data, every consumer in this phase's own work rewritten
 against the new model, and the whole flow live-verified as Learner/Coordinator/Partner Staff. 6 of
 7 spec-alignment gaps are resolved; only #6 (automation triggers) remains, paused on a product
@@ -38,13 +40,12 @@ badge for each funding request, not a timeline — added (`FundingRequestTimelin
 - SPF/DKIM and bounce handling (feature #3) remain blocked on DNS access NFCAP hasn't provided —
   not something this session can resolve.
 
-## Why nothing here is committed yet (resolved blocker, still not pushed)
+## Why this took until 2026-11-25 to merge (resolved blocker)
 
 Mid-session on 2026-11-25, the user supplied the formal spec this module was meant to be built
 against and asked for an alignment check, which found a real architecture question (`WioaCase`
 should be one case per student, not one per course) plus six smaller gaps — full list in
 `docs/plans/wioa-spec-alignment-kickoff.md`. That architecture question is now resolved: the full
-case/course split is built, migrated, and live-verified (see that doc's status section), and 6 of
-the 7 gaps are closed. The remaining blocker to pushing is no longer architectural — it's simply
-that this work hasn't been committed/pushed/code-reviewed yet. #6 from the spec-alignment doc
-(automation triggers) is still open but does not block this phase or a push.
+case/course split is built, migrated, and live-verified (see that doc's status section), 6 of the 7
+gaps are closed, and the whole thing merged to `stage` the same day via PR #29. #6 from the
+spec-alignment doc (automation triggers) is still open but does not block this phase.

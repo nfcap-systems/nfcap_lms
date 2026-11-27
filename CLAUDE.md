@@ -124,11 +124,12 @@ Do not reopen decisions already closed in `PRODUCT_CONTEXT.md` or the client sco
   Age 18+ check, upload audit logging, stale-contact flagging, failed-email logging) are all
   fixed too, the last via its own small migration. Only automation triggers (dashboard-only, one
   missing entirely) remain open, paused on a product decision (dashboard-only-with-fixes vs. real
-  notifications). **Still nothing is committed or pushed** — this is all uncommitted working-tree
-  changes on `feature/phase5-funding-productisation`, verified by building/`tsc`/`eslint`/live
-  browser walkthroughs, not yet through code review or CI. Full evidence, what changed, and the
-  resume plan: `docs/plans/wioa-spec-alignment-kickoff.md`; Phase 5's own feature-by-feature
-  status against the new architecture: `docs/build/PHASE_5_PROGRESS.md`.
+  notifications). **Merged to `stage` 2026-11-25** via PR #29 (`feature/phase5-funding-productisation`,
+  commit `2c2abb7`, merge commit `65e11ca2`) — this line previously said "still uncommitted," written
+  in the same commit that merged it; corrected 2026-11-27 during a doc-reconciliation pass, the exact
+  kind of drift `docs/MOCKUP-INDEX.md`'s own maintenance rule warns about. Full evidence, what
+  changed, and the resume plan: `docs/plans/wioa-spec-alignment-kickoff.md`; Phase 5's own
+  feature-by-feature status against the new architecture: `docs/build/PHASE_5_PROGRESS.md`.
 - **Deployment: self-hosted, VPS + Docker.** Supabase is retained for database and object storage.
   Deploy target was decided 2026-11-01 (VPS + Docker). Replica count is still undecided but isn't a
   blocker — **build for 2+ instances** is already the working assumption everything is built

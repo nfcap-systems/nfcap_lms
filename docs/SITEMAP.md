@@ -73,12 +73,12 @@ Findings). Phase = plan phase that built or will build/extend it.
 | `/admin` | Dashboard (academy-shaped `DashboardView`; being **replaced** by `/dashboard/default` structure) | `ADM02-Dashboard` | — | core → 1/6 | Admin | extend |
 | `/admin/courses` | Courses list | `ADM05-Courses` | — | core | Admin | exists |
 | `/admin/courses/[courseId]` | Course detail + curriculum builder | `ADM06-CurriculumBuilder`, `ADM07-CriteriaAuthoring` | — | 1/3/7 | Admin | extend |
-| `/admin/pathway` | Pathway list | `ADM11-Pathway` | — | 1 | Admin | exists |
-| `/admin/pathway/apprenticeship` | Pathway detail + reorder | `ADM11-Pathway` | — | 1, 7 (keyboard reorder) | Admin | extend |
+| `/admin/pathway` | Pathway list | `ADM08-Pathway` | — | 1 | Admin | exists |
+| `/admin/pathway/apprenticeship` | Pathway detail + reorder | `ADM08-Pathway` | — | 1, 7 (keyboard reorder) | Admin | extend |
 | `/admin/learners` | Learner roster | `ADM03-Learners` | — | core | Admin | exists |
 | `/admin/learners/[learnerId]` | Learner detail / profile | `ADM04-LearnerDetail` | — | core | Admin | exists |
-| `/admin/roles` | Role Management — assign role, deactivate/reactivate | `ADM14-Roles` | — | 2 | Admin | exists |
-| `/admin/audit` | Audit Log | `ADM13-Audit` | — | 1 | Admin | exists |
+| `/admin/roles` | Role Management — assign role, deactivate/reactivate | `ADM17-Roles` | — | 2 | Admin | exists |
+| `/admin/audit` | Audit Log | `ADM16-Audit` | — | 1 | Admin | exists |
 | `/admin/account` | Account Settings | — (F3) | — | 2 | Admin | exists |
 | `/admin/analytics` | **Placeholder** (`AdminPlaceholderScreen`, "Future") | `RPT01-AdminReporting` | — | 1/6 | Admin | new (placeholder only) |
 | `/admin/settings` | **Placeholder** (`AdminPlaceholderScreen`, "Future") | `SET01-AdminSettings` | — | — | Admin | new (placeholder only) |
@@ -117,10 +117,10 @@ They are not invented rows — they are plan features that will need a route whe
 | Quiz start / question / result | `LRN05`–`LRN05c` | 6 | Quiz Engine Depth | Learner | extend (`QuizView` exists in-page) |
 | Public certificate verification | `LRN09-PublicVerify` | 4 | Public Verification Page + QR Code | **Public** | new (first public non-auth page beyond legal) |
 | Eligibility self-check | `LRN10b-EligibilitySelfCheck` | 5 | Eligibility Self-Check | Learner (pre-signup?) | new |
-| Reviewer queue | `ADM08-ReviewQueue` | 3 | Reviewer Queue | Admin | new |
-| Per-criterion review | `ADM09-PerCriterionReview` | 3 | Per-Criterion Review & Gated Certification | Admin | new |
-| Photo annotation | `ADM10-PhotoAnnotation` | 3 | Photo Annotation | Admin | new |
-| Cohorts | `ADM12-Cohorts` | 6 | Cohorts & Deadlines | Admin | new |
+| Reviewer queue | `ADM10-ReviewQueue` | 3 | Reviewer Queue | Admin | **exists** — `/admin/reviews`, PR #18 (board ID corrected 2026-11-27: was `ADM08-ReviewQueue`, renamed in the 2026-11-20 board resequencing) |
+| Per-criterion review | `ADM11-PerCriterionReview` | 3 | Per-Criterion Review & Gated Certification | Admin | **exists** — `/admin/learners/[learnerId]/review/[courseId]`, PR #19 (board ID corrected 2026-11-27: was `ADM09-PerCriterionReview`) |
+| Photo annotation | `ADM12-PhotoAnnotation` | 3 | Photo Annotation | Admin | **exists** — inside the review screen above, PR #20 (board ID corrected 2026-11-27: was `ADM10-PhotoAnnotation`) |
+| Cohorts | `ADM13-Cohorts` | 6 | Cohorts & Deadlines | Admin | **exists** — `/admin/cohorts`, PR #32, 2026-11-26 (board ID corrected 2026-11-27: was `ADM12-Cohorts`) |
 | Stalled cases | `CRD05-StalledCases` | 5 | Stalled-Case Detection & Follow-Up | Coordinator | new |
 
 ## Findings
@@ -152,7 +152,10 @@ tree. Confirm against `stage` before approval.
 
 **Phase mismatches against the roadmap's provisional list:**
 
-- **F11. `ADM13-Audit` and `ADM14-Roles`** are marked Phase 1 / 2 in the roadmap and are **built** (`exists`). `WIOA01/02` are Phase 0/5; the code is Phase 0 (`exists`), with Phase 5 extending.
+- **F11. `ADM16-Audit` and `ADM17-Roles`** (board IDs corrected 2026-11-27 — the 2026-11-20 board
+  resequencing in `docs/MOCKUP-INDEX.md` renamed these from `ADM13-Audit`/`ADM14-Roles`; this file
+  never picked up the rename) are marked Phase 1 / 2 in the roadmap and are **built** (`exists`).
+  `WIOA01/02` are Phase 0/5; the code is Phase 0 (`exists`), with Phase 5 extending.
 - **F12. `LRN12-SignUp`** is built (Phase 2); step 1 "short profile" fields match the plan (verified: DOB, phone, address, employment, UI status present).
 
 ## Journeys
