@@ -258,9 +258,9 @@ is unverified, say so in the row rather than guess.
 | `CAP-5` | `fix/wioa-upload-cap-handling` | PR #35 · `b0030e8` · merge `0782d5e` | On Stage | 2026-11-27 |
 | `NOTIF-0` | `feature/notifications-foundation` | PR #36 · merge `88496bd` | On Stage | 2026-11-27 |
 | `NOTIF-1` | `feature/notifications-foundation` | PR #36 · `6f904c5`, `495807f` · merge `88496bd` | On Stage | 2026-11-27 |
-| `NOTIF-2` | — | — | Unblocked by `NOTIF-0`, not briefed | 2026-11-27 |
-| `NOTIF-3` | — | — | Unblocked by `NOTIF-0`, not briefed. Needs a `NotificationType` migration | 2026-11-27 |
-| `CAP-3` | — | — | Unblocked by `NOTIF-0`/`NOTIF-1`, not briefed | 2026-11-27 |
+| `NOTIF-2` | `feature/notif-2-evidence-reviewed` | PR #38 · merge `ee70625` | On Stage | 2026-11-27 |
+| `NOTIF-3` | `feature/notif-3-wioa-follow-up-triggers` | PR #39 · `34e33dc` (open, CI pending) | In Review | 2026-11-27 |
+| `CAP-3` | — | — | Checked and confirmed still blocked — its board amendment (new follow-up-queue row type) is not drawn/approved, same as `CAP-4`/`CAP-6`. The earlier "not briefed" note undersold this: it's blocked, not just unbriefed. | 2026-11-27 |
 | `CAP-4` | — | — | Blocked on board amendment (not drawn) | — |
 | `CAP-6` | — | — | Blocked on board amendment (not drawn) | — |
 | This kickoff + Phase 6 baseline + defects file | `docs/notifications-and-upload-cap-kickoff` | pushed direct to `stage` through `ad47aaf` | On Stage | 2026-11-27 |
