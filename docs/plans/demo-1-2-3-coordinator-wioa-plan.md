@@ -303,3 +303,82 @@ other.
 `output: standalone`" — the deploy runs the standalone server instead. Same build output, so
 minification and `cacheComponents` behaviour hold, but it is not byte-for-byte the deployed
 serving path.
+
+---
+
+## 8. QC sign-off — Ticket A (2026-11-27)
+
+**Lead/QC session closed partway through this ticket; this sign-off was done in the single
+remaining session**, re-reviewing the executor's runtime evidence adversarially rather than
+accepting it at face value, per `docs/DEV-APPROACH.md`'s executor-does-not-accept-its-own-work
+rule — the separation of roles is preserved even though both now run in one session.
+
+### Runtime criteria 1–6: ACCEPTED
+
+All driven with `agent-browser` against the production build on port 3100, real clicks/selects/
+submits, not direct URL navigation (`CLAUDE.local.md` #10).
+
+- **Criterion 1** (both legs, as reworded in §7) — linear path driven on a fresh case
+  (`manjlla test` / Tile Installation) through all four steps to terminal; decline branch driven
+  on a separate non-terminal case (`Jordan Lee` / Tile Installation, from `TUITION_APPROVED`).
+  Both terminal states rendered correctly ("no further status change is possible").
+- **Criterion 2** — not just the `CourseUnlock` row (the documented trap, `CLAUDE.local.md` #9):
+  confirmed the real gate end-to-end as the learner — Home, Course Catalog, course detail page,
+  enroll flow, My Learning all checked. **Finding, not a blocker:** the Course Catalog card's
+  "Restricted" badge stays stale after a real unlock, even though the button and the course page
+  itself correctly reflect the unlock. Cosmetic, not a functional gate failure — logged for
+  Ticket B's attention since that work already touches course-access affordances, not reopened as
+  a Ticket A defect.
+- **Criterion 3** — `Jordan Lee`'s two pre-existing funding sections (Tile Installation, Flooring
+  Fundamentals) confirmed independently addressable with correct course names; driven to two
+  different outcomes to prove the independence isn't just visual.
+- **Criterion 4** (stale-select repro per §7's note) — two-tab repro performed on a freshly
+  created non-terminal case; real inline message confirmed in the production build: "Cannot move
+  this funding request from TRAINING_AUTHORIZATION_PENDING to TRAINING_AUTHORIZATION_PENDING." —
+  not `Minified React error #441`.
+- **Criterion 5** — learner's `/learner/funding` timeline confirmed accurate against every staff
+  advance made during this session, correctly dated.
+- **Criterion 6** — re-verified past the screen level, which this QC checked independently: the
+  Partner Staff RSC payload itself was captured (`agent-browser network request`) and grepped.
+  `courseTitle`/`funding`/`fundingRequests` keys are present in the object shape (expected, see
+  `src/lib/data/wioa.ts:501-509`'s own comment) but serialize to `null`/`"$undefined"`. Zero
+  occurrences of any `WioaFundingStatus` enum value anywhere in the payload. Cross-checked against
+  `getWioaCaseDetail` (`src/lib/data/wioa.ts:514-539`): the DB query always fetches `courseCases`
+  server-side (deliberate, commented as prototype-scale), but serialization gates on
+  `opts?.includeFunding`, which Partner Staff's call site never passes — matches what the payload
+  showed. No deeper leak at the query layer.
+
+### Criterion 7: ACCEPTED ON PRIOR EVIDENCE, NOT RE-RUN
+
+CI-green on PR #37 and the clean local production build were logged in §7 before this QC pass;
+not independently re-verified here (no Docker in this environment, as `CLAUDE.md` warns, so the
+full Vitest/Playwright suite can't be run locally either). This is a real gap in this sign-off,
+not an oversight — flagged rather than silently assumed.
+
+### Conclusion
+
+**Ticket A (DEMO-3) is QC'd and accepted.** All 7 acceptance criteria hold under real
+browser-driven verification in a production build, including the two traps this plan explicitly
+warned about (`CLAUDE.local.md` #9's CourseUnlock-row-isn't-the-test, and #11's
+Minified-React-error swallowing expected validation messages). The funding pipeline genuinely
+works end to end now — the client's stated priority (§1, §2) is met. No code changes required as
+a condition of this sign-off; the one finding (stale Catalog badge) is deferred to Ticket B by
+design, not left open against Ticket A.
+
+**Known gaps in this sign-off, for the record:** Criterion 7 rests on previously-logged results,
+not re-run; E2E Playwright coverage wasn't exercised (same Docker constraint); only
+coordinator/learner/partner roles were checked, not admin. None of these are reasons to withhold
+acceptance — they're the same environment limitations every session in this repo hits — but they
+should be closed out whenever Docker becomes available in an agent sandbox, not assumed clean
+indefinitely.
+
+**Data-hygiene note, not a Ticket A defect:** this verification pass left live changes on the
+shared staging DB — `manjlla test` is now enrolled in Tile Installation and has a second
+(fresh) Flooring Fundamentals funding case at `ETPL_TRAINING_REQUESTED`; `Jordan Lee` now has
+Tile Installation declined and Flooring Fundamentals complete. Worth a conscious decision before
+these accounts are used again for a client demo or a fresh verification pass, since they no
+longer reflect clean seed state.
+
+**Next:** Ticket B (DEMO-1/DEMO-2) remains blocked exactly as stated in §4 — Salesforce UI
+references, the Q2 scope decision, and the CRD board amendment approval. None of those were
+touched by this QC pass.
