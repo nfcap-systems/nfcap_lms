@@ -207,6 +207,14 @@ them, never at module scope, or you crash unrelated test files in CI.
 --- Finishing ---
 
 Run npm run format, npm run lint, npm run build, npm test.
+
+Before `gh pr create`, run `gh auth status`. If anishb-nepa is the active
+account, run `gh auth switch --user manjila-tech` first — the active gh account
+drifts on its own between commands, and anishb-nepa lacks merge permission by
+design (Anish approves Manjila's PRs, he doesn't open them). Git commit
+authorship is separate and stays correct, which is what makes this easy to miss.
+See CLAUDE.md's known environment issues.
+
 Open ONE PR to stage, titled:
   "fix: WIOA upload cap — surface the refusal, log it, test it"
 End your handoff with an explicit "Not verified" list.
