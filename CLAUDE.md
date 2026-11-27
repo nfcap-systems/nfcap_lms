@@ -205,6 +205,14 @@ data-dependent pages as you touch them, rather than waiting for another live fai
   of it in Next.js itself). Gating it to production dropped that to ~1-2s per route, with zero change
   to production builds, CI, or deploys. Don't remove the gate to "simplify" the config — dev was never
   using what it bought.
+- **The active `gh` account drifts to `anishb-nepa` on its own between commands** (observed twice,
+  2026-11-27) — not something this session changed deliberately. `anishb-nepa` lacks merge
+  permission on this repo (by design: Manjila's PRs are approved by Anish, not merged by him), so a
+  `gh pr merge`/`gh pr create` can fail or silently act as the wrong identity. Check
+  `gh auth status` before any `gh` write operation and `gh auth switch --user manjila-tech` first if
+  it shows `anishb-nepa` active — git commit authorship (`git config user.name`) is separate and
+  usually stays correct as `manjila`, but the `gh` CLI's active account is what actually
+  pushes/merges/comments on GitHub's side.
 
 ## Conventions
 
