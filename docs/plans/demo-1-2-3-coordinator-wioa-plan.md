@@ -1,9 +1,18 @@
 # DEMO-1 / DEMO-2 / DEMO-3 — Coordinator WIOA case screen: plan
 
-**Status:** plan, awaiting approval. Nothing here is built.
+**Status:** Ticket A built and merged (PR #37, `0233313`, merge commit `10e3274`); QC in progress.
+Ticket B blocked — see §4.
 **Register:** `docs/plans/demo-feedback-2026-11-27.md` (client demo, 2026-11-27).
 **Owner split:** lead session plans and QCs; an executor builds. The lead does not build; the
 executor does not accept its own work (`docs/DEV-APPROACH.md`).
+
+**Session model for the DEMO track — decided 2026-11-27 (Sadin).** The two-session split
+**stays in force for DEMO work.** Commit `f6c9d12` recorded the lead/QC session closing, but its
+wording scopes that to the NOTIF/CAP plan and says nothing about DEMO; this entry resolves the
+ambiguity rather than leaving it to be re-guessed. The reason the split is kept here is
+throughput: the executor runs Ticket A's verification while the lead starts Ticket B's design,
+instead of the two running in series. QC judgement stays with the lead either way — an executor
+accepting its own build is the one thing the split exists to prevent.
 **Out of scope for this plan and this executor:** the Phase 6 notifications foundation and WIOA
 upload-cap track (`docs/plans/notifications-and-upload-cap-kickoff.md`) — different lead, executor
 mid-build, separate worktree at `../nfcap_lms-wt-notif`. Do not touch it.
@@ -247,3 +256,50 @@ Q1 and Q4 are product questions. The executor must not resolve either by choosin
 - **Nothing inside `$transaction` but database writes** — no uploads, no fetches.
 - **Expected failures return, unexpected ones throw.** CLAUDE.md, "Error handling convention".
 - **End the handoff with a "Not verified" list.** `docs/DEV-APPROACH.md`.
+
+---
+
+## 7. QC log — Ticket A (lead session, 2026-11-27)
+
+**Static review: complete. Runtime criteria 1–5: delegated to an executor, not yet reported.**
+
+### Verified
+
+- **A1** — `advanceWioaFundingStatus` returns `WioaActionResult`. The blanket `catch` around the
+  whole `withRlsContext` call converts *any* error, not just expected ones, into an inline
+  message. Checked against `advanceWioaEligibilityStatus` before reporting it: that function does
+  exactly the same thing, so this is the codebase's established post-`CLAUDE.local.md`-#11 pattern,
+  **not a Ticket A regression**. Worth revisiting as a convention, separately, for all three.
+- **A3** — the `fundingRequests?.[0]` pinning is gone; one `FundingSection` per entry.
+- **A5** — `updateWioaFunding` now looks up `masterCaseId` and revalidates the real route.
+- **A6** — a genuine partial unique index `WHERE "closedAt" IS NULL`, correctly reasoned in both
+  the migration and the schema comment, and **applied to the database**: `npm run db:status`
+  reports "Database schema is up to date!" `CLAUDE.local.md` #8 was avoided.
+- **Criterion 6 (structural)** — `courseTitle`, `funding` and `fundingRequests` are all gated on
+  `opts?.includeFunding` (`src/lib/data/wioa.ts:598-601`), so Partner Staff's fetch yields
+  `null`/absent. Payload still to be confirmed at runtime.
+- **Criterion 7** — CI green on PR #37 (Build, Test). Local production build clean, TypeScript
+  clean. Local unit tests cannot run in this sandbox: no Docker, as CLAUDE.md warns.
+
+### Findings
+
+| # | Finding | Evidence | Disposition |
+| --- | --- | --- | --- |
+| Q-1 | **A7 is incomplete.** The header badge was removed, but the back-compat first-course `courseTitle` is still rendered as "Course / pathway" in Case details — so a two-course learner is silently described by their first course only. S4 was moved, not fixed. | `WioaCaseDetailView.tsx:211`, populated at `src/lib/data/wioa.ts:599` as `courseCases[0]?.course.title` | **Fold into Ticket B**, which rewrites this header anyway (§4.4). Not a merge-blocker. |
+| Q-2 | **A declined funding request displays as "Step 5 of 5"** — the furthest-along position in the pipeline, past `APPRENTICESHIP_ENROLLMENT_COMPLETE` at "Step 4 of 5". `WIOA_FUNDING_STATUS_ORDER` is an enum listing in which `FUNDING_DECLINED` happens to sit last; the step indicator treats it as a sequence. | `WioaCaseDetailView.tsx` `FundingAdvanceControl`, `stepIndex` off `WIOA_FUNDING_STATUS_ORDER.indexOf`; order at `src/lib/wioa/status.ts:102` | **Ticket B**, as part of the step-path design (§4.2). A failure branch must not render as the final step. |
+| Q-3 | **Acceptance criterion 1 is unsatisfiable as written** — "every step of `WIOA_FUNDING_STATUS_ORDER`" cannot be traversed, because `FUNDING_DECLINED` is a terminal *branch* and both terminals return `[]` from `nextFundingStatusOptions`. The criterion is wrong, not the build. | `src/lib/wioa/status.ts:126-134` | **Criterion reworded below.** |
+
+**Criterion 1, corrected:** a coordinator can move a funding case along the linear path
+`ETPL_TRAINING_REQUESTED → TRAINING_AUTHORIZATION_PENDING → TUITION_APPROVED →
+APPRENTICESHIP_ENROLLMENT_COMPLETE` using on-screen controls only, and can separately take a
+non-terminal case to `FUNDING_DECLINED` as a branch.
+
+**Note for criterion 4:** the select only ever offers valid options, so an invalid transition
+cannot be produced by ordinary clicking. The realistic repro — and a real user scenario — is a
+**stale page**: open the case in two tabs, advance in one, submit the now-stale option in the
+other.
+
+**Fidelity caveat:** verification runs on `npx next start`, which warns it "does not work with
+`output: standalone`" — the deploy runs the standalone server instead. Same build output, so
+minification and `cacheComponents` behaviour hold, but it is not byte-for-byte the deployed
+serving path.
