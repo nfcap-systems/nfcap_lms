@@ -102,6 +102,17 @@ the approval, not the drawing — the boards were reviewed and approved by the l
 so the gate is satisfied by a second pair of eyes even though the drawing wasn't. `NOTIF-1`'s
 "Not verified" list should be treated as load-bearing when it lands.
 
+**Deviation, decided 2026-11-27 by Sadin — the lead/QC session is closed; one session now plans,
+builds, and checks its own work for the remainder of this plan.** This drops the two-session split
+entirely, not just for one ticket the way the `NOTIF-1` deviation above did. Grounds: the remaining
+tickets (`NOTIF-2`, `CAP-3`, `NOTIF-3`, and whatever `CAP-4`/`CAP-6` turn into once their boards are
+drawn) are small and fully specified, so a second pair of eyes buys less than it costs in session
+overhead at this point in the plan. Mitigation: the "Not verified" list on every PR from here on is
+the only QC that exists — it has to be treated as the real gate, not a formality, and anything
+genuinely unverified has to be written as unverified rather than rounded up to done. If scope grows
+past what fits this description, the two-session split is the default to return to, not something
+to re-litigate ticket by ticket.
+
 ## Ticket IDs
 
 Stable local IDs, because work is handed to a separate session and must be referenceable in chat,
