@@ -286,10 +286,25 @@ const MAX_UPLOADS_PER_DOCUMENT = 10;
 
 /** Learner document upload (spec Section 9), against the master case's eligibility checklist.
  * Verifies the document belongs to the caller before touching Storage or the DB — a server action
- * can be invoked directly, so ownership can't be assumed from what the UI shows. */
-export async function uploadWioaDocument(documentId: string, file: File): Promise<void> {
+ * can be invoked directly, so ownership can't be assumed from what the UI shows.
+ *
+ * Expected failures (the upload cap, the rate limit) are returned as `WioaActionResult`, not
+ * thrown — same reasoning as `advanceWioaEligibilityStatus`/`updateWioaFunding` (CLAUDE.md's
+ * "Error handling convention", CLAUDE.local.md #11): /learner/funding's DocumentCard rendering is
+ * conditional on `doc.status`, so a thrown error here is exactly the shape of page that can
+ * swallow it into a generic "Minified React error #441" and never reach the learner. The
+ * ownership check stays a `throw` — it runs before any of that conditional rendering is reached
+ * for this document, and should hit the error boundary like a real access-control failure. */
+export async function uploadWioaDocument(
+  documentId: string,
+  file: File,
+): Promise<WioaActionResult> {
   const user = await requireUser();
-  await enforceRateLimit(user.id, 'wioa-document-upload', 20, 15 * 60 * 1000);
+  try {
+    await enforceRateLimit(user.id, 'wioa-document-upload', 20, 15 * 60 * 1000);
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : 'Too many attempts.' };
+  }
 
   // Ownership-check read only, same deliberate trade-off as requireMasterCaseAccess above —
   // stays on the plain `prisma` client so a non-owner gets this function's explicit "Not your
@@ -308,9 +323,21 @@ export async function uploadWioaDocument(documentId: string, file: File): Promis
   const priorVersionCount = await prisma.wioaDocumentVersion.count({ where: { documentId } });
   const totalUploads = priorVersionCount + (doc.uploadedAt ? 1 : 0);
   if (totalUploads >= MAX_UPLOADS_PER_DOCUMENT) {
-    throw new Error(
-      `This document has already been uploaded ${totalUploads} times, the most we allow. Contact your WIOA case manager if you need to submit a different file.`,
-    );
+    // Nobody had ever confirmed this cap fires in production (CAP-5), and nothing recorded it
+    // when it did — logged before returning so the refusal has an audit trail even though the
+    // learner-facing copy (CAP-1) deliberately doesn't mention the cap itself.
+    await logAuditEvent({
+      actor: user,
+      action: 'WIOA_DOCUMENT_UPLOAD_CAP_REACHED',
+      targetType: 'WioaDocument',
+      targetId: documentId,
+      metadata: { masterCaseId: doc.masterCaseId, requirementId: doc.requirementId, totalUploads },
+    });
+    return {
+      ok: false,
+      error:
+        "Let's get your case manager to look at this one — message them and they'll help you upload a new file.",
+    };
   }
 
   // Each upload gets its own storage object — never overwritten or deleted — so a superseded
@@ -390,6 +417,7 @@ export async function uploadWioaDocument(documentId: string, file: File): Promis
   });
 
   revalidatePath('/learner/funding');
+  return { ok: true };
 }
 
 /** Short-lived signed URL for staff to view an uploaded document (WIOA_INTEGRATION_PLAN.md

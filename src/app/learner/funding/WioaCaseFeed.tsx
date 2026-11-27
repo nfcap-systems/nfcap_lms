@@ -73,7 +73,9 @@ export function WioaCaseFeed({ wioaCase }: { wioaCase: WioaCaseRecord }) {
           );
           return idx > max ? idx : max;
         }, -1)
-      : WIOA_UI_PHASES.indexOf(WIOA_STATUS_PHASE[wioaCase.status] as (typeof WIOA_UI_PHASES)[number]);
+      : WIOA_UI_PHASES.indexOf(
+          WIOA_STATUS_PHASE[wioaCase.status] as (typeof WIOA_UI_PHASES)[number],
+        );
 
   const phaseDate = (phase: (typeof WIOA_UI_PHASES)[number]) =>
     wioaCase.statusHistory.find((h) => WIOA_STATUS_PHASE[h.status] === phase)?.changedAt ?? null;
@@ -187,9 +189,14 @@ function DocumentCard({ doc }: { doc: WioaDocumentRecord }) {
     setError(null);
     startTransition(async () => {
       try {
-        await uploadWioaDocument(doc.id, file);
-        toast.success(`${doc.requirementName} uploaded`);
-        router.refresh();
+        const result = await uploadWioaDocument(doc.id, file);
+        if (!result.ok) {
+          setError(result.error);
+          toast.error(result.error);
+        } else {
+          toast.success(`${doc.requirementName} uploaded`);
+          router.refresh();
+        }
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Upload failed. Please try again.';
         setError(message);
