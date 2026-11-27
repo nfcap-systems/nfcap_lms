@@ -2,7 +2,7 @@
 
 import { Icon } from '@/components/icons';
 import { GlobalSearch } from './GlobalSearch';
-import { NotificationsMenu } from './NotificationsMenu';
+import { StaffNotificationsBell } from '@/components/admin-shell/StaffNotificationsBell';
 
 export type HeaderProps = {
   title: string;
@@ -51,7 +51,12 @@ export function Header({
       </div>
       <div className="ml-auto flex shrink-0 items-center gap-1">
         <GlobalSearch />
-        <NotificationsMenu />
+        {/* This component (and AppShell, which is its only consumer) is unreachable from any live
+            route today — coordinator/partner moved off it onto the admin-ui shell
+            (src/app/coordinator/layout.tsx's own comment). No userId is available here to fetch
+            real notifications, and nothing can exercise this in the running app, so this is a
+            static placeholder rather than live data — kept compiling, not verified. */}
+        <StaffNotificationsBell notifications={[]} unreadCount={0} />
       </div>
     </header>
   );

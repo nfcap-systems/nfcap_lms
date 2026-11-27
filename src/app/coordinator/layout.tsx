@@ -3,6 +3,7 @@ import { AppSidebar } from '@/components/admin-shell/AppSidebar';
 import { AdminHeader } from '@/components/admin-shell/AdminHeader';
 import { AccountMenuSkeleton } from '@/components/admin-shell/HeaderAccountMenu';
 import { ResolvedAccountMenu } from '@/components/admin-shell/ResolvedAccountMenu';
+import { ResolvedStaffNotifications } from '@/components/admin-shell/ResolvedStaffNotifications';
 import { SidebarInset, SidebarProvider } from '@/components/admin-ui/sidebar';
 import { TooltipProvider } from '@/components/admin-ui/tooltip';
 import { coordinatorNav } from '@/lib/nav';
@@ -27,6 +28,11 @@ export default function CoordinatorLayout({ children }: { children: React.ReactN
         <SidebarInset>
           <AdminHeader
             navItems={coordinatorNav}
+            notificationsMenu={
+              <Suspense fallback={null}>
+                <ResolvedStaffNotifications />
+              </Suspense>
+            }
             accountMenu={
               <Suspense fallback={<AccountMenuSkeleton />}>
                 <ResolvedAccountMenu accountHref="/coordinator/account" />

@@ -9,7 +9,6 @@ import { isNavItemActive } from '@/lib/nav';
 import type { NavItem } from '@/lib/nav';
 import { GlobalSearch } from './GlobalSearch';
 import { LogoutButton } from './LogoutButton';
-import { NotificationsMenu } from './NotificationsMenu';
 
 export type LearnerHeaderProps = {
   navItems: NavItem[];
@@ -19,6 +18,10 @@ export type LearnerHeaderProps = {
   /** Rendered after the mapped navItems — a Server Component slot (e.g. the Suspense-wrapped
    * WioaNavLink) that resolves independently instead of blocking the rest of the header. */
   extraNavSlot?: React.ReactNode;
+  /** Suspense-wrapped ResolvedLearnerNotifications (NOTIF-1) — rendered at both the desktop and
+   * mobile bell positions below, same "same slot, two positions, CSS breakpoint picks which one
+   * is visible" pattern this file already uses for accountMenu. */
+  notificationsSlot?: React.ReactNode;
 };
 
 // Mobile bottom bar always shows these 4 in this order, regardless of navItems' own order —
@@ -59,6 +62,7 @@ export function LearnerHeader({
   learnerEmail,
   learnerInitial,
   extraNavSlot,
+  notificationsSlot,
 }: LearnerHeaderProps) {
   const pathname = usePathname();
   const [prevPathname, setPrevPathname] = useState(pathname);
@@ -198,7 +202,7 @@ export function LearnerHeader({
             <button type="button" aria-label="Messages" disabled className="lhdr-iconbtn2">
               <Icon name="message-circle" className="h-4.5 w-4.5" />
             </button>
-            <NotificationsMenu variant="plain" />
+            {notificationsSlot}
             <div className="lhdr-vdivider" />
 
             <div
@@ -265,7 +269,7 @@ export function LearnerHeader({
             </button>
             {accountMenu}
           </div>
-          <NotificationsMenu variant="plain" />
+          {notificationsSlot}
         </div>
         <div className="lhdr-mobiletop-search">
           <GlobalSearch variant="pill" navItems={navItems} />
