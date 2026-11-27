@@ -245,16 +245,37 @@ is unverified, say so in the row rather than guess.
 | `CAP-1` | `fix/wioa-upload-cap-handling` | PR #35 · `4e8ea89` · merge `0782d5e` | On Stage | 2026-11-27 |
 | `CAP-2` | `fix/wioa-upload-cap-handling` | PR #35 · `24a63a3` · merge `0782d5e` | On Stage | 2026-11-27 |
 | `CAP-5` | `fix/wioa-upload-cap-handling` | PR #35 · `b0030e8` · merge `0782d5e` | On Stage | 2026-11-27 |
-| `NOTIF-0` | — | — | Planned | — |
-| `NOTIF-1` | — | — | Unblocked (Step 0 approved), not started | 2026-11-27 |
-| `NOTIF-2` | — | — | Planned | — |
-| `NOTIF-3` | — | — | Planned | — |
-| `CAP-3` | — | — | Blocked on `NOTIF-0`/`NOTIF-1` | — |
-| `CAP-4` | — | — | Blocked on board amendment | — |
-| `CAP-6` | — | — | Blocked on board amendment | — |
-| This kickoff + Phase 6 baseline + defects file | `docs/notifications-and-upload-cap-kickoff` | — | In progress, docs PR not yet opened | 2026-11-27 |
+| `NOTIF-0` | `feature/notifications-foundation` | PR #36 · merge `88496bd` | On Stage | 2026-11-27 |
+| `NOTIF-1` | `feature/notifications-foundation` | PR #36 · `6f904c5`, `495807f` · merge `88496bd` | On Stage | 2026-11-27 |
+| `NOTIF-2` | — | — | Unblocked by `NOTIF-0`, not briefed | 2026-11-27 |
+| `NOTIF-3` | — | — | Unblocked by `NOTIF-0`, not briefed. Needs a `NotificationType` migration | 2026-11-27 |
+| `CAP-3` | — | — | Unblocked by `NOTIF-0`/`NOTIF-1`, not briefed | 2026-11-27 |
+| `CAP-4` | — | — | Blocked on board amendment (not drawn) | — |
+| `CAP-6` | — | — | Blocked on board amendment (not drawn) | — |
+| This kickoff + Phase 6 baseline + defects file | `docs/notifications-and-upload-cap-kickoff` | pushed direct to `stage` through `ad47aaf` | On Stage | 2026-11-27 |
 
-**`On Stage` is not `Done`.** `CAP-1`/`CAP-2`/`CAP-5` are merged to `stage`; `stage` has never been
+**What `NOTIF-0`/`NOTIF-1` actually shipped** (PR #36, merged 2026-11-27): an internal
+`emitNotification` (`src/lib/notifications/emit.ts`, deliberately *not* a `'use server'` module)
+that `createNotification` now delegates to while keeping its own role gate — so system-generated
+notifications are no longer blocked by the acting user's role. The shared `NotificationsMenu` is
+gone, replaced by `LearnerNotificationsBell` and `StaffNotificationsBell` per Decision 1, both fed
+by server-only resolvers under their own `Suspense` boundary, both with an unread badge —
+`getUnreadNotificationCount`'s first caller. Mark-read failures are caught at all four call sites
+and surfaced as a toast rather than a swallowed `Minified React error #441`, per `CLAUDE.md`'s
+error-handling convention.
+
+**Two things that came out of it, neither actioned:**
+
+- `src/components/layout/Header.tsx` and `AppShell.tsx` are dead code — unreachable from any route
+  since coordinator/partner moved onto the admin-ui shell. PR #36 wired a static placeholder bell
+  into them rather than deleting them, deliberately and with a comment saying so. Needs a cleanup
+  ticket; belongs in `docs/build/DEFECTS_AND_HARDENING.md`, not in a feature PR.
+- No pixel-level comparison against the `LRN18`/`ADM18` boards was done by the executor, because
+  the executor drew those boards (see the recorded deviation). The lead's independent UI check is
+  the only verification of that, and it is what gated the merge.
+
+**`On Stage` is not `Done`.** `CAP-1`/`CAP-2`/`CAP-5` and `NOTIF-0`/`NOTIF-1` are merged to
+`stage`; `stage` has never been
 promoted to `main` and nothing in this repo is in production. Phase 5 feature #6 (Document Upload
 Limits) is therefore *verified*, not shipped — `docs/build/PHASE_5_PROGRESS.md` should say exactly
 that and no more.
@@ -317,18 +338,24 @@ that shapes naming and copy).
 
 State as of 2026-11-27, end of day:
 
-- The fix track is done and On Stage. CAP-1/CAP-2/CAP-5 merged via PR #35 (merge commit 0782d5e),
-  closing Phase 5 feature #6. On Stage, not Done — nothing is in production.
-- Step 0's two notification panel boards are DRAWN and APPROVED, so NOTIF-1 is unblocked. They
-  were drawn by the executor, not the lead; that deviation and its one mitigation (the lead's
-  approval) are recorded in the deviations section. The learner board is LRN18-NotificationsPanel
-  and its MOCKUP-INDEX.md row landed in 2c4cbb1.
-- Next buildable work is NOTIF-0 (split the emit path) and NOTIF-1 (the two panels). NOTIF-0 has
-  no dependency at all. Neither is briefed yet — only this file's Step 2 describes them.
-- The three board amendments (CAP-3, CAP-4, CAP-6) are still undrawn, so those three stay blocked.
-- NOTIF-3 needs a migration (NotificationType has no value for the cap event). Per
-  CLAUDE.local.md #8, generate AND apply it before writing code against it; per #3, restart the
-  dev server after prisma generate.
+- Five of the ten tickets are On Stage, not Done — nothing is in production.
+  CAP-1/CAP-2/CAP-5 merged via PR #35 (merge 0782d5e), closing Phase 5 feature #6.
+  NOTIF-0/NOTIF-1 merged via PR #36 (merge 88496bd) — the emit path is split and both
+  notification panels are live on stage with unread badges.
+- Step 0 is closed: both boards drawn and approved, LRN18-NotificationsPanel indexed in 2c4cbb1.
+  The boards were drawn by the executor rather than the lead; that deviation and its mitigation
+  are recorded in the deviations section.
+- CAP-3 is now unblocked and is the smallest remaining piece — one emitNotification call plus a
+  follow-up-queue row. NOTIF-2 (EVIDENCE_REVIEWED emitter) is unblocked and has no migration.
+  Neither is briefed; only this file's Step 2 and Step 3 describe them.
+- NOTIF-3 is unblocked but needs a NotificationType migration, plus the two WIOA spec gaps folded
+  in (the missing upcoming-appointment trigger, and the calendar-vs-business-day bug). Per
+  CLAUDE.local.md #8, generate AND apply the migration before writing code against it; per #3,
+  restart the dev server after prisma generate.
+- CAP-4 and CAP-6 stay blocked — their board amendments are still undrawn, and the open product
+  question below may change their shape entirely.
+- Loose end from PR #36, not actioned: Header.tsx and AppShell.tsx are dead code with a
+  placeholder bell wired in. Needs a cleanup ticket in docs/build/DEFECTS_AND_HARDENING.md.
 
 The one unanswered product question that outranks everything: does any WIOA document requirement
 need more than one file? A slot holds exactly one live file today. Ask NFCAP before building
