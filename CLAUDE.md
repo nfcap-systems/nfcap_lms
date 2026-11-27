@@ -21,6 +21,9 @@ Read `docs/HANDOFF.md` first — it is the onboarding entry point. Then, by ques
 | Phase 3 execution status — what's done, what's open, why | `docs/build/PHASE_3_PROGRESS.md` |
 | **Active:** Phase 3 build + the design-system migration it depends on, started without Plane connected — branch/PR naming, progress log, deliberate deviations from `DEV-APPROACH.md`, and the exact backfill-into-Plane steps | `docs/plans/phase-3-and-design-migration-kickoff.md` |
 | **Active:** Phase 5 kickoff — corrected worklist after the 2026-11-25 code audit, open product questions, process decisions | `docs/plans/phase-5-funding-productisation-kickoff.md` |
+| **Active:** Notifications foundation (Phase 6 feature #3) + WIOA upload-cap handling — three closed decisions (two panels, in-app only, build-as-capability), `NOTIF-*`/`CAP-*` worklist, boards still to draw, Plane backfill steps | `docs/plans/notifications-and-upload-cap-kickoff.md` |
+| Phase 6 execution status — what the 2026-11-25 audit found already built vs. labeled "Not Started" | `docs/build/PHASE_6_PROGRESS.md` |
+| Defects, regressions and cross-cutting hardening — the things that are not one of the 65 scoped features | `docs/build/DEFECTS_AND_HARDENING.md` |
 | **Active, supersedes the Phase 5 worklist for now:** WIOA module spec-alignment gaps found 2026-11-25 against the formal developer spec — the per-course-vs-per-student case-structure question and six smaller gaps, with the resume plan | `docs/plans/wioa-spec-alignment-kickoff.md` |
 | What the 2026-11-25 code-level audit actually found per feature in Phases 5–8 (and re-checked Phase 0/3/4 open items), with file:line evidence | `docs/build/CODE_VERIFICATION_AUDIT_2026-11-25.md` |
 | WIOA module shape and closed decisions | `docs/wioa/WIOA_INTEGRATION_PLAN.md`, `docs/build/WIOA_BUILD_WORKFLOW.md` |
