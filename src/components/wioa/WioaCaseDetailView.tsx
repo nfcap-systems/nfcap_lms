@@ -34,11 +34,7 @@ import {
 import type { WioaCaseDetail, WioaDocumentRecord } from '@/lib/data/wioa';
 import type { LearnerRecord } from '@/lib/data/learners';
 import type { WioaEligibilityStatus, AppointmentType } from '@/generated/prisma/enums';
-import {
-  WIOA_STATUS_LABEL,
-  WIOA_STATUS_PHASE,
-  nextStatusOptions,
-} from '@/lib/wioa/status';
+import { WIOA_STATUS_LABEL, WIOA_STATUS_PHASE, nextStatusOptions } from '@/lib/wioa/status';
 
 const docStatusTone: Record<
   WioaDocumentRecord['status'],
@@ -720,15 +716,14 @@ function FundingCard({ wioaCase }: { wioaCase: WioaCaseDetail }) {
       return;
     }
     startTransition(async () => {
-      try {
-        await updateWioaFunding(courseCaseId, fields);
-        toast.success('Funding details saved');
-        router.refresh();
-      } catch (err) {
-        const message = err instanceof Error ? err.message : 'Could not save funding details.';
-        setError(message);
-        toast.error(message);
+      const result = await updateWioaFunding(courseCaseId, fields);
+      if (!result.ok) {
+        setError(result.error);
+        toast.error(result.error);
+        return;
       }
+      toast.success('Funding details saved');
+      router.refresh();
     });
   }
 
@@ -875,24 +870,23 @@ function StatusCard({ wioaCase }: { wioaCase: WioaCaseDetail }) {
     if (!nextStatus) return;
     setError('');
     startTransition(async () => {
-      try {
-        await advanceWioaEligibilityStatus(
-          wioaCase.id,
-          nextStatus,
-          appointmentType && scheduledAt
-            ? { type: appointmentType, scheduledAt, notes: notes || undefined }
-            : undefined,
-        );
-        toast.success('Case status updated');
-        setNextStatus('');
-        setScheduledAt('');
-        setNotes('');
-        router.refresh();
-      } catch (err) {
-        const message = err instanceof Error ? err.message : 'Could not advance this case.';
-        setError(message);
-        toast.error(message);
+      const result = await advanceWioaEligibilityStatus(
+        wioaCase.id,
+        nextStatus,
+        appointmentType && scheduledAt
+          ? { type: appointmentType, scheduledAt, notes: notes || undefined }
+          : undefined,
+      );
+      if (!result.ok) {
+        setError(result.error);
+        toast.error(result.error);
+        return;
       }
+      toast.success('Case status updated');
+      setNextStatus('');
+      setScheduledAt('');
+      setNotes('');
+      router.refresh();
     });
   }
 

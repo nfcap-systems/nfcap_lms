@@ -165,6 +165,28 @@ to Phase 8.
    holds a Supavisor pooler slot. `src/lib/actions/wioa.ts:187` does this correctly: storage write
    first, then the transaction.
 
+## Error handling convention — Server Actions on data-dependent pages
+
+Added 2026-11-27 after a client demo hit this live on `/coordinator/[caseId]`. A Server Action that
+validates by `throw new Error('message')` can have that message silently replaced by a generic,
+useless `Minified React error #441` on any page whose component tree shape varies with the data
+being rendered (e.g. a form section that disappears entirely once a status goes terminal, or
+fields that only render for certain selections) — `cacheComponents` (PPR)'s resumable-tree
+reconciliation can mismatch on pages like that, and when it does, a thrown action error gets
+swallowed instead of delivered to the client. The validation logic itself isn't broken — confirmed
+by checking the production server's own terminal log, which still shows the real message even
+though the browser doesn't — but the user sees a crash-looking error with zero actionable
+information. Full incident: `CLAUDE.local.md` #11.
+
+**Convention:** for a Server Action that can fail in an *expected* way (validation, business-rule
+gating) and is called from a page with data-dependent conditional rendering, return a result
+(`{ ok: true } | { ok: false; error: string }`, see `WioaActionResult` in
+`src/lib/actions/wioa.ts`) instead of throwing, and have the caller check `result.ok` instead of
+try/catch. Reserve `throw` for genuinely unexpected failures (access control, not-found) that
+should hit Next's error boundary rather than be shown inline. `advanceWioaEligibilityStatus` and
+`updateWioaFunding` already follow this; convert other throw-based actions on similarly
+data-dependent pages as you touch them, rather than waiting for another live failure to surface it.
+
 ## Known environment issues
 
 - **`git` does not work in agent sessions.** The repo is owned by `sthas` but sessions may run as a

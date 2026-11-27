@@ -502,70 +502,85 @@ export async function setWioaDocumentStatus(
 /** Staff-driven eligibility status transition (master case) — linear, not skippable/reversible
  * except into CLOSED_INELIGIBLE. Optionally creates an ORIENTATION/INTAKE Appointment row in the
  * same action when advancing into an appointment-shaped status. */
+/** Expected validation failures are returned, not thrown — Next.js's cacheComponents/PPR
+ * resumable-tree reconciliation can swallow a thrown Server Action error on a page whose render
+ * shape varies with case data (CLAUDE.local.md #11), replacing it with a useless generic
+ * "Minified React error #441" that hides the real message from the Coordinator. Only genuinely
+ * unexpected failures (access-control, not-found) still throw. */
+export type WioaActionResult = { ok: true } | { ok: false; error: string };
+
 export async function advanceWioaEligibilityStatus(
   masterCaseId: string,
   nextStatus: WioaEligibilityStatus,
   appointment?: { type: AppointmentType; scheduledAt: string; notes?: string },
-): Promise<void> {
+): Promise<WioaActionResult> {
   const staff = await requireMasterCaseAccess(masterCaseId);
 
-  const fromStatus = await withRlsContext(
-    { userId: staff.id, role: getRole(staff) ?? '' },
-    async (tx) => {
-      const current = await tx.wioaCase.findUniqueOrThrow({
-        where: { id: masterCaseId },
-        include: { documents: { include: { requirement: true } } },
-      });
-      const allowed = nextEligibilityStatusOptions(current.status);
-      if (!allowed.includes(nextStatus)) {
-        throw new Error(`Cannot move a case from ${current.status} to ${nextStatus}.`);
-      }
+  let fromStatus: string;
+  try {
+    fromStatus = await withRlsContext(
+      { userId: staff.id, role: getRole(staff) ?? '' },
+      async (tx) => {
+        const current = await tx.wioaCase.findUniqueOrThrow({
+          where: { id: masterCaseId },
+          include: { documents: { include: { requirement: true } } },
+        });
+        const allowed = nextEligibilityStatusOptions(current.status);
+        if (!allowed.includes(nextStatus)) {
+          throw new Error(`Cannot move a case from ${current.status} to ${nextStatus}.`);
+        }
 
-      // Backlog gap fix (docs/build/WIOA_BUILD_WORKFLOW.md changelog #1): a case could previously
-      // reach WIOA_ELIGIBLE while required documents were still unreviewed or rejected. Gate the
-      // one transition where eligibility is actually determined.
-      if (nextStatus === 'WIOA_ELIGIBLE') {
-        const unresolved = current.documents.filter(
-          (d) => d.status !== 'ACCEPTED' && d.status !== 'NOT_APPLICABLE',
-        );
-        if (unresolved.length > 0) {
-          const names = unresolved.map((d) => d.requirement.name).join(', ');
-          throw new Error(
-            `Cannot mark this case WIOA Eligible — the following documents still need to be accepted: ${names}.`,
+        // Backlog gap fix (docs/build/WIOA_BUILD_WORKFLOW.md changelog #1): a case could
+        // previously reach WIOA_ELIGIBLE while required documents were still unreviewed or
+        // rejected. Gate the one transition where eligibility is actually determined.
+        if (nextStatus === 'WIOA_ELIGIBLE') {
+          const unresolved = current.documents.filter(
+            (d) => d.status !== 'ACCEPTED' && d.status !== 'NOT_APPLICABLE',
           );
+          if (unresolved.length > 0) {
+            const names = unresolved.map((d) => d.requirement.name).join(', ');
+            throw new Error(
+              `Cannot mark this case WIOA Eligible — the following documents still need to be accepted: ${names}.`,
+            );
+          }
         }
-      }
 
-      await tx.wioaCase.update({
-        where: { id: masterCaseId },
-        data: {
-          status: nextStatus,
-          closedAt: nextStatus === 'CLOSED_INELIGIBLE' ? new Date() : undefined,
-        },
-      });
-
-      await tx.wioaStatusHistory.create({
-        data: { masterCaseId, status: nextStatus, changedBy: staff.id },
-      });
-
-      if (appointment) {
-        const notes = appointment.notes?.trim() || undefined;
-        if (notes && containsSsnPattern(notes)) {
-          throw new Error('Appointment notes cannot contain a Social Security Number.');
-        }
-        await tx.appointment.create({
+        await tx.wioaCase.update({
+          where: { id: masterCaseId },
           data: {
-            masterCaseId,
-            type: appointment.type,
-            scheduledAt: new Date(appointment.scheduledAt),
-            notes,
+            status: nextStatus,
+            closedAt: nextStatus === 'CLOSED_INELIGIBLE' ? new Date() : undefined,
           },
         });
-      }
 
-      return current.status;
-    },
-  );
+        await tx.wioaStatusHistory.create({
+          data: { masterCaseId, status: nextStatus, changedBy: staff.id },
+        });
+
+        if (appointment) {
+          const notes = appointment.notes?.trim() || undefined;
+          if (notes && containsSsnPattern(notes)) {
+            throw new Error('Appointment notes cannot contain a Social Security Number.');
+          }
+          await tx.appointment.create({
+            data: {
+              masterCaseId,
+              type: appointment.type,
+              scheduledAt: new Date(appointment.scheduledAt),
+              notes,
+            },
+          });
+        }
+
+        return current.status;
+      },
+    );
+  } catch (err) {
+    return {
+      ok: false,
+      error: err instanceof Error ? err.message : 'Could not advance this case.',
+    };
+  }
 
   await logAuditEvent({
     actor: staff,
@@ -578,6 +593,7 @@ export async function advanceWioaEligibilityStatus(
   revalidatePath('/coordinator');
   revalidatePath('/partner');
   revalidatePath('/learner/funding');
+  return { ok: true };
 }
 
 /** Staff-driven funding status transition (per course-case) — fires CourseUnlock when funding
@@ -730,56 +746,65 @@ function validateFundingSequencing(fields: WioaFundingFields): void {
 export async function updateWioaFunding(
   courseCaseId: string,
   fields: WioaFundingFields,
-): Promise<void> {
+): Promise<WioaActionResult> {
   const coordinator = await requireCoordinator();
-  validateFundingSequencing(fields);
 
-  await withRlsContext({ userId: coordinator.id, role: 'WIOA_COORDINATOR' }, async (tx) => {
-    const fundingRequest = await tx.etplFundingRequest.upsert({
-      where: { wioaCaseId: courseCaseId },
-      update: {
-        trainingProgram: fields.trainingProgram?.trim() || null,
-        etplProviderConfirmed: fields.etplProviderConfirmed,
-        submittedAt: optionalDate(fields.submittedAt),
-        caseManagerNotifiedAt: optionalDate(fields.caseManagerNotifiedAt),
-        requestedAmount: fields.requestedAmount ?? null,
-        fundingReviewStatus: fields.fundingReviewStatus?.trim() || null,
-        status: fields.requestStatus?.trim() || null,
-      },
-      create: {
-        wioaCaseId: courseCaseId,
-        trainingProgram: fields.trainingProgram?.trim() || null,
-        etplProviderConfirmed: fields.etplProviderConfirmed,
-        submittedAt: optionalDate(fields.submittedAt),
-        caseManagerNotifiedAt: optionalDate(fields.caseManagerNotifiedAt),
-        requestedAmount: fields.requestedAmount ?? null,
-        fundingReviewStatus: fields.fundingReviewStatus?.trim() || null,
-        status: fields.requestStatus?.trim() || null,
-      },
-    });
+  try {
+    validateFundingSequencing(fields);
 
-    await tx.fundingAuthorization.upsert({
-      where: { fundingRequestId: fundingRequest.id },
-      update: {
-        itaIssuedAt: optionalDate(fields.itaIssuedAt),
-        approvedAmount: fields.approvedAmount ?? null,
-        approvalDate: optionalDate(fields.approvalDate),
-        trainingStartDate: optionalDate(fields.trainingStartDate),
-        status: fields.authorizationStatus?.trim() || null,
-      },
-      create: {
-        fundingRequestId: fundingRequest.id,
-        itaIssuedAt: optionalDate(fields.itaIssuedAt),
-        approvedAmount: fields.approvedAmount ?? null,
-        approvalDate: optionalDate(fields.approvalDate),
-        trainingStartDate: optionalDate(fields.trainingStartDate),
-        status: fields.authorizationStatus?.trim() || null,
-      },
+    await withRlsContext({ userId: coordinator.id, role: 'WIOA_COORDINATOR' }, async (tx) => {
+      const fundingRequest = await tx.etplFundingRequest.upsert({
+        where: { wioaCaseId: courseCaseId },
+        update: {
+          trainingProgram: fields.trainingProgram?.trim() || null,
+          etplProviderConfirmed: fields.etplProviderConfirmed,
+          submittedAt: optionalDate(fields.submittedAt),
+          caseManagerNotifiedAt: optionalDate(fields.caseManagerNotifiedAt),
+          requestedAmount: fields.requestedAmount ?? null,
+          fundingReviewStatus: fields.fundingReviewStatus?.trim() || null,
+          status: fields.requestStatus?.trim() || null,
+        },
+        create: {
+          wioaCaseId: courseCaseId,
+          trainingProgram: fields.trainingProgram?.trim() || null,
+          etplProviderConfirmed: fields.etplProviderConfirmed,
+          submittedAt: optionalDate(fields.submittedAt),
+          caseManagerNotifiedAt: optionalDate(fields.caseManagerNotifiedAt),
+          requestedAmount: fields.requestedAmount ?? null,
+          fundingReviewStatus: fields.fundingReviewStatus?.trim() || null,
+          status: fields.requestStatus?.trim() || null,
+        },
+      });
+
+      await tx.fundingAuthorization.upsert({
+        where: { fundingRequestId: fundingRequest.id },
+        update: {
+          itaIssuedAt: optionalDate(fields.itaIssuedAt),
+          approvedAmount: fields.approvedAmount ?? null,
+          approvalDate: optionalDate(fields.approvalDate),
+          trainingStartDate: optionalDate(fields.trainingStartDate),
+          status: fields.authorizationStatus?.trim() || null,
+        },
+        create: {
+          fundingRequestId: fundingRequest.id,
+          itaIssuedAt: optionalDate(fields.itaIssuedAt),
+          approvedAmount: fields.approvedAmount ?? null,
+          approvalDate: optionalDate(fields.approvalDate),
+          trainingStartDate: optionalDate(fields.trainingStartDate),
+          status: fields.authorizationStatus?.trim() || null,
+        },
+      });
     });
-  });
+  } catch (err) {
+    return {
+      ok: false,
+      error: err instanceof Error ? err.message : 'Could not save funding details.',
+    };
+  }
 
   revalidatePath('/coordinator');
   revalidatePath(`/coordinator/${courseCaseId}`);
+  return { ok: true };
 }
 
 /** Admin/Coordinator assigns the learner's master case to a Partner Staff account
