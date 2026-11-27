@@ -632,10 +632,6 @@ model WioaCourseCase {
   appointments         Appointment[]
   communications       WioaCommunication[]
   fundingRequest       EtplFundingRequest?
-
-  @@index([learnerId])
-  @@index([courseId])
-  @@index([masterCaseId])
   // DEMO-3/A6: a partial unique index on (masterCaseId, courseId) WHERE "closedAt" IS NULL also
   // exists in the database, applied by the hand-written migration
   // 20261127140000_wioa_course_case_open_unique_index — Prisma's schema language has no syntax
@@ -643,6 +639,10 @@ model WioaCourseCase {
   // these two columns would be wrong: more than one *closed* case per pair is expected (a learner
   // may legitimately re-request funding after a prior case closed, e.g. FUNDING_DECLINED); only
   // one *open* case per pair is disallowed.
+
+  @@index([learnerId])
+  @@index([courseId])
+  @@index([masterCaseId])
 }
 
 /// Immutable log of the master case's eligibility-pipeline progress — a row is appended on every
@@ -979,6 +979,11 @@ enum NotificationType {
   ANNOUNCEMENT_PUBLISHED
   DEADLINE_UPCOMING
   COHORT_UPDATE
+  /// NOTIF-3: a WIOA master case needs staff attention — stalled (no response, documents pending),
+  /// a rejected document, or eligible-with-no-funding-request-started. Deliberately not
+  /// CASE_STATUS_CHANGED: none of these are a status transition, they're a staleness/attention
+  /// flag raised while the status stays put.
+  WIOA_FOLLOW_UP_NEEDED
 }
 
 /// Notification Coverage Completion (Phase 6). One row per recipient per event — not broadcast,

@@ -8,6 +8,7 @@ import type {
 } from '@/generated/prisma/enums';
 import { WIOA_ELIGIBILITY_STATUS_PHASE, WIOA_UI_PHASES, type WioaUiPhase } from '@/lib/wioa/status';
 import { withRlsContext, type SessionContext } from '@/lib/db/rls';
+import { determineWioaFollowUpReason, type WioaFollowUpReasonCode } from '@/lib/wioa/follow-up';
 
 export type LearnerProfile = {
   learnerId: string;
@@ -679,6 +680,9 @@ export type WioaFollowUpItem = {
   learnerName: string;
   status: WioaEligibilityStatus;
   reason: string;
+  /// Stable dedupe key for `runWioaFollowUpNotificationSweep`
+  /// (`src/lib/actions/wioa-notifications.ts`) — see `determineWioaFollowUpReason`.
+  reasonCode: WioaFollowUpReasonCode;
   /// Back-compat: always null — eligibility-stage follow-up items aren't about one course
   /// (docs/plans/wioa-spec-alignment-kickoff.md #1). Kept only so existing UI call sites compile.
   courseTitle: null;
@@ -752,6 +756,12 @@ export async function getWioaReportingSummary(
             orderBy: { changedAt: 'asc' },
           },
           courseCases: { select: { id: true } },
+          appointments: {
+            where: { completedAt: null },
+            select: { scheduledAt: true },
+            orderBy: { scheduledAt: 'asc' },
+            take: 1,
+          },
         },
       }),
       opts?.includeFunding
@@ -820,23 +830,22 @@ export async function getWioaReportingSummary(
     }
 
     if (!c.closedAt) {
-      const daysSinceUpdate = (now - c.updatedAt.getTime()) / DAY_MS;
-      const hasRejectedDoc = c.documents.some((d) => d.status === 'REJECTED');
-      let reason: string | null = null;
-      if (hasRejectedDoc) reason = 'Document rejected — needs resubmission';
-      else if (c.status === 'AWAITING_RESPONSE' && daysSinceUpdate >= 3)
-        reason = 'No response 3+ business days after outreach';
-      else if (c.status === 'DOCUMENTS_PENDING' && daysSinceUpdate >= 5)
-        reason = 'Documents pending 5+ days';
-      else if (c.status === 'WIOA_ELIGIBLE' && c.courseCases.length === 0)
-        reason = 'Eligible — no ETPL funding request started yet';
+      const trigger = determineWioaFollowUpReason({
+        status: c.status,
+        updatedAt: c.updatedAt,
+        hasRejectedDocument: c.documents.some((d) => d.status === 'REJECTED'),
+        courseCaseCount: c.courseCases.length,
+        nextAppointmentAt: c.appointments[0]?.scheduledAt ?? null,
+        now: new Date(now),
+      });
 
-      if (reason) {
+      if (trigger) {
         followUpQueue.push({
           caseId: c.id,
           learnerName: await nameOf(c.learnerId),
           status: c.status,
-          reason,
+          reason: trigger.reason,
+          reasonCode: trigger.code,
           courseTitle: null,
         });
       }

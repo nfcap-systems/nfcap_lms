@@ -17,5 +17,7 @@ export function notificationTypeIcon(type: NotificationType): IconName {
       return 'clock';
     case 'COHORT_UPDATE':
       return 'users';
+    case 'WIOA_FOLLOW_UP_NEEDED':
+      return 'clipboard';
   }
 }

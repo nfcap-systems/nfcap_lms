@@ -1,0 +1,23 @@
+name: WIOA Follow-Up Notification Sweep
+
+on:
+  # Schedule disabled, same reason and same pattern as data-retention.yml: no production
+  # environment/secrets (APP_URL, CRON_SECRET) exist yet. Re-enable the schedule block below once
+  # production exists and those secrets are set.
+  # schedule:
+  #   - cron: '0 13 * * *'
+  workflow_dispatch: {}
+
+jobs:
+  sweep:
+    name: Run WIOA follow-up notification sweep
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Call cron endpoint
+        run: |
+          curl --fail-with-body -sS -X POST "${APP_URL}/api/cron/wioa-follow-up" \
+            -H "Authorization: Bearer ${CRON_SECRET}"
+        env:
+          APP_URL: ${{ secrets.APP_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
