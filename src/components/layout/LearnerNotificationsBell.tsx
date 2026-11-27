@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, useTransition } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
+import { toast } from 'sonner';
 import { Icon } from '@/components/icons';
 import { notificationTypeIcon } from '@/lib/notifications/display';
 import { timeAgo } from '@/lib/time-ago';
@@ -51,10 +52,23 @@ export function LearnerNotificationsBell({
     };
   }, [open]);
 
+  // markNotificationRead/markAllNotificationsRead throw via requireUser() (session expired is the
+  // realistic case) — this bell renders in every layout, on a tree whose shape varies with data
+  // (empty vs N items), exactly the condition CLAUDE.md's "Error handling convention" and
+  // CLAUDE.local.md #11 warn can swallow a thrown Server Action error into a useless generic
+  // error. These two stay `throw`-based (CLAUDE.md: reserve throw for access-control failures,
+  // which session expiry is) but the caller still needs to not leave the panel silently broken —
+  // a toast plus bailing out before navigating, so a failed mark-read doesn't quietly load the
+  // destination as if it had succeeded.
   function handleSelect(notification: Notification) {
     setOpen(false);
     startTransition(async () => {
-      if (!notification.read) await markNotificationRead(notification.id);
+      try {
+        if (!notification.read) await markNotificationRead(notification.id);
+      } catch {
+        toast.error('Could not update that notification. Try refreshing the page.');
+        return;
+      }
       if (notification.link) router.push(notification.link);
       router.refresh();
     });
@@ -62,7 +76,12 @@ export function LearnerNotificationsBell({
 
   function handleMarkAllRead() {
     startTransition(async () => {
-      await markAllNotificationsRead();
+      try {
+        await markAllNotificationsRead();
+      } catch {
+        toast.error('Could not mark notifications as read. Try refreshing the page.');
+        return;
+      }
       router.refresh();
     });
   }
