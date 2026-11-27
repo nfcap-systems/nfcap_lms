@@ -9,6 +9,7 @@ import { logAuditEvent } from './audit';
 import { containsSsnPattern } from '@/lib/pii';
 import { enforceRateLimit } from '@/lib/rate-limit';
 import { uploadEvidenceFile, getEvidenceFileSignedUrl } from '@/lib/supabase/evidence-storage';
+import { emitNotification } from '@/lib/notifications/emit';
 
 /** Must be unique per learner, not just per course — `certificateCode` has a global unique
  * constraint, but this used to be built from `courseSlug` alone, so the second learner ever
@@ -379,7 +380,10 @@ export async function applyEvidenceStatus(
         include: { criterionAssessments: { select: { criterionId: true, met: true } } },
       },
       course: {
-        select: { assessmentCriteria: { select: { id: true, mandatoryForCertification: true } } },
+        select: {
+          title: true,
+          assessmentCriteria: { select: { id: true, mandatoryForCertification: true } },
+        },
       },
     },
   });
@@ -439,6 +443,24 @@ export async function applyEvidenceStatus(
     targetType: 'EvidenceSubmission',
     targetId: evidence.id,
     metadata: { status, learnerId, courseSlug },
+  });
+
+  // NOTIF-2 — the first real emitter. Highest-value notification in the product (a learner waiting
+  // on assessment genuinely wants to know), and this is the single gate every approval/rejection
+  // path already goes through (setEvidenceStatus, bulkApproveEvidence, finalizeCriterionReview), so
+  // one call here covers all of them. Uses emitNotification, not createNotification — the acting
+  // user is an admin (not a learner), so the role gate would actually pass either way here, but
+  // emitNotification is still correct: this is a system-generated notification about an action
+  // someone else took, not the admin creating their own notification.
+  await emitNotification({
+    userId: learnerId,
+    type: 'EVIDENCE_REVIEWED',
+    title: status === 'approved' ? 'Evidence approved' : 'Evidence needs another look',
+    body:
+      status === 'approved'
+        ? `Your evidence for "${enrollment.course.title}" was approved.`
+        : `Your evidence for "${enrollment.course.title}" needs another look${reviewerNote ? ` — ${reviewerNote}` : '.'}`,
+    link: `/learner/courses/${courseSlug}`,
   });
 }
 
