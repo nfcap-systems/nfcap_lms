@@ -87,9 +87,20 @@ That trail is internal and invisible to NFCAP, and it is what makes building thi
 - Building before the full NFCAP-6 gate (all mockups) is approved — only the two boards this work
   needs get approved (Step 0), same carve-out Phase 3 took.
 
-**One deviation is reduced, not added:** unlike Phase 3, the lead/builder split *is* being
-honoured — a planning session writes the briefs, a separate executor session builds. The lead does
-not build; the executor does not QC its own work.
+**The lead/builder split holds for every ticket except `NOTIF-1`.** A planning session writes the
+briefs, a separate executor session builds; the lead does not build. That was the original
+intent for this whole plan, and it still governs `NOTIF-0`, `NOTIF-2`, `NOTIF-3` and every `CAP-*`
+ticket.
+
+**Deviation, accepted 2026-11-27 — the executor drew Step 0's two notification panel boards, not
+the lead.** For `NOTIF-1` only, the builder has drawn the boards its own work is then checked
+against, which collapses the lead/QC split for that one ticket: the artefact and the thing
+measuring it come from the same session. Recorded rather than glossed, because
+`CLAUDE.local.md` #1 is the cost of a per-role component nobody checked against its own board,
+and this is the condition under which that failure mode is likeliest to recur. Mitigation is
+the approval, not the drawing — the boards were reviewed and approved by the lead (see Step 0),
+so the gate is satisfied by a second pair of eyes even though the drawing wasn't. `NOTIF-1`'s
+"Not verified" list should be treated as load-bearing when it lands.
 
 ## Ticket IDs
 
@@ -112,15 +123,17 @@ a branch, and a commit — and must map cleanly when Plane is connected.
 Branches are descriptive, not `NFCAP-n`, since no ticket number exists yet — same as Phase 3
 (`feature/phase3-1-evidence-storage`). Step 4 renames any still-unmerged branch.
 
-## Step 0 — Boards (lead track)
+## Step 0 — Boards (executor track)
 
-**Draw and approve before `NOTIF-1` is built:**
+Drawn by the executor session, not the lead — see the recorded deviation above.
 
-- `ADM18-NotificationsPanel` — staff shell. Has a row in `docs/MOCKUP-INDEX.md` with status `new`;
-  that row exists to reconcile the index with the live canvas, **the board is not drawn.** The
-  index lists it explicitly under missing interaction/state boards.
-- A learner equivalent for `LearnerShell` — does not exist in the index at all; needs a board id
-  assigned when drawn.
+**Required before `NOTIF-1` is built — now satisfied:**
+
+- `ADM18-NotificationsPanel` — staff shell. Had a row in `docs/MOCKUP-INDEX.md` with status `new`
+  that existed only to reconcile the index with the live canvas, with the board itself undrawn;
+  the index listed it under missing interaction/state boards. Now drawn.
+- A learner equivalent for `LearnerShell` — did not exist in the index at all. Now drawn; it needs
+  a board id assigned and a row added to `docs/MOCKUP-INDEX.md`, which is still outstanding.
 
 Each board needs **list, empty, read/unread and phone states**, per `DEV-APPROACH.md` line 50.
 
@@ -141,7 +154,17 @@ thread the user activates but cannot originate a comment. So verbal approval log
 is the record, same as Phase 3's Step 0. If a canvas-side comment is wanted for the official
 trail, the user adds it by hand.
 
-**Status: not drawn as of 2026-11-27.**
+**Status: drawn and approved 2026-11-27.** Approval is the lead's, given verbally and logged here
+per the mechanism above — that is the record, and it is what satisfies `NOTIF-1`'s board gate
+despite the executor having drawn the boards. No canvas-side comment was added.
+
+**Still outstanding from Step 0** (neither blocks `NOTIF-1`):
+
+- The learner board has no board id and no `docs/MOCKUP-INDEX.md` row yet. `MOCKUP-INDEX.md`'s own
+  maintenance rule is the one this plan has already drifted against once (see the Phase 5 line in
+  `CLAUDE.md`), so this should not sit long.
+- The three board *amendments* below are not drawn or approved. `CAP-3`, `CAP-4` and `CAP-6` stay
+  blocked on them.
 
 ## Step 1 — The fix track (buildable immediately, no design dependency)
 
@@ -217,18 +240,23 @@ is unverified, say so in the row rather than guess.
 
 | ID | Branch | PR / merge commit | State | Date |
 | --- | --- | --- | --- | --- |
-| Step 0 — two notification panel boards | — | — | Not started | — |
-| `CAP-1` | `fix/wioa-upload-cap-handling` | — | Briefed, not started | 2026-11-27 |
-| `CAP-2` | `fix/wioa-upload-cap-handling` | — | Briefed, not started | 2026-11-27 |
-| `CAP-5` | `fix/wioa-upload-cap-handling` | — | Briefed, not started | 2026-11-27 |
+| Step 0 — two notification panel boards | — | — | Drawn (executor) + approved (lead, verbal) | 2026-11-27 |
+| `CAP-1` | `fix/wioa-upload-cap-handling` | PR #35 · `4e8ea89` · merge `0782d5e` | On Stage | 2026-11-27 |
+| `CAP-2` | `fix/wioa-upload-cap-handling` | PR #35 · `24a63a3` · merge `0782d5e` | On Stage | 2026-11-27 |
+| `CAP-5` | `fix/wioa-upload-cap-handling` | PR #35 · `b0030e8` · merge `0782d5e` | On Stage | 2026-11-27 |
 | `NOTIF-0` | — | — | Planned | — |
-| `NOTIF-1` | — | — | Blocked on Step 0 | — |
+| `NOTIF-1` | — | — | Unblocked (Step 0 approved), not started | 2026-11-27 |
 | `NOTIF-2` | — | — | Planned | — |
 | `NOTIF-3` | — | — | Planned | — |
 | `CAP-3` | — | — | Blocked on `NOTIF-0`/`NOTIF-1` | — |
 | `CAP-4` | — | — | Blocked on board amendment | — |
 | `CAP-6` | — | — | Blocked on board amendment | — |
-| This kickoff + Phase 6 baseline + defects file | `docs/notifications-and-upload-cap-kickoff` | — | In progress | 2026-11-27 |
+| This kickoff + Phase 6 baseline + defects file | `docs/notifications-and-upload-cap-kickoff` | — | In progress, docs PR not yet opened | 2026-11-27 |
+
+**`On Stage` is not `Done`.** `CAP-1`/`CAP-2`/`CAP-5` are merged to `stage`; `stage` has never been
+promoted to `main` and nothing in this repo is in production. Phase 5 feature #6 (Document Upload
+Limits) is therefore *verified*, not shipped — `docs/build/PHASE_5_PROGRESS.md` should say exactly
+that and no more.
 
 ## Open questions and blocked items
 
@@ -286,10 +314,20 @@ in-app notifications only (no email until DNS exists), and the staff upload acti
 upload history are built as normal capability with no client conversation (see Decision 3 for how
 that shapes naming and copy).
 
-State as of 2026-11-27: nothing built yet. CAP-1/CAP-2/CAP-5 are briefed and ready for an executor
-(docs/plans/executor-brief-cap-1-2-5.md) — no design dependency, no migration, and the
-WioaActionResult pattern they build on is already on stage via PR #34. Step 0's two notification
-panel boards are not drawn; NOTIF-1 is blocked until they are.
+State as of 2026-11-27, end of day:
+
+- The fix track is done and On Stage. CAP-1/CAP-2/CAP-5 merged via PR #35 (merge commit 0782d5e),
+  closing Phase 5 feature #6. On Stage, not Done — nothing is in production.
+- Step 0's two notification panel boards are DRAWN and APPROVED, so NOTIF-1 is unblocked. They
+  were drawn by the executor, not the lead; that deviation and its one mitigation (the lead's
+  approval) are recorded in the deviations section. The learner board still needs a board id and
+  a docs/MOCKUP-INDEX.md row.
+- Next buildable work is NOTIF-0 (split the emit path) and NOTIF-1 (the two panels). NOTIF-0 has
+  no dependency at all. Neither is briefed yet — only this file's Step 2 describes them.
+- The three board amendments (CAP-3, CAP-4, CAP-6) are still undrawn, so those three stay blocked.
+- NOTIF-3 needs a migration (NotificationType has no value for the cap event). Per
+  CLAUDE.local.md #8, generate AND apply it before writing code against it; per #3, restart the
+  dev server after prisma generate.
 
 The one unanswered product question that outranks everything: does any WIOA document requirement
 need more than one file? A slot holds exactly one live file today. Ask NFCAP before building

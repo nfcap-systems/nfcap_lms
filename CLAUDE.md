@@ -32,7 +32,7 @@ Read `docs/HANDOFF.md` first — it is the onboarding entry point. Then, by ques
 
 Do not reopen decisions already closed in `PRODUCT_CONTEXT.md` or the client scope doc.
 
-## Current state (as of 2026-11-23)
+## Current state (as of 2026-11-27)
 
 - **The client scope plan is approved.** 65 features, 9 phases, ~1,431h. **Phase 0 is in progress,
   not complete** — 3 of its 6 scoped features are done (Automated Test Suite, Automated Checks/CI,
@@ -133,6 +133,29 @@ Do not reopen decisions already closed in `PRODUCT_CONTEXT.md` or the client sco
   kind of drift `docs/MOCKUP-INDEX.md`'s own maintenance rule warns about. Full evidence, what
   changed, and the resume plan: `docs/plans/wioa-spec-alignment-kickoff.md`; Phase 5's own
   feature-by-feature status against the new architecture: `docs/build/PHASE_5_PROGRESS.md`.
+- **The active track as of 2026-11-27 is Phase 6's notifications foundation plus WIOA upload-cap
+  handling** — plan and worklist in `docs/plans/notifications-and-upload-cap-kickoff.md`, which is
+  the local source of truth while Plane is disconnected. Three decisions are closed there and must
+  not be reopened: two notification panels rather than one shared, in-app notifications only until
+  a verified sending domain exists, and the staff upload action plus learner upload history built
+  as ordinary capability rather than reported to NFCAP as a defect (which is why no "override" or
+  "reset limit" language appears anywhere in it).
+
+  **Shipped so far:** `CAP-1`/`CAP-2`/`CAP-5` merged to `stage` 2026-11-27 via PR #35 (merge commit
+  `0782d5e`) — the upload cap now returns a `WioaActionResult` instead of throwing, writes an audit
+  record when it refuses, and has a test proving it fires. That closes Phase 5 feature #6 (Document
+  Upload Limits), which had been built since 2026-11-25 but never verified. **On Stage, not Done:**
+  `stage` has still never been promoted to `main`, so nothing here is in production.
+
+  **Next:** `NOTIF-0` (split `createNotification`'s role-gated export from an internal
+  `emitNotification`, so system-generated notifications aren't blocked by the acting user's role)
+  and `NOTIF-1` (the two panels — boards drawn and approved 2026-11-27). `NOTIF-3` needs a
+  `NotificationType` migration; `CAP-3`/`CAP-4`/`CAP-6` are blocked on board amendments.
+
+  **The one open product question outranks all of it:** does any WIOA document requirement need
+  more than one file (e.g. "proof of income" = three months of pay stubs)? A slot holds exactly one
+  live file today and each upload archives the previous, so if the answer is yes, the single-live-file
+  model is the real problem and the cap is only a symptom. Only NFCAP can answer; unanswered.
 - **Deployment: self-hosted, VPS + Docker.** Supabase is retained for database and object storage.
   Deploy target was decided 2026-11-01 (VPS + Docker). Replica count is still undecided but isn't a
   blocker — **build for 2+ instances** is already the working assumption everything is built
@@ -193,6 +216,35 @@ data-dependent pages as you touch them, rather than waiting for another live fai
 
 ## Known environment issues
 
+- **Several sessions share one working tree — never `git checkout`, `git stash`, or delete a branch.**
+  The lead/planner session, the executor session, and any extra terminal all open
+  `C:/Users/sthas/Projects/nfcap_lms` — one checkout, one `HEAD`, one set of working-tree files.
+  Switching branches in one session changes the files under every other session, and when the files
+  involved happen to be **byte-identical across the two branches, `git checkout` does not refuse or
+  warn** — it succeeds silently and carries another session's uncommitted work onto the wrong
+  branch. Observed 2026-11-27: the lead session nearly moved the executor's in-progress `CAP-1`
+  edits (`src/lib/actions/wioa.ts`, `src/app/learner/funding/WioaCaseFeed.tsx`) onto a docs branch
+  this way.
+
+  **Read another branch with `git show <ref>:<path>`**, which touches nothing. When you genuinely
+  need a second branch checked out, `git worktree add <temp-dir> <branch>` gives it its own
+  directory and leaves the shared checkout alone; remove it with `git worktree remove` after.
+  `git push <refspec>`, `git fetch` and all `gh` commands are safe — they never touch the working
+  tree. `git pull` is safe only when the tree is clean.
+
+  Two corollaries worth knowing: a bare `gh pr create` infers its head from the *currently checked
+  out* branch, so from a shared checkout it can open a PR for another session's half-finished work
+  — always pass `--head` and `--base` explicitly. And a doc edited by one session sits uncommitted
+  in everyone's tree, so `git add .` / `git commit -a` from another session will sweep it into an
+  unrelated PR; stage explicit paths.
+- **A doc corrected on an unpushed branch is invisible to every other session.** `CLAUDE.md` and
+  the `docs/` tree are read by agents at session start from whatever is *checked out*, not from the
+  branch where the newest edit lives. On 2026-11-27 four docs commits sat unpushed on
+  `docs/notifications-and-upload-cap-kickoff` while the checked-out copy still claimed Phase 5 was
+  uncommitted and had no pointer to the active kickoff plan at all — a new session reading
+  `CLAUDE.md` would have been actively misled. Land docs corrections promptly rather than
+  accumulating them on a local branch, and if you must check, diff them:
+  `git diff HEAD <branch> -- CLAUDE.md`.
 - **`git` does not work in agent sessions.** The repo is owned by `sthas` but sessions may run as a
   different Windows user, so git reports "dubious ownership" and exits 128. Fix with
   `git config --global --add safe.directory C:/Users/sthas/Projects/nfcap_lms`. Until then, do not
