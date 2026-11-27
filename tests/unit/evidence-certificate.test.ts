@@ -1,6 +1,11 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { prisma } from '@/lib/prisma';
-import { enroll, submitEvidence, setEvidenceStatus, getEvidenceFileUrl } from '@/lib/actions/progress';
+import {
+  enroll,
+  submitEvidence,
+  setEvidenceStatus,
+  getEvidenceFileUrl,
+} from '@/lib/actions/progress';
 import { mockAuthUser } from '../setup/auth-mock';
 import { createCourse, fakeUserId } from '../setup/fixtures';
 
@@ -58,6 +63,33 @@ describe('evidence → certificate', () => {
     });
     expect(enrollment.evidenceSubmissions[0].status).toBe('REJECTED');
     expect(enrollment.certificate).toBeNull();
+  });
+
+  it('approving evidence emits an EVIDENCE_REVIEWED notification to the learner (NOTIF-2)', async () => {
+    const course = await enrollAndSubmit();
+    mockAuthUser('ADMIN', fakeUserId());
+
+    await setEvidenceStatus(learnerId, course.slug, 'approved');
+
+    const notifications = await prisma.notification.findMany({ where: { userId: learnerId } });
+    expect(notifications).toHaveLength(1);
+    expect(notifications[0]).toMatchObject({
+      type: 'EVIDENCE_REVIEWED',
+      title: 'Evidence approved',
+      link: `/learner/courses/${course.slug}`,
+    });
+    expect(notifications[0].body).toContain(course.title);
+  });
+
+  it('rejecting evidence emits an EVIDENCE_REVIEWED notification with reject-specific copy', async () => {
+    const course = await enrollAndSubmit();
+    mockAuthUser('ADMIN', fakeUserId());
+
+    await setEvidenceStatus(learnerId, course.slug, 'rejected');
+
+    const notifications = await prisma.notification.findMany({ where: { userId: learnerId } });
+    expect(notifications).toHaveLength(1);
+    expect(notifications[0].title).toBe('Evidence needs another look');
   });
 
   it('a non-admin cannot approve evidence', async () => {
