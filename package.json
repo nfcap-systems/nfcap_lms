@@ -25,6 +25,7 @@
     "seed-demo-learners": "tsx scripts/seed-demo-learners.ts",
     "seed-wioa-staff": "tsx scripts/seed-wioa-staff.ts",
     "seed-wioa-learner": "tsx scripts/seed-wioa-learner.ts",
+    "seed-notifications": "tsx scripts/seed-notifications.ts",
     "wioa-fast-forward-case": "tsx scripts/wioa-fast-forward-case.ts",
     "wioa-verify-gating": "tsx scripts/wioa-verify-gating.ts",
     "test": "vitest run",

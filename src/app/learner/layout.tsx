@@ -1,6 +1,7 @@
 import { Suspense } from 'react';
 import { LearnerShell } from '@/components/layout/LearnerShell';
 import { WioaNavLink } from '@/components/layout/WioaNavLink';
+import { ResolvedLearnerNotifications } from '@/components/layout/ResolvedLearnerNotifications';
 import { getAuthUser, getRole } from '@/lib/supabase/server';
 
 export default async function LearnerLayout({ children }: { children: React.ReactNode }) {
@@ -23,6 +24,13 @@ export default async function LearnerLayout({ children }: { children: React.Reac
         user && (
           <Suspense fallback={null}>
             <WioaNavLink userId={user.id} role={getRole(user) ?? 'LEARNER'} />
+          </Suspense>
+        )
+      }
+      notificationsSlot={
+        user && (
+          <Suspense fallback={null}>
+            <ResolvedLearnerNotifications userId={user.id} />
           </Suspense>
         )
       }

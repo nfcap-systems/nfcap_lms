@@ -9,6 +9,7 @@ export function LearnerShell({
   learnerEmail,
   learnerInitial,
   wioaNavSlot,
+  notificationsSlot,
 }: {
   children: ReactNode;
   learnerName: string;
@@ -17,6 +18,9 @@ export function LearnerShell({
   /** Suspense-wrapped WioaNavLink from the layout — resolves independently of the rest of the
    * shell instead of making the whole header wait on its RLS-backed query. */
   wioaNavSlot?: ReactNode;
+  /** Suspense-wrapped ResolvedLearnerNotifications from the layout (NOTIF-1) — same reasoning as
+   * wioaNavSlot above, so the notifications query doesn't block the rest of the header either. */
+  notificationsSlot?: ReactNode;
 }) {
   return (
     <div className="lshell-page" data-system="learner">
@@ -26,6 +30,7 @@ export function LearnerShell({
         learnerEmail={learnerEmail}
         learnerInitial={learnerInitial}
         extraNavSlot={wioaNavSlot}
+        notificationsSlot={notificationsSlot}
       />
       <main className="lshell-main">
         {children}

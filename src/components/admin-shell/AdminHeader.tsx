@@ -3,7 +3,6 @@
 import type { ReactNode } from 'react';
 
 import { GlobalSearch } from '@/components/layout/GlobalSearch';
-import { NotificationsMenu } from '@/components/layout/NotificationsMenu';
 import { Separator } from '@/components/admin-ui/separator';
 import { SidebarTrigger } from '@/components/admin-ui/sidebar';
 import { adminNav, type NavEntry } from '@/lib/nav';
@@ -13,6 +12,7 @@ import { adminNav, type NavEntry } from '@/lib/nav';
  * page's own heading/greeting is in its `.pagehdr`, inside the body below (see DashboardView). */
 export function AdminHeader({
   accountMenu,
+  notificationsMenu,
   navItems = adminNav,
 }: {
   /** A `<Suspense>`-wrapped `ResolvedAccountMenu` from the layout — kept as a slot rather than
@@ -23,6 +23,9 @@ export function AdminHeader({
    * incomplete first-request render and serve it to everyone until it revalidated — that's what
    * caused the sidebar border/Quick Create button to intermittently go missing on first load. */
   accountMenu: ReactNode;
+  /** A `<Suspense>`-wrapped `ResolvedStaffNotifications` from the layout (NOTIF-1) — same slot
+   * reasoning as accountMenu above. */
+  notificationsMenu: ReactNode;
   /** Defaults to today's Admin nav — coordinator/partner pass their own so the search bar's
    * "Go to" shortcuts match the sidebar they actually have, not Admin's. */
   navItems?: NavEntry[];
@@ -33,7 +36,7 @@ export function AdminHeader({
       <Separator orientation="vertical" className="h-4" />
       <GlobalSearch variant="bar" navItems={navItems} />
       <div className="ml-auto flex shrink-0 items-center gap-1">
-        <NotificationsMenu variant="ghost" />
+        {notificationsMenu}
         {accountMenu}
       </div>
     </header>

@@ -3,6 +3,7 @@ import { AppSidebar } from '@/components/admin-shell/AppSidebar';
 import { AdminHeader } from '@/components/admin-shell/AdminHeader';
 import { ResolvedAccountMenu } from '@/components/admin-shell/ResolvedAccountMenu';
 import { AccountMenuSkeleton } from '@/components/admin-shell/HeaderAccountMenu';
+import { ResolvedStaffNotifications } from '@/components/admin-shell/ResolvedStaffNotifications';
 import { SidebarInset, SidebarProvider } from '@/components/admin-ui/sidebar';
 import { TooltipProvider } from '@/components/admin-ui/tooltip';
 
@@ -27,6 +28,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <AppSidebar showPendingReview />
         <SidebarInset>
           <AdminHeader
+            notificationsMenu={
+              <Suspense fallback={null}>
+                <ResolvedStaffNotifications />
+              </Suspense>
+            }
             accountMenu={
               <Suspense fallback={<AccountMenuSkeleton />}>
                 <ResolvedAccountMenu accountHref="/admin/account" />
