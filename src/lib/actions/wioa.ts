@@ -323,7 +323,16 @@ export async function uploadWioaDocument(
   const priorVersionCount = await prisma.wioaDocumentVersion.count({ where: { documentId } });
   const totalUploads = priorVersionCount + (doc.uploadedAt ? 1 : 0);
   if (totalUploads >= MAX_UPLOADS_PER_DOCUMENT) {
-    // Reads as the process working, not as hitting a wall — no mention of limits or counts.
+    // Nobody had ever confirmed this cap fires in production (CAP-5), and nothing recorded it
+    // when it did — logged before returning so the refusal has an audit trail even though the
+    // learner-facing copy (CAP-1) deliberately doesn't mention the cap itself.
+    await logAuditEvent({
+      actor: user,
+      action: 'WIOA_DOCUMENT_UPLOAD_CAP_REACHED',
+      targetType: 'WioaDocument',
+      targetId: documentId,
+      metadata: { masterCaseId: doc.masterCaseId, requirementId: doc.requirementId, totalUploads },
+    });
     return {
       ok: false,
       error:
