@@ -38,8 +38,8 @@ its own.
 
 | ID | Item | Area | State |
 | --- | --- | --- | --- |
-| `DEMO-1` | Coordinator WIOA screen is confusing; each pipeline needs unmistakable steps | Coordinator UI | Not started |
-| `DEMO-2` | Eligibility and course-funding must read as two clearly separate tracks | Coordinator UI | Not started |
+| `DEMO-1` | Coordinator WIOA screen is confusing; each pipeline needs unmistakable steps | Coordinator UI | **Closed** — Ticket B, PR #41, merge commit `2c00c5a` (2026-11-28) |
+| `DEMO-2` | Eligibility and course-funding must read as two clearly separate tracks | Coordinator UI | **Closed** — Ticket B, PR #41, merge commit `2c00c5a` (2026-11-28) |
 | `DEMO-3` | **The funding pipeline has no UI caller at all** — no course case can be advanced, so no course is ever unlocked | Coordinator UI + actions | **Verified** — see below. Planned: `docs/plans/demo-1-2-3-coordinator-wioa-plan.md` |
 | `DEMO-4` | A WIOA-eligible learner is never told they are eligible | Learner UI (+ notifications boundary) | Not started |
 | `DEMO-5` | Signup form uses free text where the answer is from a known set | Learner form | Not started |
@@ -51,7 +51,12 @@ work end to end with no errors.
 
 ---
 
-### `DEMO-1` — Coordinator dashboard is confusing
+### `DEMO-1` — Coordinator dashboard is confusing — CLOSED
+
+**Closed 2026-11-28.** Built as Ticket B of `docs/plans/demo-1-2-3-coordinator-wioa-plan.md`,
+shipped in PR #41, merged to `stage` at `2c00c5a`. Full build/browser verification was skipped at
+the user's instruction and is flagged open in that plan's §4 — re-check before calling this done
+in production.
 
 The coordinator's case screen is not clear. Each pipeline must show clear steps so a coordinator can
 tell at a glance where a case stands and what happens next. No ambiguity.
@@ -62,7 +67,9 @@ History — with Status, Funding, Documents and Appointment cards inside Overvie
 Open: no screenshot of what the client was looking at when they called it confusing, and no decision
 yet on whether the information architecture may change or this is a re-layout of the existing screen.
 
-### `DEMO-2` — Two tracks, tracked and shown separately
+### `DEMO-2` — Two tracks, tracked and shown separately — CLOSED
+
+**Closed 2026-11-28.** Same build as `DEMO-1` above — Ticket B, PR #41, merge commit `2c00c5a`.
 
 WIOA **eligibility** (is this person eligible at all) and **course funding** (is this course paid
 for) are two different pipelines. They must not blur together, in the data or on screen, and both

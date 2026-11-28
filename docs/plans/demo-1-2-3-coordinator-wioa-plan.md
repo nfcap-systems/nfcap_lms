@@ -1,7 +1,9 @@
 # DEMO-1 / DEMO-2 / DEMO-3 — Coordinator WIOA case screen: plan
 
 **Status:** Ticket A built and merged (PR #37, `0233313`, merge commit `10e3274`); QC in progress.
-Ticket B blocked — see §4.
+Ticket B built and merged (PR #41, `feature/demo1-2-coordinator-case-detail`, merge commit
+`2c00c5a`, 2026-11-28) — see §4. Full `npm run build`/browser verification was explicitly skipped
+at the user's instruction and is open in the PR's "Not verified" section.
 **Register:** `docs/plans/demo-feedback-2026-11-27.md` (client demo, 2026-11-27).
 **Owner split:** lead session plans and QCs; an executor builds. The lead does not build; the
 executor does not accept its own work (`docs/DEV-APPROACH.md`).
@@ -212,14 +214,18 @@ Verified **in a browser, driving the real controls**, not by direct URL navigati
 
 ---
 
-## 4. Ticket B — make the screen readable (DEMO-1 + DEMO-2)
+## 4. Ticket B — make the screen readable (DEMO-1 + DEMO-2) — BUILT AND MERGED
 
-**Branch:** `feature/DEMO-1-coordinator-case-clarity` · **Depends on Ticket A being merged.**
-**Blocked until:** the Salesforce references arrive, the scope decision in §2 is confirmed, and the
-`CRD` board amendment is approved and recorded in `docs/MOCKUP-INDEX.md` (`docs/DEV-APPROACH.md` —
-a change to an approved board needs a new approval). **Do not start B from this document alone.**
+**Built as:** `feature/demo1-2-coordinator-case-detail` · PR #41 · merged to `stage` at
+`2c00c5a` (2026-11-28T12:04:45Z). Rewrote `src/components/wioa/WioaCaseDetailView.tsx` per the
+approved CRD02/CRD03/PTN02 boards. CI went green after fixing
+`tests/e2e/wioa-status.spec.ts` (old "Status history" tab selector → new "Advance" button).
 
-Intended scope, to be fixed by the board amendment:
+**Not verified:** full `npm run build` + manual browser walkthrough was explicitly skipped at the
+user's instruction ("yes skip the build browser") — flagged open in the PR's "Not verified"
+section; confirm before treating DEMO-1/DEMO-2 as fully closed in production.
+
+Scope actually covered, per the approved board amendment:
 
 1. **Eligibility as a step path** across its 4 phases, current position obvious, using the existing
    `WIOA_ELIGIBILITY_STATUS_PHASE` map rather than a new one.

@@ -611,18 +611,21 @@ status" dropdown only ever offering the real next step or Closed/Ineligible, nev
 **Board-by-board:**
 - `CRD01-CaseList` — the locked canonical data-table pattern (`ADM03-Learners`), Coordinator nav,
   a Phase filter + "Stalled only" toggle, case rows spanning all 6 UI phases plus Closed.
-- `CRD02-CaseDetail` (Overview tab) — reuses `ADM04-LearnerDetail`'s header/tab shell exactly.
-  Shows full `EtplFundingRequest`/`FundingAuthorization` detail (training program, ITA issued,
-  approved amount, authorization status) — deliberately **not** restricted the way Admin's own
-  Funding tab is, per the sync checklist's data-boundary rule.
+- `CRD02-CaseDetail` — **superseded 2026-11-28** by a full redraw against the real master/course
+  WIOA split (the old single `WioaCaseStatus` enum this description assumed is gone). No longer
+  reuses `ADM04-LearnerDetail`'s tabbed shell: one eligibility path (4 WIOA_UI_PHASES) plus one
+  independent chevron path per course-funding case, status-recording folded in directly (see
+  `CRD04` below), terminal states (Funding Declined, Apprenticeship Enrollment Complete) replacing
+  the path rather than rendering as a step, no course title in the header. Approved 2026-11-28 —
+  detail in `docs/plans/demo-1-2-3-coordinator-wioa-plan.md`.
 - `CRD03-DocumentReview` — uses a different example case (Aashma Thapa, mid-eligibility-review)
   than CRD02 (Binod Karki, further along in Funding Request) **on purpose**: Binod's documents are
   all long since resolved, so his case can't demonstrate the live Accept/Reject/resubmission
-  actions this board exists to show. Same shell/tabs, different case — flagged here so it doesn't
-  read as an inconsistency bug later.
-- `CRD04-StatusRecording` — same Aashma Thapa case as CRD03 (continuity between these two, since
-  both demonstrate "live" states). A "Record a status change" form plus the full append-only
-  timeline back to case open.
+  actions this board exists to show. **Reshelled 2026-11-28** to CRD02's new header pattern,
+  dropping its now-orphaned 3-tab strip; doc rows/Accept/Reject content unchanged. Approved
+  2026-11-28.
+- `CRD04-StatusRecording` — **removed 2026-11-28**, folded into `CRD02-CaseDetail` as part of the
+  master/course-split redraw rather than kept as its own board slot; deleted from canvas.json.
 - `CRD05-StalledCases` — a pre-filtered view of All Cases, not a separate dataset (stated on the
   board itself). **Real role-boundary finding**: `Feature_Detail_Client.md:136` attributes
   "Stalled-Case Detection & Follow-Up" to **Partner Staff**, not Coordinator, even though
@@ -637,6 +640,12 @@ status" dropdown only ever offering the real next step or Closed/Ineligible, nev
   unlike Admin/Coordinator's multi-board tab split). Includes document Accept/Reject — confirmed
   in scope (`NFCAP_LMS_Production_Scope_Summary_Client.md:31`: step 3's document accept/reject is
   "Trainee, **Partner Staff**"), not just Coordinator's job as CRD03 might suggest in isolation.
+  **Reshelled 2026-11-28** to the same header pattern ("Trainee", not "WIOA Case"). A chevron path
+  was tried for parity with CRD02's redesign, then deliberately removed — a formal pipeline chevron
+  made Partner's simple 4-course list more confusing, not clearer — and replaced with a plain thin
+  progress bar. A red triage card for missing documents now sits right under the header (the
+  role's actual job per spec — see D-7, `docs/build/DEFECTS_AND_HARDENING.md`). Approved
+  2026-11-28.
 - `RPT01-AdminReporting` — course/cohort/evidence analytics only, explicitly **not** funding
   figures (those are RPT02's job) — reuses `ADM02-Dashboard`'s exact chart treatment (grouped
   dot-pattern bars, desaturated chart tokens, `.segrange` toggle).
@@ -784,17 +793,17 @@ status" dropdown only ever offering the real next step or Closed/Ineligible, nev
 | `ADM25-ReviewQueueEmpty` | 4 Admin | 3 | new | | Added 2026-11-22 (reconciliation). Real empty-state instance for Review Queue, not just the `FND10` pattern. |
 | `ADM26-Inbox` | 4 Admin | 6 | new | | Added 2026-11-22 (reconciliation). Admin-side Trainee ↔ Staff Messaging (populated state) — the Admin counterpart to `LRN14`/`LRN15`, confirmed in scope as Role: Everyone. |
 | `GAPS01-RoutingGaps` | 4 Admin | — | n/a | | Added 2026-11-22 (reconciliation). The routing-gaps tracker board itself (mirrors this file's own gap tables), parked on the canvas so it isn't missed when reviewing boards rather than docs. |
-| `CRD01-CaseList` | 5 Coordinator | 0/5 | extend | | Roadmap said 5; list is built (Phase 0) |
-| `CRD02-CaseDetail` | 5 Coordinator | 0/5 | extend | | |
-| `CRD03-DocumentReview` | 5 Coordinator | 0/5 | extend | | Review is built in `WioaCaseDetailView`. ⚠️ Q8 |
-| `CRD04-StatusRecording` | 5 Coordinator | 0/5 | extend | | Status history built; Phase 5 sequencing fix |
+| `CRD01-CaseList` | 5 Coordinator | 0/5 | extend | **Approved 2026-11-28 (user)** | Roadmap said 5; list is built (Phase 0). **Consistency check done 2026-11-28** — already matched CRD03/PTN02's header pattern, no change needed; confirmed and approved. |
+| `CRD02-CaseDetail` | 5 Coordinator | 0/5 | extend | **Approved 2026-11-28 (user)** | **Redrawn 2026-11-28** — full redraw against the real master/course WIOA split (old single `WioaCaseStatus` enum is gone): one eligibility path (4 WIOA_UI_PHASES) plus one independent chevron path per course-funding case; terminal states (Funding Declined, Apprenticeship Enrollment Complete) replace the path rather than rendering as a step; no course title in header. See `docs/plans/demo-1-2-3-coordinator-wioa-plan.md`. |
+| `CRD03-DocumentReview` | 5 Coordinator | 0/5 | extend | **Approved 2026-11-28 (user)** | Review is built in `WioaCaseDetailView`. ⚠️ Q8. **Reshelled 2026-11-28** to CRD02's new `.rhdr` header pattern; dropped its now-orphaned 3-tab strip. Doc rows/Accept/Reject content unchanged. |
+| `CRD04-StatusRecording` | 5 Coordinator | 0/5 | **removed** | | **Removed 2026-11-28** — folded into `CRD02-CaseDetail` as part of the master/course-split redraw; deleted from canvas.json. Status-recording content now lives on CRD02 directly. |
 | `CRD05-StalledCases` | 5 Coordinator | 5 | new | | |
 | `WIOA01-Boards` | 6 WIOA config | 0 | exists | | |
 | `WIOA02-BoardDetail` | 6 WIOA config | 0 | exists | | |
 | `WIOA03-DocumentRequirements` | 6 WIOA config | 0/5 | extend | | ⚠️ Q8. **Redrawn 2026-11-24** — was a flat page stacking every board's full requirement list; user picked "board list + detail split" (master-detail) after a 3-option comparison (`temp_ss/wioa03-docreq-variants.html`: board tabs / collapsed accordion / list+detail split). Now a persistent left-hand board list with the selected board's requirements + inline add/edit panel in the right pane. |
 | `WIOA04-EmailTemplate` | 6 WIOA config | 0/5 | extend | | Phase 5 adds delivery + failure visibility |
-| `PTN01-Roster` | 7 Partner staff | 0/5 | extend | | R4: no funding amounts |
-| `PTN02-LearnerDetail` | 7 Partner staff | 0/5 | extend | | |
+| `PTN01-Roster` | 7 Partner staff | 0/5 | extend | **Approved 2026-11-28 (user)** | R4: no funding amounts. **Consistency check done 2026-11-28** — already matched CRD03/PTN02's header pattern, no change needed; confirmed and approved. **D-7 open gap found 2026-11-28**: doesn't match spec §16 (follow-up queue by urgency, cohort-pipeline counts, document-readiness) — see `docs/build/DEFECTS_AND_HARDENING.md`. Deferred until the client feedback register (DEMO-1..7) is closed. |
+| `PTN02-LearnerDetail` | 7 Partner staff | 0/5 | extend | **Approved 2026-11-28 (user)** | **Reshelled 2026-11-28** to `.rhdr` ("Trainee", not "WIOA Case"). Chevron path tried for parity with CRD02, then removed — replaced with a plain thin progress bar, since a formal pipeline chevron made Partner's simple 4-course list more confusing, not clearer. Red triage card for missing documents added under the header (the role's actual job per spec). |
 | `RPT01-AdminReporting` | 8 Reports | 1/6 | new | | `/admin/analytics` is a "Future" placeholder |
 | `RPT02-FundingImpact` | 8 Reports | 5 | extend | | `/admin/wioa/reports` built; Phase 5 adds impact reporting. **Accepted 2026-11-18 (user), Group 1: now also folds in `/coordinator/reports` and `/partner/reports` as states/tabs on this same board.** |
 | `SET01-AdminSettings` | 8 Settings | — | new | | **Not in the 65 features** — today it's a bare `AdminPlaceholderScreen` ("Future scope"). **Decided 2026-11-18 (user): draw it anyway**, no Plane ticket. Content for it still needs deciding before the design loop (gate NFCAP-6) reaches `SET`. |
