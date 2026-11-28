@@ -22,6 +22,7 @@ import { withRlsContext } from '@/lib/db/rls';
 import type { PrismaClient } from '@/generated/prisma/client';
 import { getLearnerById, getPartnerStaffRoster } from '@/lib/data/learners';
 import { sendEmail } from '@/lib/email';
+import { effectiveUploadLimit } from '@/lib/wioa/constants';
 
 /** Master-case-level authorization for staff actions on eligibility data (documents, status,
  * appointments, assignment) — Coordinator for any case, Partner Staff only for their assigned
@@ -276,14 +277,6 @@ export async function requestCourseFunding(courseSlug: string): Promise<void> {
   revalidatePath('/learner/funding');
 }
 
-/** Document Upload Limits (docs/client/NFCAP_LMS_Feature_Detail_Client.md: "so files cannot
- * accumulate without bound as usage grows"). `enforceRateLimit` below already caps upload
- * *rate*, but every accepted upload keeps its storage object forever — so a learner re-uploading
- * the same document indefinitely, slowly, still accumulates unbounded files. This is the
- * separate, unbounded dimension: a hard cap on total uploads per document, independent of how
- * spread out in time they are. */
-const MAX_UPLOADS_PER_DOCUMENT = 10;
-
 /** Learner document upload (spec Section 9), against the master case's eligibility checklist.
  * Verifies the document belongs to the caller before touching Storage or the DB — a server action
  * can be invoked directly, so ownership can't be assumed from what the UI shows.
@@ -322,7 +315,7 @@ export async function uploadWioaDocument(
   // upload. Same plain-`prisma` gating-read trade-off as the ownership check above.
   const priorVersionCount = await prisma.wioaDocumentVersion.count({ where: { documentId } });
   const totalUploads = priorVersionCount + (doc.uploadedAt ? 1 : 0);
-  if (totalUploads >= MAX_UPLOADS_PER_DOCUMENT) {
+  if (totalUploads >= effectiveUploadLimit(doc.uploadLimitOverride)) {
     // Nobody had ever confirmed this cap fires in production (CAP-5), and nothing recorded it
     // when it did — logged before returning so the refusal has an audit trail even though the
     // learner-facing copy (CAP-1) deliberately doesn't mention the cap itself.
@@ -420,6 +413,48 @@ export async function uploadWioaDocument(
   return { ok: true };
 }
 
+/** CAP-4 — "Allow another upload". Staff action for a document that has hit
+ * `MAX_UPLOADS_PER_DOCUMENT`: raises `uploadLimitOverride` to exactly one past the learner's
+ * current total, so they can resubmit once more without the cap immediately re-triggering on the
+ * very next attempt. Deliberately not a reset of the version count — `WioaDocumentVersion` rows
+ * are the audit trail this whole feature exists to protect (CLAUDE.local.md #8); nothing here
+ * deletes or renumbers them, it only moves the ceiling. Not an "override"/"reset limit" in the
+ * learner-facing or staff-facing copy, per Decision 3
+ * (docs/plans/notifications-and-upload-cap-kickoff.md) — it reads as ordinary capability. */
+export async function allowAnotherWioaDocumentUpload(
+  documentId: string,
+): Promise<WioaActionResult> {
+  const doc = await prisma.wioaDocument.findUniqueOrThrow({ where: { id: documentId } });
+  const staff = await requireMasterCaseAccess(doc.masterCaseId);
+
+  const role = getRole(staff) ?? '';
+  return withRlsContext({ userId: staff.id, role }, async (tx) => {
+    const priorVersionCount = await tx.wioaDocumentVersion.count({ where: { documentId } });
+    const totalUploads = priorVersionCount + (doc.uploadedAt ? 1 : 0);
+    const currentLimit = effectiveUploadLimit(doc.uploadLimitOverride);
+    if (totalUploads < currentLimit) {
+      return { ok: false, error: 'This document has not reached its upload limit yet.' };
+    }
+
+    await tx.wioaDocument.update({
+      where: { id: documentId },
+      data: { uploadLimitOverride: totalUploads + 1 },
+    });
+
+    await logAuditEvent({
+      actor: staff,
+      action: 'WIOA_DOCUMENT_UPLOAD_LIMIT_RAISED',
+      targetType: 'WioaDocument',
+      targetId: documentId,
+      metadata: { masterCaseId: doc.masterCaseId, previousLimit: currentLimit, totalUploads },
+    });
+
+    revalidatePath(`/coordinator/${doc.masterCaseId}`);
+    revalidatePath(`/partner/${doc.masterCaseId}`);
+    return { ok: true };
+  });
+}
+
 /** Short-lived signed URL for staff to view an uploaded document (WIOA_INTEGRATION_PLAN.md
  * Section 10 — never a public URL). Gated by requireMasterCaseAccess since the storage path alone
  * carries no access control. */
@@ -483,6 +518,58 @@ export async function getWioaDocumentVersionUrl(versionId: string): Promise<stri
   const staff = await requireMasterCaseAccess(version.document.masterCaseId);
   const rlsVersion = await withRlsContext({ userId: staff.id, role: getRole(staff) ?? '' }, (tx) =>
     tx.wioaDocumentVersion.findUniqueOrThrow({ where: { id: versionId } }),
+  );
+  return getWioaDocumentSignedUrl(rlsVersion.storagePath);
+}
+
+/** CAP-6 — learner-visible upload history. Same shape and ownership-check pattern as
+ * `uploadWioaDocument`'s gating read: a server action can be invoked directly, so ownership can't
+ * be assumed from what the UI shows. Deliberately a separate function from the staff
+ * `getWioaDocumentVersions` above rather than branching role logic inside it — the access rule is
+ * different (own document vs. assigned/any case), not just a wider version of the same check. */
+export async function getWioaDocumentVersionsForLearner(
+  documentId: string,
+): Promise<WioaDocumentVersionRecord[]> {
+  const user = await requireUser();
+  const doc = await prisma.wioaDocument.findUniqueOrThrow({
+    where: { id: documentId },
+    include: { masterCase: true },
+  });
+  if (doc.masterCase.learnerId !== user.id) {
+    throw new Error('Not your document.');
+  }
+
+  const versions = await withRlsContext(
+    { userId: user.id, role: getRole(user) ?? 'LEARNER' },
+    (tx) =>
+      tx.wioaDocumentVersion.findMany({
+        where: { documentId },
+        orderBy: { uploadedAt: 'desc' },
+      }),
+  );
+  return versions.map((v) => ({
+    id: v.id,
+    fileName: v.fileName,
+    uploadedAt: v.uploadedAt,
+    status: v.status as WioaDocumentVersionRecord['status'],
+    rejectionReason: v.rejectionReason,
+  }));
+}
+
+/** CAP-6 — short-lived signed URL for one of the learner's own past versions, gated the same way
+ * as the current file (`getWioaDocumentUrl`'s ownership check, not staff access). */
+export async function getWioaDocumentVersionUrlForLearner(versionId: string): Promise<string> {
+  const user = await requireUser();
+  const version = await prisma.wioaDocumentVersion.findUniqueOrThrow({
+    where: { id: versionId },
+    include: { document: { include: { masterCase: true } } },
+  });
+  if (version.document.masterCase.learnerId !== user.id) {
+    throw new Error('Not your document.');
+  }
+  const rlsVersion = await withRlsContext(
+    { userId: user.id, role: getRole(user) ?? 'LEARNER' },
+    (tx) => tx.wioaDocumentVersion.findUniqueOrThrow({ where: { id: versionId } }),
   );
   return getWioaDocumentSignedUrl(rlsVersion.storagePath);
 }

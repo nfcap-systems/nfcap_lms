@@ -4,6 +4,7 @@ import type { WioaEligibilityStatus } from '@/generated/prisma/enums';
  * (`src/lib/actions/wioa-notifications.ts`) needs a code to dedupe on, since the human-readable
  * `reason` text alone is fine for display but not meant to be a dedupe key. */
 export type WioaFollowUpReasonCode =
+  | 'UPLOAD_CAP_REACHED'
   | 'DOCUMENT_REJECTED'
   | 'NO_RESPONSE'
   | 'DOCUMENTS_PENDING'
@@ -47,12 +48,23 @@ export function determineWioaFollowUpReason(input: {
   status: WioaEligibilityStatus;
   updatedAt: Date;
   hasRejectedDocument: boolean;
+  /** CAP-3: at least one document has hit its upload cap (`effectiveUploadLimit`,
+   * src/lib/wioa/constants.ts) — the learner can no longer resubmit on their own, which a plain
+   * `hasRejectedDocument` can't distinguish (a capped document is usually also rejected, but
+   * "ask the learner to resubmit" doesn't work for it, so this takes priority below). */
+  hasCappedDocument: boolean;
   courseCaseCount: number;
   nextAppointmentAt: Date | null;
   now?: Date;
 }): WioaFollowUpTrigger | null {
   const now = input.now ?? new Date();
 
+  if (input.hasCappedDocument) {
+    return {
+      code: 'UPLOAD_CAP_REACHED',
+      reason: 'Document upload limit reached — needs staff action',
+    };
+  }
   if (input.hasRejectedDocument) {
     return { code: 'DOCUMENT_REJECTED', reason: 'Document rejected — needs resubmission' };
   }
