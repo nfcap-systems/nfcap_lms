@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { prisma } from '@/lib/prisma';
-import { uploadWioaDocument } from '@/lib/actions/wioa';
+import { uploadWioaDocument, allowAnotherWioaDocumentUpload } from '@/lib/actions/wioa';
 import { mockAuthUser } from '../setup/auth-mock';
 import {
   createDocumentRequirement,
@@ -95,5 +95,80 @@ describe('uploadWioaDocument — upload cap (CAP-5)', () => {
 
     expect(result).toEqual({ ok: true });
     expect(uploadWioaDocumentFile).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('allowAnotherWioaDocumentUpload (CAP-4)', () => {
+  let coordinatorId: string;
+  let learnerId: string;
+  let documentId: string;
+
+  beforeEach(async () => {
+    vi.mocked(uploadWioaDocumentFile).mockClear();
+
+    learnerId = fakeUserId();
+    coordinatorId = fakeUserId();
+
+    const board = await createWorkforceBoard();
+    const requirement = await createDocumentRequirement(board.id, 'Proof of ID');
+    const masterCase = await createWioaMasterCase({ learnerId, workforceBoardId: board.id });
+
+    const doc = await prisma.wioaDocument.create({
+      data: { masterCaseId: masterCase.id, requirementId: requirement.id, status: 'MISSING' },
+    });
+    documentId = doc.id;
+
+    // 9 archived versions + the 1 live file = 10 total uploads, the standard cap.
+    await prisma.wioaDocumentVersion.createMany({
+      data: Array.from({ length: 9 }, (_, i) => ({
+        documentId,
+        fileName: `old-${i}.pdf`,
+        storagePath: `fake/path-${i}.pdf`,
+        uploadedAt: new Date(),
+        status: 'REJECTED' as const,
+      })),
+    });
+    await prisma.wioaDocument.update({
+      where: { id: documentId },
+      data: { fileName: 'current.pdf', storagePath: 'fake/current.pdf', uploadedAt: new Date() },
+    });
+  });
+
+  it('raises the limit by exactly one, letting the next upload through and the one after it fail again', async () => {
+    mockAuthUser('WIOA_COORDINATOR', coordinatorId);
+
+    const result = await allowAnotherWioaDocumentUpload(documentId);
+    expect(result).toEqual({ ok: true });
+
+    mockAuthUser('LEARNER', learnerId);
+    const firstRetry = await uploadWioaDocument(documentId, fakeFile());
+    expect(firstRetry).toEqual({ ok: true });
+
+    const secondRetry = await uploadWioaDocument(documentId, fakeFile());
+    expect(secondRetry).toEqual({
+      ok: false,
+      error: expect.stringMatching(/case manager/i),
+    });
+  });
+
+  it('refuses when the document has not actually reached its current limit', async () => {
+    mockAuthUser('WIOA_COORDINATOR', coordinatorId);
+    await allowAnotherWioaDocumentUpload(documentId); // raises the override to 11
+
+    const result = await allowAnotherWioaDocumentUpload(documentId);
+    expect(result).toEqual({
+      ok: false,
+      error: expect.stringMatching(/not reached/i),
+    });
+  });
+
+  it('logs an audit event distinct from the learner-facing cap-reached event', async () => {
+    mockAuthUser('WIOA_COORDINATOR', coordinatorId);
+    await allowAnotherWioaDocumentUpload(documentId);
+
+    const auditRows = await prisma.auditLog.findMany({
+      where: { action: 'WIOA_DOCUMENT_UPLOAD_LIMIT_RAISED', targetId: documentId },
+    });
+    expect(auditRows).toHaveLength(1);
   });
 });

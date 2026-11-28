@@ -26,6 +26,7 @@ import {
   getWioaDocumentUrl,
   getWioaDocumentVersions,
   getWioaDocumentVersionUrl,
+  allowAnotherWioaDocumentUpload,
   assignWioaCasePartnerStaff,
   updateWioaFunding,
   type WioaFundingFields,
@@ -514,6 +515,22 @@ function DocumentReviewRow({
     });
   }
 
+  function allowAnotherUpload() {
+    startTransition(async () => {
+      try {
+        const result = await allowAnotherWioaDocumentUpload(doc.id);
+        if (!result.ok) {
+          toast.error(result.error);
+          return;
+        }
+        toast.success('The learner can upload this document again.');
+        router.refresh();
+      } catch (e) {
+        toast.error(e instanceof Error ? e.message : 'Could not update the upload limit.');
+      }
+    });
+  }
+
   return (
     <div className="flex flex-col gap-2 rounded-lg border border-[var(--nfcap-border)] p-3">
       <div className="flex flex-wrap items-start justify-between gap-2">
@@ -570,6 +587,17 @@ function DocumentReviewRow({
             </div>
           )}
         </>
+      )}
+
+      {doc.isCapped && (
+        <div className="flex flex-col gap-2 rounded-md border border-[var(--status-problem)] bg-[var(--status-problem-bg)] p-2">
+          <p className="text-xs text-[var(--status-problem)]">
+            Upload limit reached — the learner can no longer resubmit this document on their own.
+          </p>
+          <Button size="sm" variant="outline" onClick={allowAnotherUpload}>
+            Allow another upload
+          </Button>
+        </div>
       )}
 
       {doc.status !== 'MISSING' && doc.status !== 'NOT_APPLICABLE' && (

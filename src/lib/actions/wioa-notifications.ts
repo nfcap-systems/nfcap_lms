@@ -4,6 +4,7 @@ import { logAuditEvent } from './audit';
 import { determineWioaFollowUpReason } from '@/lib/wioa/follow-up';
 import { getAllUsersWithRoles } from '@/lib/data/users';
 import { getLearnerById } from '@/lib/data/learners';
+import { effectiveUploadLimit } from '@/lib/wioa/constants';
 
 /** How often this sweep is expected to run (the GitHub Action's schedule, currently disabled —
  * see `.github/workflows/wioa-follow-up-notifications.yml`). The dedupe window below is kept
@@ -17,7 +18,8 @@ export type WioaFollowUpSweepResult = {
   recipientsNotified: number;
 };
 
-/** NOTIF-3 — turns the five (now six, with the appointment reminder) `followUpQueue` conditions
+/** NOTIF-3 — turns the `followUpQueue` conditions (five originally, plus the appointment
+ * reminder and CAP-3's upload-cap trigger — seven total now)
  * from `getWioaReportingSummary` (dashboard-only) into real notifications. Deliberately NOT called
  * from inside `getWioaReportingSummary` itself: that function runs on every Reports-page render,
  * and emitting a side effect from a read is how you get a fresh duplicate notification on every
@@ -40,7 +42,14 @@ export async function runWioaFollowUpNotificationSweep(): Promise<WioaFollowUpSw
       status: true,
       updatedAt: true,
       assignedPartnerStaffId: true,
-      documents: { select: { status: true } },
+      documents: {
+        select: {
+          status: true,
+          uploadedAt: true,
+          uploadLimitOverride: true,
+          _count: { select: { versions: true } },
+        },
+      },
       courseCases: { select: { id: true } },
       appointments: {
         where: { completedAt: null },
@@ -64,6 +73,10 @@ export async function runWioaFollowUpNotificationSweep(): Promise<WioaFollowUpSw
       status: c.status,
       updatedAt: c.updatedAt,
       hasRejectedDocument: c.documents.some((d) => d.status === 'REJECTED'),
+      hasCappedDocument: c.documents.some(
+        (d) =>
+          d._count.versions + (d.uploadedAt ? 1 : 0) >= effectiveUploadLimit(d.uploadLimitOverride),
+      ),
       courseCaseCount: c.courseCases.length,
       nextAppointmentAt: c.appointments[0]?.scheduledAt ?? null,
       now,

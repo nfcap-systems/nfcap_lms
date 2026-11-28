@@ -9,6 +9,7 @@ import type {
 import { WIOA_ELIGIBILITY_STATUS_PHASE, WIOA_UI_PHASES, type WioaUiPhase } from '@/lib/wioa/status';
 import { withRlsContext, type SessionContext } from '@/lib/db/rls';
 import { determineWioaFollowUpReason, type WioaFollowUpReasonCode } from '@/lib/wioa/follow-up';
+import { effectiveUploadLimit } from '@/lib/wioa/constants';
 
 export type LearnerProfile = {
   learnerId: string;
@@ -71,6 +72,11 @@ export type WioaDocumentRecord = {
   uploadedAt: Date | null;
   reviewedAt: Date | null;
   rejectionReason: string | null;
+  /** CAP-4/CAP-6: whether this document has hit its effective upload cap (the standard limit,
+   * or `uploadLimitOverride` once staff have raised it) — computed here so neither the staff
+   * "Allow another upload" action nor the learner upload-history UI has to re-derive the cap
+   * math client-side. */
+  isCapped: boolean;
 };
 
 export type WioaAppointmentRecord = {
@@ -109,7 +115,9 @@ export async function getWioaEligibilityCaseForLearner(
         workforceBoard: { select: { name: true } },
         ajccCenter: { select: { name: true } },
         contact: { select: { name: true } },
-        documents: { include: { requirement: true } },
+        documents: {
+          include: { requirement: true, _count: { select: { versions: true } } },
+        },
         appointments: { orderBy: { scheduledAt: 'asc' } },
         statusHistory: { orderBy: { changedAt: 'asc' } },
       },
@@ -135,6 +143,8 @@ export async function getWioaEligibilityCaseForLearner(
       uploadedAt: d.uploadedAt,
       reviewedAt: d.reviewedAt,
       rejectionReason: d.rejectionReason,
+      isCapped:
+        d._count.versions + (d.uploadedAt ? 1 : 0) >= effectiveUploadLimit(d.uploadLimitOverride),
     })),
     appointments: c.appointments,
     statusHistory: c.statusHistory.map((h) => ({ status: h.status, changedAt: h.changedAt })),
@@ -524,7 +534,9 @@ export async function getWioaCaseDetail(
         workforceBoard: { select: { name: true } },
         ajccCenter: { select: { name: true } },
         contact: { select: { name: true } },
-        documents: { include: { requirement: true } },
+        documents: {
+          include: { requirement: true, _count: { select: { versions: true } } },
+        },
         appointments: { orderBy: { scheduledAt: 'asc' } },
         statusHistory: { orderBy: { changedAt: 'asc' } },
         communications: { orderBy: { sentAt: 'desc' } },
@@ -580,6 +592,8 @@ export async function getWioaCaseDetail(
       uploadedAt: d.uploadedAt,
       reviewedAt: d.reviewedAt,
       rejectionReason: d.rejectionReason,
+      isCapped:
+        d._count.versions + (d.uploadedAt ? 1 : 0) >= effectiveUploadLimit(d.uploadLimitOverride),
     })),
     appointments: c.appointments,
     statusHistory: c.statusHistory.map((h) => ({
@@ -750,7 +764,14 @@ export async function getWioaReportingSummary(
         where: masterWhere,
         include: {
           workforceBoard: { select: { name: true } },
-          documents: { select: { status: true } },
+          documents: {
+            select: {
+              status: true,
+              uploadedAt: true,
+              uploadLimitOverride: true,
+              _count: { select: { versions: true } },
+            },
+          },
           statusHistory: {
             select: { status: true, changedAt: true },
             orderBy: { changedAt: 'asc' },
@@ -834,6 +855,11 @@ export async function getWioaReportingSummary(
         status: c.status,
         updatedAt: c.updatedAt,
         hasRejectedDocument: c.documents.some((d) => d.status === 'REJECTED'),
+        hasCappedDocument: c.documents.some(
+          (d) =>
+            d._count.versions + (d.uploadedAt ? 1 : 0) >=
+            effectiveUploadLimit(d.uploadLimitOverride),
+        ),
         courseCaseCount: c.courseCases.length,
         nextAppointmentAt: c.appointments[0]?.scheduledAt ?? null,
         now: new Date(now),

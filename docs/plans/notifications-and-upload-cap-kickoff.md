@@ -178,6 +178,61 @@ sit is the right call.
 **Still outstanding from Step 0** (does not block `NOTIF-1`): the three board *amendments* below
 are not drawn or approved, so `CAP-3`, `CAP-4` and `CAP-6` stay blocked on them.
 
+**`CAP-3`'s amendment — drawn 2026-11-28, scope decision closed, content not yet approved.**
+Scoping `CAP-3` found that `RPT02-FundingImpact.dc.html` didn't show the Follow-Up Queue section
+at all, even though it's real and live on `/coordinator/reports` and `/partner/reports`
+(`WioaReportsView.tsx`, ~line 273) with 5 reason types already built. Sadin was asked full
+reconciliation (all 6 reason types, one pass) vs. a minimal bolt-on (just the capped-document
+case) — **chose full reconciliation**, same reasoning the brief already carried: a half-fixed
+board recreates the board-vs-real-route mismatch `CLAUDE.local.md` #1 burned a session on. The
+board now has the whole section drawn, all 6 rows (`DOCUMENT_REJECTED`, `NO_RESPONSE`,
+`DOCUMENTS_PENDING`, `ELIGIBLE_NO_FUNDING`, `APPOINTMENT_UPCOMING` from
+`determineWioaFollowUpReason`, `src/lib/wioa/follow-up.ts`, plus the 6th — `CAP-3`'s new
+capped-document row, labeled as not-yet-built in the board's own caption), matching the real
+component's row markup (learner name, course · reason, status badge, chevron) and using existing
+shared classes (`.dtcard`, `.ov-h`, `.badge-pending`) rather than inventing new CSS. Published to
+the canvas 2026-11-28 (version 215, version id `1795861439-e0b1`).
+
+**What's closed vs. still open:** the *scope decision* (full reconciliation) is closed — don't
+reopen it. The *drawn content itself* has not been visually reviewed or verbally approved by
+Sadin yet — that review is still the gate `DEV-APPROACH.md` requires before `CAP-3` code starts.
+Don't start `CAP-3`'s `emitNotification` call believing the board gate is satisfied; only the
+scope-approach question is.
+
+**`CAP-4`'s amendment — drawn 2026-11-28, content not yet approved.** The kickoff doc's own
+earlier note ("the staff WIOA case detail screen — `CRD02-CaseDetail.dc.html` or
+`CRD03-DocumentReview.dc.html`, check which one actually renders document-level actions") was
+checked before drawing: `CRD02-CaseDetail` only has a summary panel ("Documents (5) · 4 accepted,
+1 awaiting review" + a "Review documents" button to leave the page); `CRD03-DocumentReview` is the
+one with the real per-document rows and actions (View file / Accept / Reject), matching the real
+`DocumentReviewRow` component (`WioaCaseDetailView.tsx`). `CRD03` is the right target. Added a
+"Proof of Income" row modeling a capped document (10/10 uploads, status Rejected, an explicit
+problem-tone note) with an "Allow another upload" button beside the existing actions — not
+"override" or "reset limit" wording, per Decision 3. Published 2026-11-28 (version 216, version id
+`1795862092-baeb`).
+
+**`CAP-6`'s amendment — drawn 2026-11-28 on a *different* board than the one named in the
+original brief, content not yet approved.** The brief said `LRN10-FundingStatus.dc.html`; checking
+it against the real code first (same discipline as `CAP-4`'s check, and the exact habit
+`CLAUDE.local.md` #1 exists to enforce) found that board has no per-document rows at all — just an
+"Outreach log" card and a "View document checklist →" link out to a different board. The real
+learner-side component (`DocumentCard`, `src/app/learner/funding/WioaCaseFeed.tsx`) matches
+`LRN10c-DocumentChecklist.dc.html`'s row shape (`.docrow`: requirement name, status badge,
+file name, upload/re-upload button) exactly — not `LRN10`'s. **`LRN10c`, not `LRN10`, is the real
+target**, and it's what got amended: added a "View upload history" toggle under the Photo ID row
+(the one with real history in this mock — two prior rejected attempts), display-only, since each
+past upload already persists as a `WioaDocumentVersion` row with nothing new to model, mirroring
+the staff side's existing "View past versions" pattern. Published 2026-11-28 (version 217, version
+id `1795862170-4aea`). **Correct the board name wherever `CAP-6` is referenced below and in any
+future ticket/brief — `LRN10c-DocumentChecklist`, not `LRN10-FundingStatus`.**
+
+**All three amendments reviewed and approved — 2026-11-28.** Sadin reviewed and approved
+`RPT02-FundingImpact` (`CAP-3`, version 215), `CRD03-DocumentReview` (`CAP-4`, version 216) and
+`LRN10c-DocumentChecklist` (`CAP-6`, version 217, corrected target board) as drawn, verbally,
+logged here per the same mechanism as Step 0 above — no canvas-side comment added. **The board
+gate is now satisfied for all three; `CAP-3`, `CAP-4` and `CAP-6` are unblocked and ready to
+build.**
+
 ## Step 1 — The fix track (buildable immediately, no design dependency)
 
 `CAP-1`, `CAP-2`, `CAP-5`. Full brief: `docs/plans/executor-brief-cap-1-2-5.md`.
@@ -234,13 +289,51 @@ generate **and apply** it before any code depends on it; per #3, restart the dev
 
 ## Step 3 — Cap handling that depends on notifications
 
-`CAP-3` (one `emitNotification` call plus a follow-up-queue row), then `CAP-4` and `CAP-6` once
-their board amendments are approved.
+**Built 2026-11-28, PR #40 (`feature/cap-3-4-6-capped-document-handling`, commit `f485631`) open
+against `stage`, In Review.** `CAP-3` ended up as a 6th reason code on the existing
+`determineWioaFollowUpReason`/`followUpQueue`/sweep machinery rather than a standalone
+`emitNotification` call — simpler, and it means the sweep's dedupe/recipient logic didn't need
+touching at all. `CAP-4` used the schema decision below. `CAP-6` needed its own learner-scoped
+read functions, not a branch inside the staff-only ones.
 
-`CAP-4` needs a schema decision: a nullable `uploadLimitOverride Int?` on `WioaDocument` is
-preferred over deleting `WioaDocumentVersion` rows to reset the count — those rows are the audit
-trail this whole feature exists to protect, and clearing the counter by destroying them would burn
-the thing being guarded.
+**`CAP-3` detail:** new `UPLOAD_CAP_REACHED` reason code in `determineWioaFollowUpReason`
+(`src/lib/wioa/follow-up.ts`), checked first so it outranks `DOCUMENT_REJECTED` — a capped
+document is usually also rejected, but "ask the learner to resubmit" doesn't work for it. Wired
+into both `getWioaReportingSummary`'s `followUpQueue` and `runWioaFollowUpNotificationSweep`
+(`src/lib/actions/wioa-notifications.ts`). Reuses the existing `WIOA_FOLLOW_UP_NEEDED`
+notification type — no new migration for this part. New `src/lib/wioa/constants.ts`
+(`MAX_UPLOADS_PER_DOCUMENT`/`effectiveUploadLimit`) shared with `CAP-4` so the cap number can't
+drift between the two. Unit tests added to `tests/unit/wioa-follow-up.test.ts`.
+
+**`CAP-4` detail:** a nullable `uploadLimitOverride Int?` on `WioaDocument` is preferred over
+deleting `WioaDocumentVersion` rows to reset the count — those rows are the audit trail this whole
+feature exists to protect, and clearing the counter by destroying them would burn the thing being
+guarded. Migration `20261128120000_add_wioa_document_upload_limit_override` generated by hand (no
+shadow DB in this sandbox, per `CLAUDE.local.md` #8) and already applied to the live staging DB
+via `prisma migrate deploy` — `prisma migrate status` confirms clean. New staff action
+`allowAnotherWioaDocumentUpload` raises the override to exactly one past the learner's current
+total (never resets or deletes version rows), audit-logged as `WIOA_DOCUMENT_UPLOAD_LIMIT_RAISED`
+— distinct from the learner-facing `WIOA_DOCUMENT_UPLOAD_CAP_REACHED` event. "Allow another
+upload" button wired into `WioaCaseDetailView.tsx`'s `DocumentReviewRow`, shown only on
+`CRD03-DocumentReview`'s Coordinator-facing case detail (Partner Staff's own case-detail component,
+`PartnerTraineeDetailView.tsx`, has no document review actions at all yet — a pre-existing gap,
+left untouched here). Tests added to `tests/unit/wioa-upload-cap.test.ts`.
+
+**`CAP-6` detail:** `WioaDocumentRecord` gained a server-computed `isCapped` field (data layer,
+both `getWioaEligibilityCaseForLearner` and `getWioaCaseDetail`, so neither UI re-derives the cap
+math). New learner-scoped `getWioaDocumentVersionsForLearner`/`getWioaDocumentVersionUrlForLearner`
+(ownership-checked, deliberately not a branch inside the staff-only
+`getWioaDocumentVersions`/`getWioaDocumentVersionUrl` — the access rule is genuinely different,
+not just wider) power a "View upload history" toggle wired into `WioaCaseFeed.tsx`'s
+`DocumentCard`, mirroring the staff side's existing pattern. `canUpload` now also checks
+`!doc.isCapped` so a capped learner sees the "message your case manager" copy instead of a button
+that would just fail server-side.
+
+**Verification done vs. not done:** `tsc --noEmit`, `eslint`, and `next build` all pass locally.
+Docker is unavailable in this sandbox, so the Vitest suite itself (including the new tests above)
+could not be run locally — CI covers that. **Not clicked through in a browser** — "Allow another
+upload" and "View upload history" haven't been visually verified against a real case; say so
+plainly rather than claim it, per this session's own "Not verified" discipline.
 
 ## Progress log (update as each item finishes)
 
@@ -260,9 +353,9 @@ is unverified, say so in the row rather than guess.
 | `NOTIF-1` | `feature/notifications-foundation` | PR #36 · `6f904c5`, `495807f` · merge `88496bd` | On Stage | 2026-11-27 |
 | `NOTIF-2` | `feature/notif-2-evidence-reviewed` | PR #38 · merge `ee70625` | On Stage | 2026-11-27 |
 | `NOTIF-3` | `feature/notif-3-wioa-follow-up-triggers` | PR #39 · merge `beb3799` | On Stage | 2026-11-27 |
-| `CAP-3` | — | — | Checked and confirmed still blocked — its board amendment (new follow-up-queue row type) is not drawn/approved, same as `CAP-4`/`CAP-6`. The earlier "not briefed" note undersold this: it's blocked, not just unbriefed. | 2026-11-27 |
-| `CAP-4` | — | — | Blocked on board amendment (not drawn) | — |
-| `CAP-6` | — | — | Blocked on board amendment (not drawn) | — |
+| `CAP-3` | `feature/cap-3-4-6-capped-document-handling` | PR #40 · `f485631` | In Review (PR open) | 2026-11-28 |
+| `CAP-4` | `feature/cap-3-4-6-capped-document-handling` | PR #40 · `f485631` | In Review (PR open) | 2026-11-28 |
+| `CAP-6` | `feature/cap-3-4-6-capped-document-handling` | PR #40 · `f485631` | In Review (PR open) | 2026-11-28 |
 | This kickoff + Phase 6 baseline + defects file | `docs/notifications-and-upload-cap-kickoff` | pushed direct to `stage` through `ad47aaf` | On Stage | 2026-11-27 |
 | Sole-session deviation note | `stage` (local) | commit `f6c9d12`, **not yet pushed** — holding behind PR #37 per Sadin | Committed locally | 2026-11-27 |
 | Task 0 — staging bell verification | — | n/a (verification, no branch) | Done — see note below | 2026-11-27 |
@@ -318,12 +411,12 @@ that and no more.
 
 ## Open questions and blocked items
 
-- **Does any document requirement need more than one file?** Unanswered, and it outranks
-  everything above. A slot holds exactly **one** live file — each upload archives the previous one.
-  If "proof of income" means three months of pay stubs, the current model cannot express it, and a
-  learner uploading three would watch each replace the last and reasonably conclude the system is
-  losing her paperwork. If the answer is yes, the single-live-file model is the real problem and
-  the cap is a symptom; `CAP-4` and `CAP-6` both change shape. **Ask NFCAP.**
+- **Does any document requirement need more than one file? Resolved 2026-11-28 — no.** A slot
+  holds exactly **one** live file — each upload archives the previous one. Sadin confirmed the
+  single-live-file model is correct as-is: a multi-page/month requirement (e.g. three months of
+  pay stubs for "proof of income") gets combined into one PDF before upload, not split across
+  slots. `CAP-4` and `CAP-6` build against the existing model — no schema rethink beyond what was
+  already planned (`CAP-4`'s nullable `uploadLimitOverride Int?` on `WioaDocument`).
 - **Email deliverability** — SPF/DKIM and bounce handling remain blocked on DNS access NFCAP has
   not provided. Decision 2 removes this from the critical path; it is still a launch blocker for
   anything that must reach a real inbox.

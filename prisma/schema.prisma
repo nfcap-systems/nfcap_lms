@@ -752,6 +752,12 @@ model WioaDocument {
   rejectionReason String?
   expirationDate  DateTime?
   notes           String?
+  /// CAP-4: raises `MAX_UPLOADS_PER_DOCUMENT` (src/lib/wioa/constants.ts) for this document only,
+  /// via the staff "Allow another upload" action, once a learner has hit the standard cap and
+  /// genuinely needs to resubmit again. Null means the standard cap applies. Deliberately not a
+  /// reset of the version count — WioaDocumentVersion rows are the audit trail this feature exists
+  /// to protect (CLAUDE.local.md #8) — this only moves the ceiling, nothing is deleted.
+  uploadLimitOverride Int?
   versions        WioaDocumentVersion[]
 
   @@unique([masterCaseId, requirementId])
