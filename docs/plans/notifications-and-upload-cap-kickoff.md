@@ -289,8 +289,12 @@ generate **and apply** it before any code depends on it; per #3, restart the dev
 
 ## Step 3 — Cap handling that depends on notifications
 
-**Built 2026-11-28, PR #40 (`feature/cap-3-4-6-capped-document-handling`, commit `f485631`) open
-against `stage`, In Review.** `CAP-3` ended up as a 6th reason code on the existing
+**Built 2026-11-28, PR #40 (`feature/cap-3-4-6-capped-document-handling`) merged to `stage` via
+merge commit `0f4c537` — On Stage, not Done; `stage` has still never been promoted to `main`.
+Merged on the user's explicit instruction, ahead of Anish's review — `CLAUDE.md`'s
+approver-is-never-the-pusher rule was flagged before merging and the user confirmed twice to
+proceed anyway; worth a look from Anish after the fact rather than before.** `CAP-3` ended up as a
+6th reason code on the existing
 `determineWioaFollowUpReason`/`followUpQueue`/sweep machinery rather than a standalone
 `emitNotification` call — simpler, and it means the sweep's dedupe/recipient logic didn't need
 touching at all. `CAP-4` used the schema decision below. `CAP-6` needed its own learner-scoped
@@ -353,9 +357,9 @@ is unverified, say so in the row rather than guess.
 | `NOTIF-1` | `feature/notifications-foundation` | PR #36 · `6f904c5`, `495807f` · merge `88496bd` | On Stage | 2026-11-27 |
 | `NOTIF-2` | `feature/notif-2-evidence-reviewed` | PR #38 · merge `ee70625` | On Stage | 2026-11-27 |
 | `NOTIF-3` | `feature/notif-3-wioa-follow-up-triggers` | PR #39 · merge `beb3799` | On Stage | 2026-11-27 |
-| `CAP-3` | `feature/cap-3-4-6-capped-document-handling` | PR #40 · `f485631` | In Review (PR open) | 2026-11-28 |
-| `CAP-4` | `feature/cap-3-4-6-capped-document-handling` | PR #40 · `f485631` | In Review (PR open) | 2026-11-28 |
-| `CAP-6` | `feature/cap-3-4-6-capped-document-handling` | PR #40 · `f485631` | In Review (PR open) | 2026-11-28 |
+| `CAP-3` | `feature/cap-3-4-6-capped-document-handling` | PR #40 · `f485631`/`9b57808` · merge `0f4c537` | On Stage | 2026-11-28 |
+| `CAP-4` | `feature/cap-3-4-6-capped-document-handling` | PR #40 · `f485631`/`9b57808` · merge `0f4c537` | On Stage | 2026-11-28 |
+| `CAP-6` | `feature/cap-3-4-6-capped-document-handling` | PR #40 · `f485631`/`9b57808` · merge `0f4c537` | On Stage | 2026-11-28 |
 | This kickoff + Phase 6 baseline + defects file | `docs/notifications-and-upload-cap-kickoff` | pushed direct to `stage` through `ad47aaf` | On Stage | 2026-11-27 |
 | Sole-session deviation note | `stage` (local) | commit `f6c9d12`, **not yet pushed** — holding behind PR #37 per Sadin | Committed locally | 2026-11-27 |
 | Task 0 — staging bell verification | — | n/a (verification, no branch) | Done — see note below | 2026-11-27 |
