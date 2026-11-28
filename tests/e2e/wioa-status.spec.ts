@@ -23,9 +23,10 @@ test.describe('WIOA eligibility status changes', () => {
     try {
       await loginAs(page, coordinator);
       await page.goto(`/coordinator/${masterCase.id}`);
-      // The status-change control (StatusCard, WioaCaseDetailView.tsx) lives under the "Status
-      // history" tab, not the default "Overview" tab.
-      await page.getByRole('tab', { name: 'Status history' }).click();
+      // The status-change control (StatusCard, WioaCaseDetailView.tsx) now sits directly under
+      // the eligibility step path on the default view, collapsed behind an "Advance" button
+      // (DEMO-1/Ticket B) rather than living under a "Status history" tab.
+      await page.getByRole('button', { name: 'Advance' }).click();
 
       await page
         .getByLabel('New status')
@@ -64,7 +65,7 @@ test.describe('WIOA eligibility status changes', () => {
     try {
       await loginAs(page, coordinator);
       await page.goto(`/coordinator/${masterCase.id}`);
-      await page.getByRole('tab', { name: 'Status history' }).click();
+      await page.getByRole('button', { name: 'Advance' }).click();
 
       await expect(
         page
