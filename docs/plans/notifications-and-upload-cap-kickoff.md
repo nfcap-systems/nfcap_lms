@@ -335,9 +335,22 @@ that would just fail server-side.
 
 **Verification done vs. not done:** `tsc --noEmit`, `eslint`, and `next build` all pass locally.
 Docker is unavailable in this sandbox, so the Vitest suite itself (including the new tests above)
-could not be run locally — CI covers that. **Not clicked through in a browser** — "Allow another
-upload" and "View upload history" haven't been visually verified against a real case; say so
-plainly rather than claim it, per this session's own "Not verified" discipline.
+could not be run locally — CI ran it green on PR #40.
+
+**Manually verified by Sadin, 2026-11-28, against real staging data.** `learner@nfcap.demo`'s
+"Identity Document" was seeded to 10/10 uploads (9 archived `WioaDocumentVersion` rows +
+rejected live file, via a throwaway script run once and deleted, not committed) specifically to
+exercise the capped path. Confirmed working: the Follow-Up Queue on `/coordinator/reports` shows
+the case with reason "Document upload limit reached — needs staff action" and outranks a plain
+rejected reason (`CAP-3`); `/coordinator/[caseId]`'s Documents section shows the problem-tone
+notice and "Allow another upload", which raises the limit by exactly one, lets the next upload
+through, then re-caps (`CAP-4`); `/learner/funding`'s DocumentCard shows "View upload history"
+with the cap message and no Upload/Re-upload button while capped, and the history list shows the
+prior uploads (`CAP-6`). Regression (untouched documents' Accept/Reject/Upload) also checked
+clean. Seed data cleaned up 2026-11-28 via a second throwaway script (also deleted, not
+committed): 10 `WioaDocumentVersion` rows removed (9 from the seed + 1 the real upload flow
+created while verifying `CAP-4`), document restored to `ACCEPTED` with `uploadLimitOverride`
+back to `null`.
 
 ## Progress log (update as each item finishes)
 
