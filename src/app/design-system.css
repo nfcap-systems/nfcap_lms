@@ -3288,3 +3288,297 @@
     height: 40px;
   }
 }
+
+/* ============================================================================
+   Coordinator case detail (CRD02-CaseDetail, CRD03-DocumentReview) — redrawn
+   2026-11-28 against the real master/course WIOA split, replacing the old
+   .phdr/.pring/.ptabs shell for this screen (DEMO-1/DEMO-2, Ticket B).
+   ============================================================================ */
+.rhdr {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+.rhdr-left {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  min-width: 0;
+}
+.rhdr-avatar {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  background: var(--nfcap-accent);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 15px;
+  flex: none;
+}
+.rhdr-type {
+  font-size: 11.5px;
+  color: var(--ink-muted);
+  letter-spacing: 0.02em;
+}
+.rhdr-name {
+  margin: 1px 0 3px;
+  font-size: 24px;
+  font-weight: 600;
+  font-family: var(--font-display);
+  color: var(--ink);
+  line-height: 1.15;
+}
+.rhdr-sub {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--ink-muted);
+}
+.rhdr-actions {
+  display: flex;
+  gap: 8px;
+  flex: none;
+}
+.rhdr-current {
+  font-size: 12.5px;
+  color: var(--ink-muted);
+  margin: 10px 0 0;
+}
+.rhdr-current b {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.sect-h {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--ink-muted);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin: 0 0 12px;
+}
+
+/* Step-path chevrons — one for eligibility (4 WIOA_UI_PHASES), one per course funding case.
+   Siblings by design: this is what makes "two separate tracks" (DEMO-2) read without copy. */
+.pathwrap {
+  display: flex;
+  align-items: stretch;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+.path {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+}
+.path-step {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  background: var(--surface-muted);
+  color: var(--ink-muted);
+  font-size: 12.5px;
+  font-weight: 500;
+  padding: 0 14px 0 20px;
+  clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 50%, calc(100% - 12px) 100%, 0 100%, 12px 50%);
+  margin-right: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.path-step:first-child {
+  clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 50%, calc(100% - 12px) 100%, 0 100%);
+  padding-left: 14px;
+}
+.path-step:last-child {
+  margin-right: 0;
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%, 12px 50%);
+}
+.path-step.done {
+  background: color-mix(in srgb, var(--ink) 12%, var(--surface-muted));
+  color: var(--ink-muted);
+}
+.path-step.now {
+  background: var(--nfcap-accent);
+  color: #fff;
+  font-weight: 600;
+}
+/* Real WIOA_FUNDING_STATUS_LABEL names are too long for one line at equal chevron widths
+   (CLAUDE.local.md #5) — wrap two lines rather than inventing a second short-label map. */
+.path-step.wrap2 {
+  height: 48px;
+  white-space: normal;
+  line-height: 1.15;
+  overflow: visible;
+  text-overflow: clip;
+}
+.path.sm .path-step {
+  height: 30px;
+  font-size: 11.5px;
+}
+.path.sm .path-step.wrap2 {
+  height: 42px;
+  font-size: 11px;
+}
+.path-advance {
+  flex: none;
+  display: flex;
+  align-items: center;
+}
+.path-current {
+  font-size: 12.5px;
+  color: var(--ink-muted);
+  margin: 0;
+}
+.path-current b {
+  color: var(--ink);
+  font-weight: 600;
+}
+/* A terminal state REPLACES the path, never a step inside it (QC finding Q-2). */
+.path-terminal {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 38px;
+  padding: 0 16px;
+  border: 1px solid color-mix(in srgb, var(--status-problem) 45%, transparent);
+  background: var(--status-problem-bg);
+  border-radius: var(--nfcap-radius-md);
+  font-size: 12.5px;
+  color: var(--status-problem);
+  font-weight: 600;
+}
+
+.bodygrid {
+  display: grid;
+  grid-template-columns: 1fr 312px;
+  gap: 26px;
+  align-items: start;
+}
+
+/* One course funding case. */
+.ccard {
+  border: 1px solid var(--nfcap-border);
+  border-radius: var(--nfcap-radius-lg);
+  margin-bottom: 14px;
+  background: var(--surface);
+}
+.ccard-h {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 13px 16px;
+  border-bottom: 1px solid var(--nfcap-border);
+}
+.ccard-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.ccard-meta {
+  font-size: 11.5px;
+  color: var(--ink-muted);
+  margin-top: 2px;
+}
+.ccard-body {
+  padding: 16px;
+}
+.ccase-tag {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--nfcap-border);
+  border-radius: 4px;
+  padding: 2px 8px;
+  font-size: 11px;
+  color: var(--ink-muted);
+}
+
+/* The 12 ETPL/authorization fields, grouped as attribute rows under the step they belong to
+   (DEMO-3/A4) — not a flat form that advances anything itself. */
+.grp {
+  border-top: 1px solid var(--nfcap-border);
+  margin-top: 16px;
+  padding-top: 13px;
+}
+.grp-h {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+.arow {
+  display: grid;
+  grid-template-columns: 170px 1fr;
+  gap: 12px;
+  padding: 6px 0;
+  font-size: 12.5px;
+  border-bottom: 1px dashed var(--nfcap-border);
+}
+.arow:last-child {
+  border-bottom: 0;
+}
+.arow .k {
+  color: var(--ink-muted);
+}
+.arow .v {
+  color: var(--ink);
+}
+.arow .v.empty {
+  color: var(--ink-faint);
+  font-style: italic;
+}
+
+/* Right-rail summary panels (Documents / Appointments / Board contact / Communications /
+   Status history) — each a collapsed summary with an action into its own full view. */
+.rpanel {
+  border: 1px solid var(--nfcap-border);
+  border-radius: var(--nfcap-radius-lg);
+  margin-bottom: 12px;
+  background: var(--surface);
+}
+.rpanel-h {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 11px 14px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.rpanel-h .left {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.rpanel-b {
+  padding: 0 14px 13px;
+  font-size: 12.5px;
+  color: var(--ink-muted);
+  line-height: 1.6;
+}
+.cnt {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 19px;
+  height: 19px;
+  padding: 0 5px;
+  border-radius: 9px;
+  background: var(--surface-muted);
+  color: var(--ink-muted);
+  font-size: 11px;
+  font-weight: 600;
+}

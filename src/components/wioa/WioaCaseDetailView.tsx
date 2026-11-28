@@ -4,21 +4,7 @@ import { useState, useTransition } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import {
-  Badge,
-  Button,
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CompletionRing,
-  Field,
-  Input,
-  ProfileHeader,
-  ProfileTabs,
-  Select,
-  Textarea,
-} from '@/components/ui';
+import { Badge, Button, Field, Input, Select, Textarea } from '@/components/ui';
 import { Icon } from '@/components/icons';
 import {
   setWioaDocumentStatus,
@@ -42,7 +28,8 @@ import type {
 } from '@/generated/prisma/enums';
 import {
   WIOA_STATUS_LABEL,
-  WIOA_STATUS_PHASE,
+  WIOA_UI_PHASES,
+  WIOA_ELIGIBILITY_STATUS_PHASE,
   nextStatusOptions,
   WIOA_FUNDING_STATUS_ORDER,
   WIOA_FUNDING_STATUS_LABEL,
@@ -75,12 +62,6 @@ const COMMUNICATION_LABEL: Record<'EMAIL' | 'CALL' | 'NOTE', string> = {
   NOTE: 'Note',
 };
 
-const COMMUNICATION_ICON: Record<'EMAIL' | 'CALL' | 'NOTE', 'mail' | 'phone' | 'file-text'> = {
-  EMAIL: 'mail',
-  CALL: 'phone',
-  NOTE: 'file-text',
-};
-
 // Only these two next-statuses ever pair with scheduling an Appointment in the same action
 // (docs/build/WIOA_BUILD_WORKFLOW.md "Open decisions" — Appointment is authoritative for the date,
 // the case status is a derived label staff sets alongside creating it).
@@ -98,276 +79,346 @@ function formatDate(value: Date | string | null | undefined): string {
   });
 }
 
+function formatMoney(value: number | null | undefined): string | null {
+  if (value == null) return null;
+  return `$${value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
 function initials(name: string): string {
   const parts = name.trim().split(/\s+/);
   return ((parts[0]?.[0] ?? '') + (parts[1]?.[0] ?? '')).toUpperCase() || '?';
 }
 
-type Tab = 'overview' | 'documents' | 'history';
+/** Splits a two-word-or-more funding status label across two lines for the narrow chevron steps
+ * (CLAUDE.local.md #5 — the real WIOA_FUNDING_STATUS_LABEL names are too long for one line at
+ * equal chevron widths; this wraps at the natural midpoint instead of inventing a short-label
+ * map). */
+function wrapLabel(label: string) {
+  const words = label.split(' ');
+  const mid = Math.ceil(words.length / 2);
+  return (
+    <>
+      {words.slice(0, mid).join(' ')}
+      <br />
+      {words.slice(mid).join(' ')}
+    </>
+  );
+}
+
+type View = 'overview' | 'documents' | 'history';
 
 export function WioaCaseDetailView({
   wioaCase,
-  basePath,
+  basePath = '/coordinator',
   partnerStaffRoster,
 }: {
   wioaCase: WioaCaseDetail;
-  /** '/coordinator' or '/partner' — breadcrumb back-link target. */
-  basePath: '/coordinator' | '/partner';
+  /** '/coordinator' or '/partner' — "All Cases"/"My Cases" breadcrumb back-link target. */
+  basePath?: '/coordinator' | '/partner';
   /** Only passed on the Coordinator dashboard — turns on the assignment control. Partner Staff
    * views their assignment read-only via wioaCase.assignedPartnerStaffName. */
   partnerStaffRoster?: LearnerRecord[];
 }) {
   const [, startTransition] = useTransition();
-  const [tab, setTab] = useState<Tab>('overview');
-  const phase = WIOA_STATUS_PHASE[wioaCase.status];
-  const lastStatusChange = wioaCase.statusHistory[0]?.changedAt ?? wioaCase.createdAt;
-  const nextAppointment = wioaCase.appointments.find(
-    (a) => !a.completedAt && new Date(a.scheduledAt) >= new Date(),
-  );
-  // Funding enrollment-complete is now a per-course fact, not an eligibility-case one
-  // (docs/plans/wioa-spec-alignment-kickoff.md #1) — 100% once any funding request reaches it.
-  const pathwayPercent = wioaCase.fundingRequests?.some(
-    (f) => f.status === 'APPRENTICESHIP_ENROLLMENT_COMPLETE',
-  )
-    ? 100
-    : wioaCase.status === 'CLOSED_INELIGIBLE'
-      ? 0
-      : 50;
+  const [view, setView] = useState<View>('overview');
 
   return (
     <div className="flex flex-col gap-5">
-      <div className="crumbrow">
-        <Link href={basePath} style={{ color: 'inherit', textDecoration: 'none' }}>
-          All Cases
-        </Link>
-        <span className="sep">/</span>
-        <span>{wioaCase.learnerName}</span>
-        <span className="sep">/</span>
-        <span className="cur">Case details</span>
-      </div>
-
-      <ProfileHeader
-        left={
-          <>
-            <CompletionRing percentage={pathwayPercent} initials={initials(wioaCase.learnerName)} />
-            <div style={{ minWidth: 0 }}>
-              <h1 className="phdr-name">{wioaCase.learnerName}</h1>
-              <p className="phdr-sub">
-                {wioaCase.learnerEmail} · Case opened {formatDate(wioaCase.createdAt)}
-              </p>
-              <div className="pbadges">
-                <Badge tone="info" style={{ fontSize: 11.5 }}>
-                  {phase}
-                </Badge>
-                <span className="pbadge">{WIOA_STATUS_LABEL[wioaCase.status]}</span>
-                {wioaCase.boardName && <span className="pbadge">{wioaCase.boardName}</span>}
-              </div>
-            </div>
-          </>
-        }
+      <CaseCrumb
+        wioaCase={wioaCase}
+        basePath={basePath}
+        view={view}
+        onBack={() => setView('overview')}
       />
 
-      <ProfileTabs
-        tabs={[
-          { key: 'overview', label: 'Overview' },
-          {
-            key: 'documents',
-            label: `Documents${wioaCase.documents.length > 0 ? ` (${wioaCase.documents.length})` : ''}`,
-          },
-          { key: 'history', label: 'Status history' },
-        ]}
-        active={tab}
-        onChange={(key) => setTab(key as Tab)}
-      />
+      <CaseHeader wioaCase={wioaCase} />
 
-      {tab === 'overview' && (
-        <div className="ov-grid" style={{ paddingTop: 4 }}>
-          <div>
-            <div className="ov-h">Case summary</div>
-            <p
-              style={{
-                fontSize: 13,
-                color: 'var(--ink-muted)',
-                lineHeight: 1.6,
-                margin: '0 0 20px',
-              }}
-            >
-              {wioaCase.learnerName.split(' ')[0]}&apos;s case is in the{' '}
-              <strong style={{ color: 'var(--ink)' }}>{phase}</strong> phase (
-              {WIOA_STATUS_LABEL[wioaCase.status]}); last status change was{' '}
-              {formatDate(lastStatusChange)}.
-            </p>
+      {view === 'documents' && (
+        <DocumentsView wioaCase={wioaCase} startTransition={startTransition} />
+      )}
 
-            <div style={{ height: 1, background: 'var(--nfcap-border)', margin: '0 0 20px' }} />
+      {view === 'history' && <HistoryView wioaCase={wioaCase} />}
 
-            <div className="ov-h">Case details</div>
-            <div className="ov-detgrid" style={{ marginBottom: 20 }}>
-              <div className="ov-detcol">
-                <div className="ov-field">
-                  <span className="ov-sub">Case ID</span>
-                  <span className="ov-val">{wioaCase.id}</span>
-                </div>
-                <div className="ov-field">
-                  <span className="ov-sub">Course / pathway</span>
-                  <span className="ov-val">{wioaCase.courseTitle}</span>
-                </div>
-              </div>
-              <div className="ov-detcol">
-                <div className="ov-field">
-                  <span className="ov-sub">Workforce board</span>
-                  <span className="ov-val">
-                    {wioaCase.boardName ?? 'No workforce board matched'}
-                  </span>
-                </div>
-                <div className="ov-field">
-                  <span className="ov-sub">AJCC center</span>
-                  <span className="ov-val">{wioaCase.ajccName ?? '—'}</span>
-                </div>
-              </div>
-              <div className="ov-detcol">
-                <div className="ov-field">
-                  <span className="ov-sub">Case opened</span>
-                  <span className="ov-val">{formatDate(wioaCase.createdAt)}</span>
-                </div>
-                <div className="ov-field">
-                  <span className="ov-sub">Last status change</span>
-                  <span className="ov-val">{formatDate(lastStatusChange)}</span>
-                </div>
-              </div>
-            </div>
+      {view === 'overview' && (
+        <>
+          <EligibilitySection wioaCase={wioaCase} />
 
-            {partnerStaffRoster && (
-              <div style={{ marginTop: 20 }}>
-                <div className="ov-h">Assignment</div>
-                <AssignmentControl wioaCase={wioaCase} partnerStaffRoster={partnerStaffRoster} />
+          <div className="bodygrid">
+            <div>
+              <div className="sect-h">
+                Course funding — one per course, independently advanceable
               </div>
-            )}
-            {!partnerStaffRoster && (
-              <div style={{ marginTop: 20 }}>
-                <div className="ov-h">Assignment</div>
+              {!wioaCase.fundingRequests || wioaCase.fundingRequests.length === 0 ? (
                 <p style={{ fontSize: 13.5, color: 'var(--ink-muted)' }}>
-                  {wioaCase.assignedPartnerStaffName
-                    ? `Assigned to ${wioaCase.assignedPartnerStaffName}`
-                    : 'Not yet assigned to a Partner Staff account.'}
+                  No course funding request exists yet for this case.
                 </p>
-              </div>
-            )}
+              ) : (
+                wioaCase.fundingRequests.map((fr) => (
+                  <FundingSection key={fr.id} courseCase={fr} />
+                ))
+              )}
+            </div>
 
-            {partnerStaffRoster && (
-              <div style={{ marginTop: 20, display: 'flex', flexDirection: 'column', gap: 16 }}>
-                <div className="ov-h">Funding</div>
-                {!wioaCase.fundingRequests || wioaCase.fundingRequests.length === 0 ? (
-                  <p style={{ fontSize: 13.5, color: 'var(--ink-muted)' }}>
-                    No course funding request exists yet for this case.
-                  </p>
-                ) : (
-                  wioaCase.fundingRequests.map((fr) => (
-                    <FundingSection key={fr.id} courseCase={fr} />
-                  ))
-                )}
-              </div>
-            )}
+            <RightRail
+              wioaCase={wioaCase}
+              partnerStaffRoster={partnerStaffRoster}
+              onOpenDocuments={() => setView('documents')}
+              onOpenHistory={() => setView('history')}
+            />
           </div>
+        </>
+      )}
+    </div>
+  );
+}
 
-          <div className="ov-sep" />
+function CaseCrumb({
+  wioaCase,
+  basePath,
+  view,
+  onBack,
+}: {
+  wioaCase: WioaCaseDetail;
+  basePath: '/coordinator' | '/partner';
+  view: View;
+  onBack: () => void;
+}) {
+  return (
+    <div className="crumbrow">
+      <Link href={basePath} style={{ color: 'inherit', textDecoration: 'none' }}>
+        {basePath === '/partner' ? 'My Cases' : 'All Cases'}
+      </Link>
+      <span className="sep">/</span>
+      {view === 'overview' ? (
+        <span className="cur">{wioaCase.learnerName}</span>
+      ) : (
+        <>
+          <button
+            type="button"
+            onClick={onBack}
+            style={{
+              background: 'none',
+              border: 'none',
+              padding: 0,
+              font: 'inherit',
+              color: 'inherit',
+              cursor: 'pointer',
+            }}
+          >
+            {wioaCase.learnerName}
+          </button>
+          <span className="sep">/</span>
+          <span className="cur">{view === 'documents' ? 'Document review' : 'Status history'}</span>
+        </>
+      )}
+    </div>
+  );
+}
 
-          <div>
-            <div className="ov-h" style={{ fontSize: 13.5 }}>
-              Board contact
-            </div>
-            {wioaCase.contactName ? (
-              <div className="side-row" style={{ paddingTop: 0 }}>
-                <div
-                  style={{
-                    width: 32,
-                    height: 32,
-                    borderRadius: '50%',
-                    background: 'var(--surface-muted)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: 11,
-                    fontWeight: 600,
-                    color: 'var(--ink-muted)',
-                    flexShrink: 0,
-                  }}
-                >
-                  {initials(wioaCase.contactName)}
-                </div>
-                <div>
-                  <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--ink)' }}>
-                    {wioaCase.contactName}
-                  </div>
-                  <div style={{ fontSize: 11.5, color: 'var(--ink-muted)' }}>
-                    {wioaCase.boardName ?? 'Primary contact'}
-                  </div>
-                </div>
+/** The .rhdr header shared by the overview, documents and history views (CRD02/CRD03 redraw,
+ * 2026-11-28) — replaces the old .phdr/.pring completion-ring shell for this screen. No course
+ * title here (QC finding Q-1/S4 — courses belong to the funding section, not the case header). */
+function CaseHeader({ wioaCase }: { wioaCase: WioaCaseDetail }) {
+  return (
+    <div className="rhdr">
+      <div className="rhdr-left">
+        <div className="rhdr-avatar">{initials(wioaCase.learnerName)}</div>
+        <div style={{ minWidth: 0 }}>
+          <div className="rhdr-type">WIOA Case</div>
+          <h1 className="rhdr-name">{wioaCase.learnerName}</h1>
+          <p className="rhdr-sub">
+            {wioaCase.learnerEmail} · Case opened {formatDate(wioaCase.createdAt)}
+            {wioaCase.boardName && <> · {wioaCase.boardName}</>}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/** Eligibility as a step path across its 4 phases (DEMO-1 item 1) — a sibling of each funding
+ * path below it (DEMO-2), using the existing WIOA_UI_PHASES/WIOA_ELIGIBILITY_STATUS_PHASE map
+ * rather than a new one. A terminal state replaces the path rather than rendering as a step in it
+ * (same rule as the funding paths, QC finding Q-2). */
+function EligibilitySection({ wioaCase }: { wioaCase: WioaCaseDetail }) {
+  const isClosed = wioaCase.status === 'CLOSED_INELIGIBLE';
+  const isEligible = wioaCase.status === 'WIOA_ELIGIBLE';
+  const phase = WIOA_ELIGIBILITY_STATUS_PHASE[wioaCase.status];
+  const phaseIndex = WIOA_UI_PHASES.indexOf(phase as (typeof WIOA_UI_PHASES)[number]);
+
+  return (
+    <div>
+      <div className="sect-h">Eligibility — one per learner</div>
+      {isClosed ? (
+        <div className="path-terminal">
+          <span>✕</span>
+          <span>{WIOA_STATUS_LABEL.CLOSED_INELIGIBLE}</span>
+        </div>
+      ) : (
+        <div className="pathwrap">
+          <div className="path">
+            {WIOA_UI_PHASES.map((p, i) => (
+              <div
+                key={p}
+                className={`path-step${i < phaseIndex ? ' done' : i === phaseIndex ? ' now' : ''}`}
+              >
+                {p}
               </div>
-            ) : (
-              <p style={{ fontSize: 12.5, color: 'var(--ink-muted)', margin: '0 0 0' }}>
-                No contact matched.
-              </p>
-            )}
-
-            <div style={{ height: 1, background: 'var(--nfcap-border)', margin: '14px 0' }} />
-
-            <div className="ov-h" style={{ fontSize: 13.5 }}>
-              Upcoming appointment
-            </div>
-            {nextAppointment ? (
-              <div className="side-row">
-                <Icon name="clock" className="side-ic" />
-                <div>
-                  <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--ink)' }}>
-                    {formatDate(nextAppointment.scheduledAt)} ·{' '}
-                    {APPOINTMENT_TYPE_LABEL[nextAppointment.type] ?? nextAppointment.type}
-                  </div>
-                  {nextAppointment.notes && (
-                    <div style={{ fontSize: 11.5, color: 'var(--ink-muted)' }}>
-                      {nextAppointment.notes}
-                    </div>
-                  )}
-                </div>
-              </div>
-            ) : (
-              <p style={{ fontSize: 12.5, color: 'var(--ink-muted)' }}>
-                No upcoming appointment scheduled.
-              </p>
-            )}
-
-            <div style={{ height: 1, background: 'var(--nfcap-border)', margin: '14px 0' }} />
-
-            <div className="ov-h" style={{ fontSize: 13.5 }}>
-              Recent communications
-            </div>
-            {wioaCase.communications.length === 0 ? (
-              <p style={{ fontSize: 12.5, color: 'var(--ink-muted)' }}>No outreach logged yet.</p>
-            ) : (
-              wioaCase.communications.slice(0, 2).map((c, i) => (
-                <div
-                  className="side-row"
-                  key={c.id}
-                  style={i === 0 ? { paddingTop: 0 } : undefined}
-                >
-                  <Icon name={COMMUNICATION_ICON[c.channel]} className="side-ic" />
-                  <div>
-                    <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--ink)' }}>
-                      {formatDate(c.sentAt)} — {COMMUNICATION_LABEL[c.channel]}
-                      {c.channel !== 'NOTE' && <> to {c.recipient}</>}
-                    </div>
-                    {c.subject && (
-                      <div style={{ fontSize: 11.5, color: 'var(--ink-muted)' }}>{c.subject}</div>
-                    )}
-                  </div>
-                </div>
-              ))
-            )}
+            ))}
           </div>
         </div>
       )}
 
-      {tab === 'documents' && (
-        <div className="doccard" style={{ marginTop: 18 }}>
+      {isEligible && (
+        <p className="path-current" style={{ marginTop: 8 }}>
+          <b>WIOA Eligible.</b> No advance control here anymore — everything below is per-course.
+        </p>
+      )}
+
+      {!isClosed && !isEligible && <StatusCard wioaCase={wioaCase} />}
+    </div>
+  );
+}
+
+function RightRail({
+  wioaCase,
+  partnerStaffRoster,
+  onOpenDocuments,
+  onOpenHistory,
+}: {
+  wioaCase: WioaCaseDetail;
+  partnerStaffRoster?: LearnerRecord[];
+  onOpenDocuments: () => void;
+  onOpenHistory: () => void;
+}) {
+  const nextAppointment = wioaCase.appointments.find(
+    (a) => !a.completedAt && new Date(a.scheduledAt) >= new Date(),
+  );
+  const docsAwaiting = wioaCase.documents.filter(
+    (d) => d.status === 'UPLOADED' || d.status === 'UNDER_REVIEW',
+  ).length;
+  const docsAccepted = wioaCase.documents.filter((d) => d.status === 'ACCEPTED').length;
+
+  return (
+    <div>
+      {partnerStaffRoster ? (
+        <div className="rpanel">
+          <div className="rpanel-h">
+            <span className="left">Assigned Partner Staff</span>
+          </div>
+          <div className="rpanel-b">
+            <AssignmentControl wioaCase={wioaCase} partnerStaffRoster={partnerStaffRoster} />
+          </div>
+        </div>
+      ) : (
+        <div className="rpanel">
+          <div className="rpanel-h">
+            <span className="left">Assigned Partner Staff</span>
+          </div>
+          <div className="rpanel-b">
+            {wioaCase.assignedPartnerStaffName
+              ? `Assigned to ${wioaCase.assignedPartnerStaffName}`
+              : 'Not yet assigned.'}
+          </div>
+        </div>
+      )}
+
+      <div className="rpanel">
+        <div className="rpanel-h">
+          <span className="left">
+            Documents <span className="cnt">{wioaCase.documents.length}</span>
+          </span>
+        </div>
+        <div className="rpanel-b">
+          {wioaCase.documents.length === 0
+            ? 'No documents required for this case.'
+            : `${docsAccepted} accepted${docsAwaiting > 0 ? `, ${docsAwaiting} awaiting review` : ''}.`}
+          <div style={{ marginTop: 9 }}>
+            <Button size="sm" variant="outline" onClick={onOpenDocuments}>
+              Review documents
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      <div className="rpanel">
+        <div className="rpanel-h">
+          <span className="left">
+            Appointments <span className="cnt">{wioaCase.appointments.length}</span>
+          </span>
+        </div>
+        <div className="rpanel-b">
+          {nextAppointment
+            ? `${formatDate(nextAppointment.scheduledAt)} · ${APPOINTMENT_TYPE_LABEL[nextAppointment.type] ?? nextAppointment.type}`
+            : 'No upcoming appointment scheduled.'}
+        </div>
+      </div>
+
+      <div className="rpanel">
+        <div className="rpanel-h">
+          <span className="left">Board contact</span>
+        </div>
+        <div className="rpanel-b">
+          {wioaCase.contactName ? (
+            <>
+              {wioaCase.boardName ?? 'Primary contact'}
+              <br />
+              {wioaCase.contactName}
+            </>
+          ) : (
+            'No contact matched.'
+          )}
+        </div>
+      </div>
+
+      <div className="rpanel">
+        <div className="rpanel-h">
+          <span className="left">
+            Communications <span className="cnt">{wioaCase.communications.length}</span>
+          </span>
+        </div>
+        <div className="rpanel-b">
+          {wioaCase.communications.length === 0
+            ? 'No outreach logged yet.'
+            : `Last: ${COMMUNICATION_LABEL[wioaCase.communications[0].channel]}, ${formatDate(wioaCase.communications[0].sentAt)}.`}
+        </div>
+      </div>
+
+      <div className="rpanel">
+        <div className="rpanel-h">
+          <span className="left">
+            Status history <span className="cnt">{wioaCase.statusHistory.length}</span>
+          </span>
+        </div>
+        <div className="rpanel-b">
+          Append-only log of every eligibility and funding change.
+          <div style={{ marginTop: 9 }}>
+            <Button size="sm" variant="outline" onClick={onOpenHistory}>
+              View full history
+            </Button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function DocumentsView({
+  wioaCase,
+  startTransition,
+}: {
+  wioaCase: WioaCaseDetail;
+  startTransition: ReturnType<typeof useTransition>[1];
+}) {
+  return (
+    <div style={{ paddingTop: 4 }}>
+      <p className="rhdr-current">
+        Currently <b>{WIOA_STATUS_LABEL[wioaCase.status]}</b>
+        {wioaCase.boardName && <> · {wioaCase.boardName}</>}
+      </p>
+      <div style={{ paddingTop: 14 }}>
+        <div className="sect-h">Documents</div>
+        <div className="doccard">
           <div className="doccard-head">
             <div className="doccard-title">Required documents</div>
             <div className="doccard-desc">
@@ -388,69 +439,65 @@ export function WioaCaseDetailView({
             ))
           )}
         </div>
-      )}
+      </div>
+    </div>
+  );
+}
 
-      {tab === 'history' && (
-        <div
-          style={{ paddingTop: 18, display: 'grid', gridTemplateColumns: '1fr 1px 320px', gap: 28 }}
-        >
-          <div>
-            <Card style={{ marginBottom: 24 }}>
-              <CardContent>
-                <StatusCard wioaCase={wioaCase} />
-              </CardContent>
-            </Card>
-
-            <p className="panel-h">Status history</p>
-            <p className="panel-sub">
-              Every transition this case has recorded, oldest to most recent.
-            </p>
-            <div className="tl">
-              {[...wioaCase.statusHistory].reverse().map((h, i, arr) => {
-                const isCurrent = i === arr.length - 1;
-                return (
-                  <div key={h.id} className={isCurrent ? 'tlrow current' : 'tlrow'}>
-                    <div className="tldot" />
-                    <div className="tl-status">{WIOA_STATUS_LABEL[h.status]}</div>
-                    <div className="tl-meta">
-                      {formatDate(h.changedAt)} — recorded by {h.changedByName}
-                      {isCurrent && ' · current status'}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            {wioaCase.communications.length > 0 && (
-              <div className="border-t border-[var(--nfcap-border)] pt-4 mt-5">
-                <p className="mb-2 text-sm font-medium text-[var(--ink)]">Outreach log</p>
-                <div className="flex flex-col gap-2">
-                  {wioaCase.communications.map((c) => (
-                    <div key={c.id} className="text-sm text-[var(--ink-muted)]">
-                      {COMMUNICATION_LABEL[c.channel]}
-                      {c.channel !== 'NOTE' && <> to {c.recipient}</>} — {formatDate(c.sentAt)}
-                    </div>
-                  ))}
+function HistoryView({ wioaCase }: { wioaCase: WioaCaseDetail }) {
+  return (
+    <div
+      style={{ paddingTop: 8, display: 'grid', gridTemplateColumns: '1fr 1px 320px', gap: 28 }}
+    >
+      <div>
+        <p className="panel-h">Status history</p>
+        <p className="panel-sub">
+          Every transition this case has recorded, oldest to most recent.
+        </p>
+        <div className="tl">
+          {[...wioaCase.statusHistory].reverse().map((h, i, arr) => {
+            const isCurrent = i === arr.length - 1;
+            return (
+              <div key={h.id} className={isCurrent ? 'tlrow current' : 'tlrow'}>
+                <div className="tldot" />
+                <div className="tl-status">{WIOA_STATUS_LABEL[h.status]}</div>
+                <div className="tl-meta">
+                  {formatDate(h.changedAt)} — recorded by {h.changedByName}
+                  {isCurrent && ' · current status'}
                 </div>
               </div>
-            )}
-          </div>
-
-          <div className="ov-sep" />
-
-          <div>
-            <p className="panel-h" style={{ fontSize: 13.5 }}>
-              Why this matters
-            </p>
-            <p style={{ fontSize: 12.5, color: 'var(--ink-muted)', lineHeight: 1.6 }}>
-              Several of the funding journey&apos;s steps — orientation, CalJOBS, the application,
-              the intake appointment and the eligibility decision — happen with the workforce board,
-              outside this system. Coordinators record each status here as it&apos;s confirmed; the
-              record is never editable after the fact, only appended to.
-            </p>
-          </div>
+            );
+          })}
         </div>
-      )}
+
+        {wioaCase.communications.length > 0 && (
+          <div className="border-t border-[var(--nfcap-border)] pt-4 mt-5">
+            <p className="mb-2 text-sm font-medium text-[var(--ink)]">Outreach log</p>
+            <div className="flex flex-col gap-2">
+              {wioaCase.communications.map((c) => (
+                <div key={c.id} className="text-sm text-[var(--ink-muted)]">
+                  {COMMUNICATION_LABEL[c.channel]}
+                  {c.channel !== 'NOTE' && <> to {c.recipient}</>} — {formatDate(c.sentAt)}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      <div className="ov-sep" />
+
+      <div>
+        <p className="panel-h" style={{ fontSize: 13.5 }}>
+          Why this matters
+        </p>
+        <p style={{ fontSize: 12.5, color: 'var(--ink-muted)', lineHeight: 1.6 }}>
+          Several of the funding journey&apos;s steps — orientation, CalJOBS, the application,
+          the intake appointment and the eligibility decision — happen with the workforce board,
+          outside this system. Coordinators record each status here as it&apos;s confirmed; the
+          record is never editable after the fact, only appended to.
+        </p>
+      </div>
     </div>
   );
 }
@@ -680,21 +727,19 @@ function AssignmentControl({
   }
 
   return (
-    <Field label="Assigned Partner Staff" htmlFor="assignedPartnerStaff">
-      <Select
-        id="assignedPartnerStaff"
-        value={wioaCase.assignedPartnerStaffId ?? ''}
-        disabled={pending}
-        onChange={(e) => assign(e.target.value)}
-      >
-        <option value="">Unassigned</option>
-        {partnerStaffRoster.map((p) => (
-          <option key={p.id} value={p.id}>
-            {p.name}
-          </option>
-        ))}
-      </Select>
-    </Field>
+    <Select
+      id="assignedPartnerStaff"
+      value={wioaCase.assignedPartnerStaffId ?? ''}
+      disabled={pending}
+      onChange={(e) => assign(e.target.value)}
+    >
+      <option value="">Unassigned</option>
+      {partnerStaffRoster.map((p) => (
+        <option key={p.id} value={p.id}>
+          {p.name}
+        </option>
+      ))}
+    </Select>
   );
 }
 
@@ -710,41 +755,85 @@ function toDateInput(value: Date | string | null | undefined): string {
   return new Date(value).toISOString().slice(0, 10);
 }
 
-/** One course's funding pipeline: the step-advance control (DEMO-3/A2) plus the ETPL/funding
- * milestone fields (DEMO-3/A4) presented underneath the step they belong to, so it's unambiguous
- * which control actually moves the case (the enum, not the form). One instance per entry in
- * `wioaCase.fundingRequests` (DEMO-3/A3) — no more pinning to the first course case. */
+/** One course's funding pipeline: the step path (DEMO-1 item 2 — a sibling of the eligibility
+ * path), the step-advance control (DEMO-3/A2) docked right below it (DEMO-1 item 3), and the
+ * ETPL/funding milestone fields (DEMO-3/A4) presented as attribute rows under the step they
+ * belong to. One instance per entry in `wioaCase.fundingRequests` (DEMO-3/A3) — no more pinning
+ * to the first course case. */
 function FundingSection({ courseCase }: { courseCase: FundingRequest }) {
+  // FUNDING_DECLINED is a terminal branch, not the furthest step in the linear order — it must
+  // replace the path, never render as "Step 5 of 5" (QC finding Q-2).
+  const isDeclined = courseCase.status === 'FUNDING_DECLINED';
+  const isClosed = isDeclined || courseCase.status === 'APPRENTICESHIP_ENROLLMENT_COMPLETE';
+  const linearStatuses: WioaFundingStatus[] = WIOA_FUNDING_STATUS_ORDER.filter(
+    (s) => s !== 'FUNDING_DECLINED',
+  );
+  const linearIndex = linearStatuses.indexOf(courseCase.status);
+  const requestedAmount = formatMoney(courseCase.funding?.requestedAmount);
+
   return (
-    <Card>
-      <CardHeader>
-        <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
-          <CardTitle>{courseCase.courseTitle}</CardTitle>
-          <span className="pbadge">{WIOA_FUNDING_STATUS_LABEL[courseCase.status]}</span>
+    <div className="ccard">
+      <div className="ccard-h">
+        <div>
+          <div className="ccard-title">{courseCase.courseTitle}</div>
+          <div className="ccard-meta">
+            Requested {formatDate(courseCase.createdAt)}
+            {requestedAmount ? ` · ${requestedAmount} requested` : ' · amount not yet set'}
+          </div>
         </div>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-4">
+        <span className="ccase-tag">{isClosed ? 'Closed' : 'Open'}</span>
+      </div>
+      <div className="ccard-body">
+        {isDeclined ? (
+          <div className="path-terminal">
+            <span>✕</span>
+            <span>Funding Declined</span>
+          </div>
+        ) : (
+          <div className="pathwrap">
+            <div className="path sm">
+              {linearStatuses.map((s, i) => (
+                <div
+                  key={s}
+                  className={`path-step wrap2${i < linearIndex ? ' done' : i === linearIndex ? ' now' : ''}`}
+                >
+                  {wrapLabel(WIOA_FUNDING_STATUS_LABEL[s])}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         <FundingAdvanceControl courseCase={courseCase} />
-        <div style={{ height: 1, background: 'var(--nfcap-border)' }} />
-        <FundingDetailsForm courseCase={courseCase} />
-      </CardContent>
-    </Card>
+        <div style={{ height: 1, background: 'var(--nfcap-border)', margin: '14px 0' }} />
+        <FundingDetailsSection courseCase={courseCase} />
+      </div>
+    </div>
   );
 }
 
-/** DEMO-3/A2 — the funding advance control, one per course case. Next statuses only ever come
- * from `nextFundingStatusOptions`, never a free list of all five. Errors are shown inline from
+/** DEMO-3/A2 — the funding advance control, docked directly under the step path it drives
+ * (DEMO-1 item 3 — out of the old Status history tab). Next statuses only ever come from
+ * `nextFundingStatusOptions`, never a free list of all five. Errors are shown inline from
  * `result.ok === false` (DEMO-3/A1, CLAUDE.md's error-handling convention), not via try/catch. */
 function FundingAdvanceControl({ courseCase }: { courseCase: FundingRequest }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
+  const [open, setOpen] = useState(false);
   const options = nextFundingStatusOptions(courseCase.status);
-  const stepIndex = WIOA_FUNDING_STATUS_ORDER.indexOf(courseCase.status);
   const [nextStatus, setNextStatus] = useState<WioaFundingStatus | ''>('');
   const [scheduleAppointment, setScheduleAppointment] = useState(false);
   const [scheduledAt, setScheduledAt] = useState('');
   const [notes, setNotes] = useState('');
   const [error, setError] = useState('');
+
+  if (options.length === 0) {
+    return (
+      <p className="path-current" style={{ marginTop: 10 }}>
+        This funding request is closed — no further status change is possible.
+      </p>
+    );
+  }
 
   function advance() {
     if (!nextStatus) return;
@@ -765,86 +854,192 @@ function FundingAdvanceControl({ courseCase }: { courseCase: FundingRequest }) {
       setScheduleAppointment(false);
       setScheduledAt('');
       setNotes('');
+      setOpen(false);
       router.refresh();
     });
   }
 
+  if (!open) {
+    return (
+      <div style={{ marginTop: 10, display: 'flex', alignItems: 'center', gap: 10 }}>
+        <Button size="sm" onClick={() => setOpen(true)}>
+          Advance
+        </Button>
+      </div>
+    );
+  }
+
   return (
-    <div>
-      <p className="panel-sub" style={{ margin: '0 0 10px' }}>
-        {stepIndex >= 0 && `Step ${stepIndex + 1} of ${WIOA_FUNDING_STATUS_ORDER.length}`}
-      </p>
-      {options.length === 0 ? (
-        <p style={{ fontSize: 12.5, color: 'var(--ink-muted)' }}>
-          This funding request is closed — no further status change is possible.
-        </p>
-      ) : (
-        <div className="flex flex-col gap-3">
-          <Field
-            label="New funding status"
-            htmlFor={`fundingStatus-${courseCase.id}`}
-            error={error || undefined}
-          >
-            <Select
-              id={`fundingStatus-${courseCase.id}`}
-              value={nextStatus}
-              onChange={(e) => {
-                setError('');
-                setNextStatus(e.target.value as WioaFundingStatus);
-              }}
-            >
-              <option value="">Select next status</option>
-              {options.map((s) => (
-                <option key={s} value={s}>
-                  {WIOA_FUNDING_STATUS_LABEL[s]}
-                </option>
-              ))}
-            </Select>
-          </Field>
+    <div style={{ marginTop: 10 }} className="flex flex-col gap-3">
+      <Field
+        label="New funding status"
+        htmlFor={`fundingStatus-${courseCase.id}`}
+        error={error || undefined}
+      >
+        <Select
+          id={`fundingStatus-${courseCase.id}`}
+          value={nextStatus}
+          onChange={(e) => {
+            setError('');
+            setNextStatus(e.target.value as WioaFundingStatus);
+          }}
+        >
+          <option value="">Select next status</option>
+          {options.map((s) => (
+            <option key={s} value={s}>
+              {WIOA_FUNDING_STATUS_LABEL[s]}
+            </option>
+          ))}
+        </Select>
+      </Field>
 
-          <label className="flex items-center gap-2 text-sm text-[var(--ink)]">
-            <input
-              type="checkbox"
-              checked={scheduleAppointment}
-              onChange={(e) => setScheduleAppointment(e.target.checked)}
+      <label className="flex items-center gap-2 text-sm text-[var(--ink)]">
+        <input
+          type="checkbox"
+          checked={scheduleAppointment}
+          onChange={(e) => setScheduleAppointment(e.target.checked)}
+        />
+        Schedule a follow-up appointment
+      </label>
+
+      {scheduleAppointment && (
+        <>
+          <Field label="Appointment date/time" htmlFor={`fundingAppt-${courseCase.id}`}>
+            <Input
+              id={`fundingAppt-${courseCase.id}`}
+              type="datetime-local"
+              value={scheduledAt}
+              onChange={(e) => setScheduledAt(e.target.value)}
             />
-            Schedule a follow-up appointment
-          </label>
-
-          {scheduleAppointment && (
-            <>
-              <Field label="Appointment date/time" htmlFor={`fundingAppt-${courseCase.id}`}>
-                <Input
-                  id={`fundingAppt-${courseCase.id}`}
-                  type="datetime-local"
-                  value={scheduledAt}
-                  onChange={(e) => setScheduledAt(e.target.value)}
-                />
-              </Field>
-              <Field label="Notes (optional)" htmlFor={`fundingApptNotes-${courseCase.id}`}>
-                <Textarea
-                  id={`fundingApptNotes-${courseCase.id}`}
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  rows={2}
-                />
-              </Field>
-            </>
-          )}
-
-          <Button size="sm" disabled={!nextStatus || pending} onClick={advance} className="w-fit">
-            {pending ? 'Saving…' : 'Save funding status'}
-          </Button>
-        </div>
+          </Field>
+          <Field label="Notes (optional)" htmlFor={`fundingApptNotes-${courseCase.id}`}>
+            <Textarea
+              id={`fundingApptNotes-${courseCase.id}`}
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              rows={2}
+            />
+          </Field>
+        </>
       )}
+
+      <div className="flex gap-2">
+        <Button size="sm" disabled={!nextStatus || pending} onClick={advance} className="w-fit">
+          {pending ? 'Saving…' : 'Save funding status'}
+        </Button>
+        <Button size="sm" variant="ghost" onClick={() => setOpen(false)} className="w-fit">
+          Cancel
+        </Button>
+      </div>
     </div>
   );
 }
 
-/** DEMO-3/A4 — the 12 ETPL/funding fields as attributes recorded against the step above, not a
- * flat form that advances anything itself. Saves via updateWioaFunding, keyed to this course
- * case's id (DEMO-3/A3 — no more pinning to the first course case). */
-function FundingDetailsForm({ courseCase }: { courseCase: FundingRequest }) {
+/** DEMO-3/A4 — the 12 ETPL/funding fields as attribute rows under the step above, read-only by
+ * default (the CRD02 board's presentation) with an explicit Edit control that swaps in the real
+ * form; still saves through `updateWioaFunding`, keyed to this course case's id (DEMO-3/A3). */
+function FundingDetailsSection({ courseCase }: { courseCase: FundingRequest }) {
+  const [editing, setEditing] = useState(false);
+  const funding = courseCase.funding;
+  const auth = funding?.authorization;
+
+  if (editing) {
+    return <FundingDetailsForm courseCase={courseCase} onDone={() => setEditing(false)} />;
+  }
+
+  return (
+    <div>
+      <div className="grp">
+        <div className="grp-h">
+          <span>Training request</span>
+          <button
+            type="button"
+            onClick={() => setEditing(true)}
+            className="text-xs text-[var(--nfcap-accent)] hover:underline"
+          >
+            Edit
+          </button>
+        </div>
+        <div className="arow">
+          <span className="k">Training program</span>
+          <span className={funding?.trainingProgram ? 'v' : 'v empty'}>
+            {funding?.trainingProgram || 'Not set'}
+          </span>
+        </div>
+        <div className="arow">
+          <span className="k">ETPL provider confirmed</span>
+          <span className="v">{funding?.etplProviderConfirmed ? 'Yes' : 'No'}</span>
+        </div>
+        <div className="arow">
+          <span className="k">Submitted</span>
+          <span className={funding?.submittedAt ? 'v' : 'v empty'}>
+            {funding?.submittedAt ? formatDate(funding.submittedAt) : 'Not yet submitted'}
+          </span>
+        </div>
+        <div className="arow">
+          <span className="k">Case manager notified</span>
+          <span className={funding?.caseManagerNotifiedAt ? 'v' : 'v empty'}>
+            {funding?.caseManagerNotifiedAt ? formatDate(funding.caseManagerNotifiedAt) : 'Not yet notified'}
+          </span>
+        </div>
+        <div className="arow">
+          <span className="k">Requested amount</span>
+          <span className={funding?.requestedAmount != null ? 'v' : 'v empty'}>
+            {formatMoney(funding?.requestedAmount) ?? 'Not set'}
+          </span>
+        </div>
+        <div className="arow">
+          <span className="k">Funding review status</span>
+          <span className={funding?.fundingReviewStatus ? 'v' : 'v empty'}>
+            {funding?.fundingReviewStatus || 'Not set'}
+          </span>
+        </div>
+      </div>
+
+      <div className="grp">
+        <div className="grp-h">
+          <span>Authorization</span>
+        </div>
+        <div className="arow">
+          <span className="k">ITA issued</span>
+          <span className={auth?.itaIssuedAt ? 'v' : 'v empty'}>
+            {auth?.itaIssuedAt ? formatDate(auth.itaIssuedAt) : 'Not yet issued'}
+          </span>
+        </div>
+        <div className="arow">
+          <span className="k">Approved amount</span>
+          <span className={auth?.approvedAmount != null ? 'v' : 'v empty'}>
+            {formatMoney(auth?.approvedAmount) ?? 'Pending approval'}
+          </span>
+        </div>
+        <div className="arow">
+          <span className="k">Approval date</span>
+          <span className={auth?.approvalDate ? 'v' : 'v empty'}>
+            {auth?.approvalDate ? formatDate(auth.approvalDate) : 'Not yet approved'}
+          </span>
+        </div>
+        <div className="arow">
+          <span className="k">Training start date</span>
+          <span className={auth?.trainingStartDate ? 'v' : 'v empty'}>
+            {auth?.trainingStartDate ? formatDate(auth.trainingStartDate) : 'Not set'}
+          </span>
+        </div>
+        <div className="arow">
+          <span className="k">Authorization status</span>
+          <span className={auth?.status ? 'v' : 'v empty'}>{auth?.status || 'Not set'}</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function FundingDetailsForm({
+  courseCase,
+  onDone,
+}: {
+  courseCase: FundingRequest;
+  onDone: () => void;
+}) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const funding = courseCase.funding;
@@ -899,14 +1094,22 @@ function FundingDetailsForm({ courseCase }: { courseCase: FundingRequest }) {
       }
       toast.success('Funding details saved');
       router.refresh();
+      onDone();
     });
   }
 
   return (
     <div className="flex flex-col gap-4">
-      <p className="mb-0 text-sm font-medium text-[var(--ink)]">
-        Funding &amp; authorization details
-      </p>
+      <div className="grp-h" style={{ marginTop: 0 }}>
+        <span>Funding &amp; authorization details</span>
+        <button
+          type="button"
+          onClick={onDone}
+          className="text-xs text-[var(--ink-muted)] hover:underline"
+        >
+          Cancel
+        </button>
+      </div>
       <Field label="Training program" htmlFor={`trainingProgram-${courseCase.id}`}>
         <Input
           id={`trainingProgram-${courseCase.id}`}
@@ -1026,9 +1229,12 @@ function FundingDetailsForm({ courseCase }: { courseCase: FundingRequest }) {
   );
 }
 
+/** DEMO-1 item 3 — the eligibility advance control, docked directly with the path it drives
+ * instead of living in the old Status history tab. */
 function StatusCard({ wioaCase }: { wioaCase: WioaCaseDetail }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
+  const [open, setOpen] = useState(false);
   const options = nextStatusOptions(wioaCase.status);
   const [nextStatus, setNextStatus] = useState<WioaEligibilityStatus | ''>('');
   const [scheduledAt, setScheduledAt] = useState('');
@@ -1059,59 +1265,68 @@ function StatusCard({ wioaCase }: { wioaCase: WioaCaseDetail }) {
       setNextStatus('');
       setScheduledAt('');
       setNotes('');
+      setOpen(false);
       router.refresh();
     });
   }
 
+  if (!open) {
+    return (
+      <div style={{ marginTop: 8 }}>
+        <Button size="sm" onClick={() => setOpen(true)}>
+          Advance
+        </Button>
+      </div>
+    );
+  }
+
   return (
-    <div>
-      <p className="panel-h">Record a status change</p>
-      <p className="panel-sub">
-        Current status: {WIOA_STATUS_LABEL[wioaCase.status]} — set when the real-world step (outside
-        this system) actually happens.
-      </p>
-      <div className="flex flex-col gap-3">
-        <Field label="New status" htmlFor="nextStatus" error={error || undefined}>
-          <Select
-            id="nextStatus"
-            value={nextStatus}
-            onChange={(e) => {
-              setError('');
-              setNextStatus(e.target.value as WioaEligibilityStatus);
-            }}
-          >
-            <option value="">Select next status</option>
-            {options.map((s) => (
-              <option key={s} value={s}>
-                {WIOA_STATUS_LABEL[s]}
-              </option>
-            ))}
-          </Select>
-        </Field>
+    <div style={{ marginTop: 10 }} className="flex flex-col gap-3">
+      <Field label="New status" htmlFor="nextStatus" error={error || undefined}>
+        <Select
+          id="nextStatus"
+          value={nextStatus}
+          onChange={(e) => {
+            setError('');
+            setNextStatus(e.target.value as WioaEligibilityStatus);
+          }}
+        >
+          <option value="">Select next status</option>
+          {options.map((s) => (
+            <option key={s} value={s}>
+              {WIOA_STATUS_LABEL[s]}
+            </option>
+          ))}
+        </Select>
+      </Field>
 
-        {appointmentType && (
-          <>
-            <Field label="Appointment date/time" htmlFor="scheduledAt">
-              <Input
-                id="scheduledAt"
-                type="datetime-local"
-                value={scheduledAt}
-                onChange={(e) => setScheduledAt(e.target.value)}
-              />
-            </Field>
-            <Field label="Notes (optional)" htmlFor="apptNotes">
-              <Textarea
-                id="apptNotes"
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                rows={2}
-              />
-            </Field>
-          </>
-        )}
+      {appointmentType && (
+        <>
+          <Field label="Appointment date/time" htmlFor="scheduledAt">
+            <Input
+              id="scheduledAt"
+              type="datetime-local"
+              value={scheduledAt}
+              onChange={(e) => setScheduledAt(e.target.value)}
+            />
+          </Field>
+          <Field label="Notes (optional)" htmlFor="apptNotes">
+            <Textarea
+              id="apptNotes"
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              rows={2}
+            />
+          </Field>
+        </>
+      )}
 
+      <div className="flex gap-2">
         <Button size="sm" disabled={!nextStatus || pending} onClick={advance} className="w-fit">
           {pending ? 'Saving…' : 'Save status'}
+        </Button>
+        <Button size="sm" variant="ghost" onClick={() => setOpen(false)} className="w-fit">
+          Cancel
         </Button>
       </div>
     </div>
